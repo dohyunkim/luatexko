@@ -1,4 +1,3 @@
-
 LuaTeX-ko Package version 1.0 (2013/05/10)
 ==========================================
 
@@ -19,7 +18,8 @@ functionality.
 License
 -------
 
-This package is licensed under LPPL (LaTeX Project Public License).
+This package is licensed under [LPPL](http://latex-project.org/lppl/)
+(LaTeX Project Public License) version 1.3c or later.
 
 See each file for details.
 
@@ -68,16 +68,16 @@ Under plain TeX:
 Package Options
 ---------------
 
-* [hangul]
+* ``[hangul]``
 
     Load Hangul captions. Besides, this option adjusts interword and
     interline spacing.
 
-* [hanja]
+* ``[hanja]``
 
     Load Hanja captions. Also adjusts spacing as [hangul] option does.
 
-* [unfonts]
+* ``[unfonts]``
 
     Load font setting predefined for Un TrueType fonts available at
     [this link](http://kldp.net/projects/unfonts/).
