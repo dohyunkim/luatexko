@@ -1,0 +1,258 @@
+% $Id: luatexko.sty,v 1.39 2012/11/23 05:06:02 nomos Exp $
+%
+% Copyright (c) 2013 Dohyun Kim  <nomos at ktug org>
+%
+% This work may be distributed and/or modified under the
+% conditions of the LaTeX Project Public License, either version 1.3c
+% of this license or (at your option) any later version.
+% The latest version of this license is in
+%   http://www.latex-project.org/lppl.txt
+% and version 1.3c or later is part of all distributions of LaTeX
+% version 2006/05/20 or later.
+
+\ifx\luatexkocatcodeofatchar\undefined\else
+  \expandafter\endinput\fi % no multiple loading
+\ifx\ProvidesPackage\relax \let\ProvidesPackage\undefined \fi
+\ifx\ProvidesPackage\undefined % plain tex
+  \edef\luatexkocatcodeofatchar{\catcode`@=\the\catcode`@}
+  \input luatexko-core.sty
+  %\hangulfont{name:NanumGothic:interlatincjk=0.125em} at 10pt
+  %\setmathhangulfont{NanumGothic}
+  \luatexkocatcodeofatchar
+  \expandafter\endinput
+\fi
+
+\ProvidesPackage{luatexko}[2013/05/10 v1.0 Typesetting Korean with LuaLaTeX]
+\RequirePackage{fontspec}
+\RequirePackage{luatexko-core}
+
+%% fontspec Korean options
+\ExplSyntaxOn
+
+\DeclareDocumentCommand \newhangulfontfeature {mmmm}
+  {
+    \fontspec_define_font_feature:n {#1}
+    \keys_define:nn {fontspec}
+      {
+	#1 .default:n = {#3} ,
+	#1 / unknown .code:n = {
+	  \fontspec_update_fontid:n  {#2:##1}
+	  \fontspec_update_featstr:n {#2=##1}#4
+	}
+      }
+  }
+
+\fontspec_define_font_feature:n {YetHangul}
+\keys_define:nn {fontspec}
+  {
+    YetHangul .default:n = {On} ,
+    YetHangul / On .code:n = {
+      \fontspec_update_fontid:n  {yethangul:on}
+      \fontspec_update_featstr:n {script=hang;+ccmp;+ljmo;+vjmo;+tjmo}
+    } ,
+    YetHangul / Off .code:n = {
+      \fontspec_update_fontid:n  {yethangul:off}
+      \fontspec_update_featstr:n {-ljmo;-vjmo;-tjmo}
+    }
+  }
+
+\ExplSyntaxOff
+
+\newhangulfontfeature{InterHangul}{interhangul}{0}{}
+\newhangulfontfeature{InterLatinCJK}{interlatincjk}{0}{}
+\newhangulfontfeature{PunctRaise}{punctraise}{0}{}
+\newhangulfontfeature{QuoteRaise}{quoteraise}{0}{}
+\newhangulfontfeature{CharRaise}{charraise}{0}{}
+\newhangulfontfeature{Protrusion}{protrusion}{default}{\aftergroup\pdfprotrudechars\aftergroup\tw@}
+\newhangulfontfeature{Expansion}{expansion}{default}{\aftergroup\pdfadjustspacing\aftergroup\tw@}
+
+%% macros for Korean fonts
+\protected\def\setmainhangulfont{\newfontfamily\serifhangul@font}
+\protected\def\setmainhanjafont {\newfontfamily\serifhanja@font}
+\protected\def\setsanshangulfont{\newfontfamily\sanshangul@font}
+\protected\def\setsanshanjafont {\newfontfamily\sanshanja@font}
+\protected\def\setmonohangulfont{\newfontfamily\monohangul@font}
+\protected\def\setmonohanjafont {\newfontfamily\monohanja@font}
+
+\protected\def\newhangulfontfamily#1{%
+  \protected\def#1{\expandafter\let\expandafter\hangul@font
+  \csname luatexko@\string#1\endcsname
+  \luatexko@hangul@selectfont}\expandafter\newfontfamily
+  \csname luatexko@\string#1\endcsname}
+\protected\def\newhanjafontfamily#1{%
+  \protected\def#1{\expandafter\let\expandafter\hanja@font
+  \csname luatexko@\string#1\endcsname
+  \luatexko@hanja@selectfont}\expandafter\newfontfamily
+  \csname luatexko@\string#1\endcsname}
+
+\protected\def\newhangulfontface#1{%
+  \protected\def#1{\expandafter\let\expandafter\hangul@font
+  \csname luatexko@\string#1\endcsname
+  \luatexko@hangul@selectfont}\expandafter\newfontface
+  \csname luatexko@\string#1\endcsname}
+\protected\def\newhanjafontface#1{%
+  \protected\def#1{\expandafter\let\expandafter\hanja@font
+  \csname luatexko@\string#1\endcsname
+  \luatexko@hanja@selectfont}\expandafter\newfontface
+  \csname luatexko@\string#1\endcsname}
+
+\protected\def\hangulfontspec#1#{%
+  \def\luatexko@fontspec@temp{#1}\hangulfontspec@}
+\def\hangulfontspec@#1{%
+  \expandafter\newfontfamily\expandafter\hangul@font\luatexko@fontspec@temp{#1}%
+  \luatexko@hangul@selectfont\ignorespaces}
+\let\adhochangulfont\hangulfontspec
+\protected\def\hanjafontspec#1#{%
+  \def\luatexko@fontspec@temp{#1}\hanjafontspec@}
+\def\hanjafontspec@#1{%
+  \expandafter\newfontfamily\expandafter\hanja@font\luatexko@fontspec@temp{#1}%
+  \luatexko@hanja@selectfont\ignorespaces}
+\let\adhochanjafont\hanjafontspec
+
+% add{hangul/hanja}fontfeature
+\protected\def\addhangulfontfeature#1{%
+  \begingroup
+    \check@hangul@family
+    \hangul@font\addfontfeature{#1}\global
+    \let\luatexko@fontspec@temp\f@family
+  \endgroup
+  \def\hangul@font{\fontfamily\luatexko@fontspec@temp
+    \luatexko@orig@selectfont}\luatexko@hangul@selectfont \ignorespaces}
+\let\addhangulfontfeatures\addhangulfontfeature
+\protected\def\addhanjafontfeature#1{%
+  \begingroup
+    \check@hanja@family
+    \hanja@font\addfontfeature{#1}\global
+    \let\luatexko@fontspec@temp\f@family
+  \endgroup
+  \def\hanja@font{\fontfamily\luatexko@fontspec@temp
+    \luatexko@orig@selectfont}\luatexko@hanja@selectfont \ignorespaces}
+\let\addhanjafontfeatures\addhanjafontfeature
+
+% check hangul/hanja family
+\def\check@hangul@family{%
+  \unless\ifdefined\hangul@font
+  \ifx\f@family\sfdefault \let\hangul@font\sanshangul@font
+  \else\ifx\f@family\ttdefault  \let\hangul@font\monohangul@font
+  \else \let\hangul@font\serifhangul@font
+  \fi\fi\fi
+}
+\def\check@hanja@family{%
+  \unless\ifdefined\hanja@font
+  \ifx\f@family\sfdefault \let\hanja@font\sanshanja@font
+  \else\ifx\f@family\ttdefault \let\hanja@font\monohanja@font
+  \else \let\hanja@font\serifhanja@font
+  \fi\fi\fi
+}
+
+\let\luatexko@orig@selectfont\selectfont
+\protected\def\selectfont{\luatexko@orig@selectfont
+  \luatexko@hangul@selectfont\luatexko@hanja@selectfont}
+
+% don't forget to redefine \normalfont
+\protected\edef\normalfont{\unexpanded{\let\hangul@font\luatexko@undefined}%
+  \unexpanded\expandafter{\normalfont}}
+\let\reset@font\normalfont
+
+% normal   : finemathattr = 1
+% tt       : finemathattr = 0
+% verbatim : finemathattr = off
+\protected\edef\ttfamily{\unexpanded\expandafter{\ttfamily
+  \finemathattr\z@}}
+\edef\verbatim@font{\unexpanded\expandafter{\verbatim@font
+  \unsetluatexattribute\finemathattr}}
+
+%% hangul in math --- latex
+\protected\def\setmathhangulfont{%
+  \@ifnextchar[{\setmathhangul@font@}{\setmathhangul@font@[]}}
+\def\setmathhangul@font@[#1]#2{%
+  \zf@fontspec{#1}{#2}\xdef\luatexko@math@hangul@family{\zf@family}}
+\AtBeginDocument{%
+  \begingroup
+    \unless\ifdefined\luatexko@math@hangul@family
+      \check@hangul@family
+      \ifdefined\hangul@font \hangul@font \fi
+      \xdef\luatexko@math@hangul@family{\f@family}%
+    \fi
+  \endgroup
+  \DeclareSymbolFont{mathhangul}\zf@enc\luatexko@math@hangul@family\mddefault\updefault
+  \ifcsname\zf@enc/\luatexko@math@hangul@family/\bfdefault/\updefault\endcsname
+    \SetSymbolFont{mathhangul}{bold}\zf@enc\luatexko@math@hangul@family\bfdefault\updefault
+  \fi
+  \setmathhangulblock{AC00}{D7A3}
+}
+
+%% package options
+\newif\if@hangul
+\newif\if@hanja
+\newif\if@unfonts
+\DeclareOption{hangul}{\@hangultrue}
+\DeclareOption{hanja}{\@hangultrue\@hanjatrue}
+\DeclareOption{unfonts}{\@unfontstrue}
+\ProcessOptions\relax
+
+\if@unfonts
+  \setmainhangulfont[
+    InterHangul=-0.04em,
+    InterLatinCJK=0.125em,
+    PunctRaise=-0.125em,
+    SlantedFont=*, SlantedFeatures={FakeSlant=0.2},
+    ItalicFont=*,  ItalicFeatures={FakeSlant=0.2},
+    BoldSlantedFont=*Bold, BoldSlantedFeatures={FakeSlant=0.2},
+    BoldItalicFont=*Bold,  BoldItalicFeatures={FakeSlant=0.2},
+  ]{UnBatang}
+  \setsanshangulfont[
+    InterLatinCJK=0.125em,
+    PunctRaise=-0.125em,
+    SlantedFont=*, SlantedFeatures={FakeSlant=0.2},
+    ItalicFont=*,  ItalicFeatures={FakeSlant=0.2},
+    BoldSlantedFont=*Bold, BoldSlantedFeatures={FakeSlant=0.2},
+    BoldItalicFont=*Bold,  BoldItalicFeatures={FakeSlant=0.2},
+  ]{UnDotum}
+  \setmonohangulfont[
+    SlantedFont=*, SlantedFeatures={FakeSlant=0.2},
+    ItalicFont=*,  ItalicFeatures={FakeSlant=0.2},
+    BoldSlantedFont=*Bold, BoldSlantedFeatures={FakeSlant=0.2},
+    BoldItalicFont=*Bold,  BoldItalicFeatures={FakeSlant=0.2},
+  ]{UnDotum}
+\fi
+
+\AtBeginDocument{% [unfonts] 없는 경우 에러 방지
+\unless\ifdefined\serifhangul@font\let\serifhangul@font\relax\fi
+\unless\ifdefined\sanshangul@font \let\sanshangul@font\serifhangul@font\fi
+\unless\ifdefined\monohangul@font \let\monohangul@font\sanshangul@font\fi
+% for hyperref
+\@ifpackageloaded{hyperref}{\pdfstringdefDisableCommands{%
+  \let\dotemph\@firstofone
+  \let\ruby\@firstoftwo
+  \let\uline\@firstofone
+  \let\sout\@firstofone
+  \let\uuline\@firstofone
+  \let\xout\@firstofone
+  \let\uwave\@firstofone
+  \let\dashuline\@firstofone
+  \let\dotuline\@firstofone
+  \def\는{는}%
+  \def\은{은}%
+  \def\을{을}%
+  \def\를{를}%
+  \def\와{와}%
+  \def\과{과}%
+  \def\가{가}%
+  \def\이{이}%
+  \def\라{라}%
+  \def\으{으}%
+  \def\로{로}%
+  }}{}
+}
+
+\RequirePackage{kolabels-utf}
+\if@hangul
+  \RequirePackage{konames-utf}
+  \linespread{1.3888}
+  \footnotesep=1.3888\footnotesep
+  \skip\footins=1.3888\skip\footins plus6pt minus3pt
+  \directlua{luatexko.hangulmain = true}
+\fi
+
+\endinput

@@ -1,0 +1,355 @@
+% $Id: luatexko-core.sty,v 1.22 2012/11/23 05:06:02 nomos Exp $
+%
+% Copyright (c) 2013 Dohyun Kim  <nomos at ktug org>
+%
+% This work may be distributed and/or modified under the
+% conditions of the LaTeX Project Public License, either version 1.3c
+% of this license or (at your option) any later version.
+% The latest version of this license is in
+%   http://www.latex-project.org/lppl.txt
+% and version 1.3c or later is part of all distributions of LaTeX
+% version 2006/05/20 or later.
+
+\ifx\ProvidesPackage\undefined
+  \input luaotfload.sty
+  \catcode`@ = 11
+\else
+  \ProvidesPackage{luatexko-core}[2013/05/10 v1.0 Typesetting Korean with LuaTeX]
+  \RequirePackage{luaotfload}
+\fi
+
+%% attributes
+\newluatexattribute\finemathattr \finemathattr\@ne % finemath on by default
+\newluatexattribute\cjtypesetattr
+\newluatexattribute\dotemphattr
+\newluatexattribute\autojosaattr
+\newluatexattribute\luakorubyattr \chardef\luakorubyattrnum\the\allocationnumber
+\newluatexattribute\hangfntattr
+\newluatexattribute\hanjfntattr
+
+%% load lua modules
+\RequireLuaModule{luatexko}
+
+%% japanese/chinese/pre-modern
+\protected\def\japanese{\frenchspacing\cjtypesetattr\@ne
+  \luatexkolatinspaceskip\parindent1em }
+\protected\def\Schinese{\frenchspacing\cjtypesetattr\tw@
+  \luatexkolatinspaceskip\parindent2em }
+\protected\def\Tchinese{\frenchspacing\cjtypesetattr\thr@@
+  \luatexkolatinspaceskip\parindent2em }
+\let\chinese\Schinese
+% korean in japanese/chinese env.
+\protected\def\korean{\unsetluatexattribute\cjtypesetattr}
+
+% inhibitglue
+\protected\def\inhibitglue{{\unsetluatexattribute\cjtypesetattr\hskip\z@skip}}
+
+\def\luatexkolatinspaceskip{\spaceskip\fontdimen\tw@\the\font
+  plus \fontdimen\thr@@\the\font minus \fontdimen4\the\font}
+
+%% auto josa
+\protected\def\은{{\autojosaattr\@ne 은}}
+\let\는\은
+
+\protected\def\을{{\autojosaattr\@ne 을}}
+\let\를\을
+
+\protected\def\와{{\autojosaattr\@ne 와}}
+\let\과\와
+
+\protected\def\가{{\autojosaattr\@ne 가}}
+\protected\def\이{{\autojosaattr\@ne 이}}
+\protected\def\라{\이라}
+
+\protected\def\으{{\autojosaattr\@ne 으}}
+\protected\def\로{\으로}
+
+%% dot-emphasis
+\def\dotemphraise{0.4em }
+\unless\ifdefined\bfseries\let\bfseries\bf\fi
+\def\dotemphchar{\bfseries ^^^^02d9}
+\newcount\dotemph@cnt \dotemph@cnt\z@
+\protected\def\dotemph#1{{%
+  \ifnum\dotemph@cnt > 100 \global\dotemph@cnt\z@ \fi
+  \global\advance\dotemph@cnt\@ne
+  \setbox\z@\hbox{\raise\dotemphraise\hbox{\dotemphchar}}\ht\z@\z@\dp\z@\z@
+  \directlua{luatexko.dotemphnode[\the\dotemph@cnt] = node.copy_list(tex.box[0])}%
+  \dotemphattr\dotemph@cnt  #1}}
+
+%% ruby : ruby.sty by Lemberg is excellent; but
+%%        it doesn't match well with luatexko, so implemented anew
+%%        with plain tex support and enhanced features.
+\def\rubysize{0.6}  % size of ruby compared to base character
+\def\rubysep{0.1ex} % distance between base character and ruby
+% users can define \rubyfont : eg. \font\rubyfont={foo:+ruby}
+\newif\ifruby@overlap
+\let\rubyoverlap\ruby@overlaptrue
+\let\rubynooverlap\ruby@overlapfalse
+\rubyoverlap       % ruby may protrude over adjacent chars
+\newcount\luakorubyattr@cnt\luakorubyattr@cnt\z@
+\protected\def\ruby#1#2{%
+  \ifnum\luakorubyattr@cnt > 1000 \global\luakorubyattr@cnt\z@ \fi
+  \global\advance\luakorubyattr@cnt\@ne
+  \begingroup
+  \setbox\z@\hbox attr\luakorubyattrnum\luakorubyattr@cnt{% base character
+    \vrule width\z@ height.88em depth\z@\relax #1}%
+  \setbox\tw@\hbox{% ruby
+    \ifdefined\rubyfont \rubyfont \fi
+    \expandafter\dimen@\pdffontsize\the\font
+    \dimen@\rubysize\dimen@
+    \ifcsname selectfont\endcsname
+      \fontsize\dimen@\dimen@\selectfont
+    \else
+      \ifdefined\rubyfont \else
+	\resizecurrentfont{\the\dimen@}%
+      \fi
+    \fi #2}\ht\tw@\z@\dp\tw@\z@
+  \directlua{%
+    luatexko.rubynode[\the\luakorubyattr@cnt] = {
+      node.copy_list(tex.box[2]),
+      \number\numexpr\dimexpr\rubysep\relax\relax,
+      \ifruby@overlap true\else false\fi}}%
+  \leavevmode\box\z@
+  \endgroup}
+
+\ifcsname selectfont\endcsname\else
+  % font resize under plain tex
+  % ex: \resizecurrentfont{9pt}
+  \def\resizecurrentfont#1{%
+    \edef\curr@font@name{\directlua{
+	local f = font.current()
+	f = f and fonts.hashes.identifiers[f]
+	f = f and f.properties and f.properties.name
+	if not f then
+	  f = "\fontname\font"
+	  f = string.gsub(f," at .+","")
+	end
+	if f then
+	  tex.sprint(f)
+	else
+	  error("cannot get current font name")
+	end
+    }}%
+    \font\resized@font={\curr@font@name} at #1\resized@font}
+\fi
+
+%% vertical typesetting
+%% EXPERIMENTAL code: don't use this
+\def\luatexko@vertical{%
+  \ifnum\cjtypesetattr<\@ne
+    \cjtypesetattr\z@ % korean-vertical
+    \spaceskip 0.5em plus 0.15em minus 0.06em
+    \parindent 1em
+  \fi
+}
+\protected\def\vertical#1{%
+  \leavevmode
+  \setbox\z@\vbox\bgroup
+      \hsize#1\relax
+      \luatexko@vertical
+      \parindent\z@
+      \everypar{}%
+      \leftskip\z@
+      \rightskip\z@ }
+\protected\def\endvertical{\egroup\luatexkorotatebox\z@\box\z@}
+\protected\def\luatexkorotatebox#1{%
+  \ifvbox#1\count@\@ne\else\count@\z@\fi
+  \dimen@\wd#1\dimen@ii\dimexpr\ht#1+\dp#1\relax
+  \setbox#1\ifnum\count@=\@ne
+  \vbox to\dimen@\bgroup\hbox to\dimen@ii\bgroup\hfil\else
+  \hbox to\dimen@ii\bgroup\vbox to\dimen@\bgroup\fi
+    \wd#1\z@ \ht#1\z@ \dp#1\z@
+    \pdfliteral{ q 0 -1 1 0 0 0 cm}\box#1\pdfliteral{ Q}%
+    \ifnum\count@=\@ne\egroup\vfil\else\vfil\egroup\hfil\fi\egroup}
+
+% do not veticalize headline/footline
+\ifdefined\ProvidesPackage % for latex
+  \def\verticaltypesetting{%
+    \maxdepth\z@ \luatexko@vertical
+    \dimen@\textwidth \textwidth\textheight \textheight\dimen@
+    \edef\@outputpage{\unexpanded{\luatexkorotatebox\@outputbox
+    \textwidth\textheight}\unexpanded\expandafter{\@outputpage}}}
+\else % for plain
+  \def\verticaltypesetting{%
+    \dimen@\hsize\hsize\vsize\vsize\dimen@
+    \edef\plainoutput{\unexpanded{\dimen@\hsize\hsize\vsize\vsize\dimen@}%
+      \unexpanded\expandafter{\plainoutput}}%
+    \def\pagebody{\setbox\z@\vbox to\hsize{\boxmaxdepth=\maxdepth
+      \pagecontents}\luatexkorotatebox\z@\box\z@}%
+    \maxdepth\z@ \luatexko@vertical}
+\fi
+
+%% underline using post_linebreak_filter
+%%  ulem doesn't work well with luatexko;
+%%  especially linebreak does not occur inside cjk words.
+\def\ulinewidth{0.04em }
+\def\ulinedown {0.25em }
+\newcount\ulinebox@cnt\ulinebox@cnt\z@
+\protected\def\uline#1{%
+  \ifnum\ulinebox@cnt > 100 \global\ulinebox@cnt\z@ \fi
+  \global\advance\ulinebox@cnt\@ne
+  \dimen@\dimexpr\ulinedown+\ulinewidth\relax
+  \dimen@ii-\dimexpr\ulinedown\relax
+  \setbox\z@\hbox{\vrule width\z@ height\dimen@ii depth\dimen@}%
+  \directlua{luatexko.ulinebox[\the\ulinebox@cnt]=node.copy_list(tex.box[0].head)}%
+  \leavevmode\special{luako:ulinebegin=\the\ulinebox@cnt}%
+  #1\special{luako:ulineend}}
+% strike-out
+\protected\def\sout#1{{\def\ulinedown{-0.5ex-\ulinewidth/2}\uline{#1}}}
+% ulem with arbitray box
+\protected\def\markoverwidth#1#2{%
+  \ifnum\ulinebox@cnt > 100 \global\ulinebox@cnt\z@ \fi
+  \global\advance\ulinebox@cnt\@ne
+  \setbox\z@\hbox{#1}%
+  \directlua{luatexko.ulinebox[\the\ulinebox@cnt]=node.copy_list(tex.box[0])}%
+  \leavevmode\special{luako:ulinebegin=\the\ulinebox@cnt}%
+  #2\special{luako:ulineend}}
+\protected\def\uuline{\dimen@ii-\dimexpr\ulinedown\relax
+  \dimen@\dimexpr\ulinedown+\ulinewidth\relax
+  \markoverwidth{\vtop{\hrule width.2em height\dimen@ii depth\dimen@
+  \kern.1em\hrule height\dimen@ii depth\dimen@}}}
+\protected\def\uwave {\ifx\ltxko@sixly\undefined \font\ltxko@sixly=lasy6 \fi
+  \markoverwidth{\lower4\p@\hbox{\ltxko@sixly\char58}}}
+\protected\def\xout  {\markoverwidth{\hbox to.35em{/\hss}}}
+\protected\def\dashuline{\markoverwidth{\kern.125em\vtop{\kern\ulinedown
+  \hrule width.3em height\z@ depth\ulinewidth}\kern.125em}}
+\protected\def\dotuline{\dimen@\dimexpr\ulinedown+0.1ex\relax
+  \markoverwidth{\lower\dimen@\hbox{\kern.1em .\kern.04em}}}
+
+%% hangul font -- core
+\def\luatexko@hangul@selectfont{%
+  \begingroup
+  \let\luatexko@hangul@selectfont\relax
+  \let\luatexko@hanja@selectfont\relax
+  \check@hangul@family
+  \ifdefined\hangul@font \hangul@font \fi
+  \expandafter\endgroup
+  \directlua{
+    local i = font.current()
+    local name = fonts.hashes.identifiers[i]
+    name = name and name.properties and name.properties.name
+    luatexko.tmpfntname = name or "luatexkodefault"
+  }%
+  \directlua{
+    local name = luatexko.tmpfntname
+    local hang = luatexko.hangulfont[name]
+    if hang then
+      tex.setattribute("hangfntattr", hang)
+    else
+      local c = luatexko.hangulcount
+      c = c + 1
+      luatexko.hangulcount = c
+      tex.setattribute("hangfntattr",c)
+      luatexko.hangulfont[name] = c
+      luatexko.hangulfont[c] = name
+    end }%
+}
+\def\luatexko@hanja@selectfont{%
+  \begingroup
+  \let\luatexko@hangul@selectfont\relax
+  \let\luatexko@hanja@selectfont\relax
+  \check@hanja@family
+  \ifdefined\hanja@font \hanja@font \fi
+  \expandafter\endgroup
+  \directlua{
+    local i = font.current()
+    local name = fonts.hashes.identifiers[i]
+    name = name and name.properties and name.properties.name
+    luatexko.tmpfntname = name or "luatexkodefault"
+  }%
+  \directlua{
+    local name = luatexko.tmpfntname
+    local hanj = luatexko.hangulfont[name]
+    if hanj then
+      tex.setattribute("hanjfntattr", hanj)
+    else
+      local c = luatexko.hangulcount
+      c = c + 1
+      luatexko.hangulcount = c
+      tex.setattribute("hanjfntattr",c)
+      luatexko.hangulfont[name] = c
+      luatexko.hangulfont[c] = name
+    end }%
+  \ifnum\cjtypesetattr>\z@\luatexkolatinspaceskip\fi
+}
+\let\check@hangul@family\relax
+\let\check@hanja@family \relax
+% user interface for plain tex
+\protected\def\hangulfont
+  {\afterassignment\luatexko@hangul@selectfont\font\hangul@font}
+\protected\def\hanjafont
+  {\afterassignment\luatexko@hanja@selectfont \font\hanja@font }
+
+%% hangul in math mode -- general
+\def\setmathhangulblock#1#2{%
+  \count@="#1
+  \loop
+    \luatexUmathcode\count@ = 7 \symmathhangul \count@
+    \ifnum\count@<"#2
+      \advance\count@\@ne
+  \repeat}
+\ifdefined\ProvidesPackage
+  \let\setmathhangulfont\@gobble
+\else
+  % for plain; see luatexko.sty for latex
+  \newfam\symmathhangul
+  \def\setmathhangulfont#1#{\setmathhangulfont@}
+  \def\setmathhangulfont@#1{%
+    \font\tenhangul   = "#1" at 10pt
+    \font\sevenhangul = "#1" at 7pt
+    \font\fivehangul  = "#1" at 5pt
+    \textfont\symmathhangul         = \tenhangul
+    \scriptfont\symmathhangul       = \sevenhangul
+    \scriptscriptfont\symmathhangul = \fivehangul}
+  \setmathhangulblock{AC00}{D7A3}
+\fi
+
+%% hangul normalization
+\def\luatexhangulnormalize{\RequireLuaModule{luatexko-normalize}%
+  \afterassignment\luatexh@ngulnorm@lize\count@}
+\def\luatexh@ngulnorm@lize{%
+  \ifnum\count@=\z@
+    \directlua{ luatexkonormalize.unload() }%
+  \else\ifnum\count@=\@ne % nfc
+    \directlua{ luatexkonormalize.compose() }%
+  \else\ifnum\count@=\tw@ % nfd
+    \directlua{ luatexkonormalize.decompose() }%
+  \fi\fi\fi}
+
+%% uhc to utf8
+\def\luatexuhcinputencoding{\RequireLuaModule{luatexko-uhc2utf8}%
+  \afterassignment\luatexuhcinput@ncoding\count@}
+\def\luatexuhcinput@ncoding{%
+  \ifnum\count@>\z@
+    \directlua{ luatexkouhc2utf8.startconvert() }%
+  \else
+    \directlua{ luatexkouhc2utf8.stopconvert() }%
+  \fi}
+
+%% uhc file names
+\def\luatexuhcfilenames{\RequireLuaModule{luatexko-uhc2utf8}%
+  \afterassignment\luatexuhcfilen@mes\count@}
+\def\luatexuhcfilen@mes{%
+  \ifnum\count@>\z@
+    \directlua{ luatexkouhc2utf8.start_uhc_filename() }%
+  \else
+    \directlua{ luatexkouhc2utf8.stop_uhc_filename() }%
+  \fi}
+
+%% use hanja font for hanja chars
+\def\hanjafontforhanja{\afterassignment\h@nj@fontforh@nj@\count@}
+\let\hanjabyhanjafont\hanjafontforhanja
+\def\h@nj@fontforh@nj@{%
+  \ifnum\count@>\z@
+    \directlua{ luatexko.hanjafontforhanja = true }%
+  \else
+    \directlua{ luatexko.hanjafontforhanja = false }%
+  \fi}
+
+%% frenchspacing is default
+\frenchspacing
+
+%% 말줄임표
+\def\hellipsis{^^^^2026\kern-.1em ^^^^2026}
+
+\endinput

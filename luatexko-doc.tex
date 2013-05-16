@@ -1,0 +1,392 @@
+%% !TEX program = lualatex
+%% !TEX encoding = UTF-8
+%%
+%% written by Dohyun Kim <nomos at ktug org>
+%% public domain
+%%
+%% $Id: luatexko-doc.tex,v 1.67 2011/07/20 09:56:06 nomos Exp $
+
+\documentclass[a4paper]{article}
+\usepackage{typearea}
+\usepackage[hangul]{luatexko}
+\usepackage{luamplib}
+\setmainhangulfont[
+  AutoFakeSlant,
+  InterLatinCJK=.125em,
+  QuoteRaise=.1em,
+  Expansion,
+  ]{NanumMyeongjo}
+\setmainhanjafont[AutoFakeSlant]{UnBatang}
+\setsanshangulfont[
+  AutoFakeSlant,
+  InterLatinCJK=.125em,
+  ]{NanumGothic}
+\usepackage[svgnames]{xcolor}
+\usepackage{mflogo}
+\usepackage{metalogo}
+\usepackage[unicode,bookmarksnumbered]{hyperref}
+
+\edef\verbatim{\unexpanded\expandafter{\verbatim
+  \linespread{1.1}\selectfont\color{MidnightBlue}}}
+\edef\itemize{\unexpanded\expandafter{\itemize\small}}
+\catcode`|=13 \def|{\verb|\color{MidnightBlue}} %|
+\let\luatex\LuaTeX
+\def\luatexko{\luatex-k$o$}
+\def\texlive{\TeX\ Live}
+\def\kotex{\textsf{k}\kern-.1em \textit{o}\kern-.1ex .\kern-.1667em \TeX}
+\edef\section#1{\unexpanded\expandafter{\section{\empty}\vskip-5pt\hrule\nobreak\vskip5pt}}
+\def\hemph#1{\textsf{\bfseries #1}}
+
+\begin{document}
+\title{\luatexko\ 간단 매뉴얼}
+\author{Dohyun Kim <|nomos at ktug org|>}
+\maketitle
+
+\begin{quote}\small
+  For summary introduction in English, please see |README| file in this package.
+
+  주요 변경 사항:
+  \begin{itemize}\itemsep=0pt
+    \item 플레인텍에서도 luatexko.sty을 불러야 한다.
+    \item 패키지 옵션 |unfonts|가 선언되지 않으면 은글꼴을 자동으로
+      부르지 않는다.
+    \item 글꼴 옵션에 |QuoteRaise|가 추가되었다.
+    \item 세로쓰기를 더 이상 공식적으로 지원하지 않는다.
+    \item \MP\ 코드를 넣으려면 luamplib 패키지를 불러야 한다.
+  \end{itemize}
+\end{quote}
+
+\section{}
+\texlive\ 2013 이상을 사용해야 한다.  실행 명령은 레이텍의 경우
+|lualatex|, 플레인텍은 |luatex|이다.  아직 \luatex은 베타 상태로 개발
+중에 있으므로 안정적인 동작을 보장하지 않는다.
+
+\section{}
+\luatexko\ 로드하기: |\usepackage{luatexko}|.  플레인텍은
+|\input luatexko.sty|.  입력은 원칙적으로 UTF-8으로 한다.
+BOM (Byte Order Mark)은 있어도 좋고 없어도 좋다.
+CP949 인코딩에 관해서는 제\ref{sec:uhcencoding}절 참조.
+
+\section{}
+패키지 옵션으로 |[hangul]|과 |[hanja]|가 제공된다.  장 제목이나
+표·그림 캡션 따위가 한글 또는 한자 방식으로 표시된다.  다만
+장(chapter) 제목과 편(part) 제목에만 “제(第)”가 붙어 ``제~1 편''
+“제~3 장”과 같은 방식으로 표시되며 절 제목 이하에는 붙지 않는다.
+
+또한 |[unfonts]|는 은글꼴을 불러오는 패키지 옵션이다.
+이전 버전과 달리 \hemph{은글꼴이 기본으로 로드되지 않음}에 유의할 것.
+
+\section{}
+\luatexko를 로드하면 fontspec 패키지를 자동으로 불러온다.  글꼴 설정에
+대해서는 fontspec 문서를 참조하라.
+
+한국어 글꼴을 위해 새로 마련한 명령은 다음과 같다.
+\begin{verbatim}
+  \setmainhangulfont     \setmainhanjafont
+  \setsanshangulfont     \setsanshanjafont
+  \setmonohangulfont     \setmonohanjafont
+  \newhangulfontfamily   \newhanjafontfamily
+  \addhangulfontfeature  \addhanjafontfeature
+  \hangulfontspec        \hanjafontspec
+\end{verbatim}
+|\adhochangulfont| |\adhochanjafont|는 각각 |\hangulfontspec|
+|\hanjafontspec|의 다른 이름이다.
+\begin{itemize}\item[]
+플레인텍에서 한글 글꼴 설정은 영문 글꼴 지정하는 방식과 거의 같다.
+\begin{verbatim}
+  \hangulfont=UnDotum\relax
+  \hanjafont=UnDotum at 14pt
+  \hangulfont=UnDotum scaled 2000
+  \hanjafont{HCR Batang LVT}\relax
+  \hangulfont={HCR Batang LVT:script=hang;+dlig} at 12pt
+\end{verbatim}
+\end{itemize}
+
+\section{}
+원칙적으로 \luatexko에서는 영문폰트에 지정한 글자가 없으면 한글폰트에서,
+한글폰트에도 없으면 한자폰트에서 글자를 찾아 찍는다.  기존 \kotex과는
+글꼴 대체 방식이 다르므로 주의해야 한다.
+
+하지만 |\hanjabyhanjafont=1|을 선언하면 한자는 우선 한자글꼴로
+식자한다.  |0|을 선언하면 원래 방식으로 되돌아간다. 이 명령은 문단
+중간에서 사용하지 않도록 주의해야 한다. 문단 중에 사용되었다면
+그 문단의 처음부터 효력이 발생한다.
+
+\section{}
+fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이
+있다.\footnote{ 옛한글 식자를 위해서는
+  |[Script=Hangul]| 옵션을 사용하는 것으로 충분하다. 그러나
+  |[YetHangul]| 옵션을 써도 무해하다.}
+
+\begin{figure}
+  \fboxsep=1em
+  \fbox{\vbox{\hsize\dimexpr\linewidth-2.1em\relax
+%      \fontspec[Script=Hangul]{malgungothic}
+      \fontspec[Script=Hangul]{HCR Dotum LVT}
+      \centering
+뎨 가ᄂᆞᆫ 뎌 각시 본 듯도 ᄒᆞᆫ뎌이고.\\
+天텬上상白ᄇᆡᆨ玉옥京경을 엇디ᄒᆞ야 離니別별ᄒᆞ고\\
+ᄒᆡ 다 져믄 날의 눌을 보라 가시ᄂᆞᆫ고
+
+\medskip
+
+어와 네여이고 내 ᄉᆞ셜 드러보오.\\
+내 얼굴 이 거동이 님 괴얌즉 ᄒᆞᆫ가마ᄂᆞᆫ\\
+엇딘디 날 보시고 네로다 녀기실ᄉᆡ\\
+나도 님을 미더 군 ᄠᅥ디 전혀 업서\\
+이ᄅᆡ야 교ᄐᆡ야 어ᄌᆞ러이 구돗ᄯᅥᆫ디\\
+반기시ᄂᆞᆫ ᄂᆞᆺ비치 녜와 엇디 다ᄅᆞ신고.\\
+%누어 ᄉᆡᆼ각ᄒᆞ고 니러 안자 혜여ᄒᆞ니\\
+%내 몸의 지은 죄 뫼ᄀᆞ티 ᄡᅡ혀시니\\
+%하ᄂᆞᆯ히라 원망ᄒᆞ고 사ᄅᆞᆷ이라 허믈ᄒᆞ랴\\
+%셜워 플텨 혜니 造조物믈의 타시로다.
+}}
+\caption{옛한글 조판 보기}\label{fig:yethangul}
+\end{figure}
+
+\begin{description}
+\item[InterHangul] 한글 글자 사이의 자간.  아래는 $-0.04$em 만큼 한글
+  자간을 지시한다.
+\begin{verbatim}
+  [InterHangul=-0.04em]
+\end{verbatim}
+
+\item[InterLatinCJK] 한글 또는 한자와 라틴 문자 사이의 자간을
+  설정한다.
+\begin{verbatim}
+  [InterLatinCJK=0.125em]
+\end{verbatim}
+
+\item[PunctRaise] 한글 또는 한자 다음에 라틴 구두점이 왔을 때 그 세로
+  위치를 조절할 수 있다.
+\begin{verbatim}
+  [PunctRaise=-0.125em]
+\end{verbatim}
+
+\item[QuoteRaise] 한글 또는 한자 주변에 라틴 인용부호나 \hemph{괄호}가 왔을 때
+  그 세로 위치를 조절할 수 있다.
+\begin{verbatim}
+  [QuoteRaise=0.125em]
+\end{verbatim}
+
+\item[CharRaise] 글자의 세로 위치를
+  {\addhangulfontfeature{CharRaise=.3em} 조절}할 수 있는 기능이다.
+  이로써 주변에 식자되는 다른 글꼴과 조화를 이루게 한다.
+\begin{verbatim}
+  [CharRaise=0.1em]
+\end{verbatim}
+
+\item[Protrusion] 특정 글자가 행 끌에 왔을 때 판면 바깥으로 끌어내는
+  기능이다.  Lua\LaTeX의 기본값은 구두점들만 완전히 글자내밀기 한다. 즉
+  hanging punctuation이 작동한다.
+\begin{verbatim}
+  [Protrusion]
+\end{verbatim}
+  이는 |Protrusion=default|와 마찬가지 뜻이다.  마이크로타입에 관심
+  있으면 자신만의 설정을 만들어 지정할 수 있다.
+
+\item[Expansion] 판면의 균일한 조판을 위해 글자들을 미세하게 늘이거나
+  줄이는 기능이다.
+\begin{verbatim}
+  [Expansion]
+\end{verbatim}
+  이는 |Expansion=default|와 마찬가지 뜻이다.
+
+\end{description}
+
+\section{}
+\begin{figure}\linespread{1.388}\selectfont\hfil
+\fbox{\vbox{\hsize=36em \begin{chinese} \setmainfont{STFangsong}
+子曰：「學而時習之，不亦說乎？有朋自遠方來，不亦樂乎？人不知而不慍，不亦君子乎？」
+
+有子曰：「其為人也孝弟，而好犯上者，鮮矣！不好犯上，而好作亂者，未之有也！君子務本，本立而道生；孝弟也者，其為仁之本歟？」
+
+子曰：「巧言令色，鮮矣仁！」
+
+曾子曰：「吾日三省吾身：為人謀，而不忠乎？與朋友交，而不信乎？傳，不習乎？」
+
+子曰：「道千乘之國，敬事而信，節用而愛人，使民以時。」
+\end{chinese}}}\hfil
+\caption{고문헌 조판 보기}\label{fig:ancientdoc}
+\end{figure}
+
+고문헌·일본어·중국어 조판을 위해 japanese, Schinese, Tchinese 환경을
+제공한다.  chinese는 Schinese의 다른 이름이다.  korean 환경도
+마련했는데 이들 환경 안에서 잠깐 한국어를 조판하는 데
+사용한다.  일본어·중국어라도 글꼴 설정은 |\newhangulfontfamily|
+|\newhanjafontfamily| 따위를 이용한다.  그림~\ref{fig:ancientdoc} 참조.
+
+\section{}
+\luatexko가 글자 사이에 삽입하는 미세간격을 사용자가 영(zero)으로
+강제하기 위해선 |\inhibitglue| 명령을 이용한다.
+대체로 일본어·중국어 환경에서만 문제된다.
+
+\section{}
+\begin{quote}
+  |$가^{나^다}$|\quad$\Rightarrow\quad가^{나^다}$
+\end{quote}
+수식 모드에서도 한글을 {\small(hbox로 감싸지 않고)} 직접 입력할 수
+있다.  문서의 기본 한글 글꼴이 자동으로 수식 한글에도 적용되므로 따로
+설정할 것이 없지만 굳이 한다면 다음처럼 지시한다.
+\begin{verbatim}
+  \setmathhangulfont{HCRBatang}
+\end{verbatim}
+현재 한글만 쓸 수 있게 설정되어 있다.
+
+\section{}
+\luatex 에서는 아직 \hemph{세로쓰기를 지원하지 않는다}.%
+\footnote{굳이 세로쓰기를 실험해보고자 한다면 |ttx -t vmtx <폰트>.ttf|
+  명령의 결과물인 |<폰트>.ttx| 파일을 현재 디렉토리에 두어야 한다. 그런 다음
+  |\string\begin\string{vertical\string}\string{<dimen>\string}
+  ...\string\end\string{vertical\string}| 환경을 이용하라. ttx에 대해선
+  \url{http://sourceforge.net/projects/fonttools/} 참조.
+  문서 전체에 대해 세로쓰기를 하려면 이 환경을 쓰는 대신
+  |\string\verticaltypesetting| 명령을 전처리부에 선언한다.}
+
+%\begin{figure}
+%\hfil\framebox[\linewidth]{\begin{vertical}{16em}
+%\fontspec[Vertical=RotatedGlyphs]{Adobe Myungjo Std Medium}
+%\parindent-1em\leftskip1em \linespread{1.5}\selectfont
+%\noindent 님의 침묵{\small(The Silent Beloved)}
+%\smallbreak
+%\hfil\hfil 한 용 운\hfil
+%\bigbreak
+%님은 갓슴니다 아아 사랑하는나의님은 갓슴니다\par
+%푸른산빗을깨치고 단풍나무숩을향하야난 적은길을 거러서 참어떨치고
+%갓슴니다\par
+%黃金의꽃가티 굿고빗나든 옛盟誓는 차듸찬띠끌이되야서 한숨의 微風에
+%나러갓슴니다\par
+%날카로은 첫〈키쓰〉의追憶은 나의運命의指針을 돌너노코 뒷거름처서 사러젓슴니다\\
+%%…… \par
+%\hellipsis\par
+%아아 님은갓지마는 나는 님을보내지 아니하얏슴니다\par
+%제곡조를못이기는 사랑의노래는 님의沈默을 휩싸고돔니다\par
+%\end{vertical}}
+%\caption{세로쓰기의 예}\label{fig:vertical}
+%\end{figure}
+
+\section{}
+전처리부에서 |\usepackage{luamplib}|을 선언하면 \MP\ 코드를 문서 중간에 삽입할 수 있다.
+한글이나 수식은 |btex| ... |etex| 안에 넣어야 한다. 그림~\ref{fig:mplib} 참조.
+
+\begin{figure}
+\setbox0\hbox{%
+\begin{mplibcode}
+beginfig(1);
+    draw fullcircle scaled 2cm;
+    dotlabel.bot(btex\TeX etex, origin);
+    dotlabel.rt(btex 루아 etex, dir 45*1cm);
+endfig;
+\end{mplibcode}
+}%
+\setbox2\vbox{\bigskip
+\begin{verbatim}
+  \usepackage{luamplib}
+  ...
+  \begin{mplibcode}
+    beginfig(1);
+      draw fullcircle scaled 2cm;
+      dotlabel.bot(btex \TeX etex, origin);
+      dotlabel.rt(btex 루아 etex, dir 45*1cm);
+    endfig;
+  \end{mplibcode}
+\end{verbatim}}\wd2=.7\linewidth
+\framebox[\linewidth]{\box2 \raise.8cm\box0 }
+\caption{mplib 용례}\label{fig:mplib}
+\end{figure}
+
+\section{}
+|\dotemph| 명령으로 \dotemph{드러냄표}%
+를 이용한 강조를 할 수 있다.  기본은 글자 위에 점을 찍는 형태이나
+다음과 같이 명령을 주어 개인적으로 선호하는 기호를 드러냄표로 쓸 수
+있다.
+\begin{verbatim}
+  \def\dotemphraise{0.4em }
+  \def\dotemphchar{\bfseries ^^^^02d9}
+\end{verbatim}
+전자는 드러냄표를 피강조 글자 위로 끌어올리는 길이를, 후자는 드러냄표
+기호 자체를 정의한다.  |^^^^02d9|는 유니코드 코드포인트를 뜻하는
+16진수이고 소문자로만 써야 한다.  숫자 대신 직접 문자를 입력해도 된다.
+플레인텍에서도 쓸 수 있다.
+
+\section{}
+루비를 달 수 있다. ruby 패키지가 이미 존재하지만 \luatexko와 궁합이 잘
+맞지 않아 새로 매크로를 제공한다.  플레인텍도 지원한다.
+\begin{quote}
+|\ruby{漢字}{한자}|\quad$\Rightarrow$\quad\ruby{漢字}{한자}
+\end{quote}
+이처럼 글자별로 따로 루비를 달 필요가 없다.  관련 설정은 다음처럼
+한다.
+
+①~|\rubyfont|: 루비를 식자할 폰트를 지시해 둔다.
+
+②~|\def\rubysize{0.6}|: 루비 글자 크기를 본문 글자 크기에 대한 비율로
+지정
+
+③~|\def\rubysep{0.2ex}|: 루비와 본문 글자 사이의 간격을 지정
+
+④~|\rubynooverlap|: 루비의 폭이 본문 글자의 폭보다 클 때 루비가 이웃
+글자들 위로 삐져나가지 못하게 한다. 본문 글자의 흐름을 중시하여
+|\rubyoverlap|을 기본값으로 하였으므로 이는 따로 선언할 필요가 없다.
+
+\section{}
+ulem 패키지가 \luatexko와 궁합이 잘 맞지 않아{\small (줄바꿈에 문제가 있음)}
+명령을 따로 제공한다. 플레인텍에서도 쓸 수 있다.
+
+\bigskip
+\halign{\qquad#\hfil&\quad$\Rightarrow$\quad#\hfil\cr
+|\uline{밑줄을 그을 수 있다}|&\uline{밑줄을 그을 수 있다}\cr
+|\sout{취소선을 그을 수 있다}|&\sout{취소선을 그을 수 있다}\cr
+|\uuline{밑줄을 두 줄 긋는다}|&\uuline{밑줄을 두 줄 긋는다}\cr
+|\xout{빗금으로 취소할 수 있다}|&\xout{빗금으로 취소할 수 있다}\cr
+|\uwave{물결표로 밑줄을 삼는다}|&\uwave{물결표로 밑줄을 삼는다}\cr
+|\dashuline{대시로 밑줄을 삼는다}|&\dashuline{대시로 밑줄을 삼는다}\cr
+|\dotuline{밑줄을 점선으로 긋는다}|&\dotuline{밑줄을 점선으로 긋는다}\cr
+}
+\bigskip
+
+관련하여 다음 설정을 할 수 있다.
+
+①~|\def\ulinedown{0.25em}|: 밑줄을 베이스라인 아래로 끌어내리는 정도
+
+②~|\def\ulinewidth{0.04em}|: 밑줄의 굵기
+
+\section{}
+자동조사는 \kotex 과 동일하게 |\은| |\는| |\이| |\가| |\을| |\를|
+|\와| |\과| |\로| |\으로| |\라| |\이라| 따위를 사용한다.  문장 중에서도
+작동할 뿐만 아니라 플레인텍도 지원한다.
+
+\section{}
+항목 번호를 한국어 기호로 붙일 수 있다. \kotex과 동일하게 |\jaso|
+|\gana| |\ojaso| |\ogana| |\pjaso| |\pgana| |\onum| |\pnum| |\oeng|
+|\peng| |\hnum| |\Hnum| |\hroman| |\hRoman| |\hNum| |\hanjanum| 따위를
+사용한다.
+
+\section{}
+hyperref 패키지는 |[unicode]| 옵션을 주어야 한다.
+
+\section{}
+|\luatexhangulnormalize=1|이라 지시하면 첫가끝 자모를 완성형 음절로,
+|2|라면 완성형 음절을 첫가끝 자모로 인코딩 변환한다. |0|이 할당되면
+인코딩 변환 기능이 꺼진다. \XeTeX의 |\XeTeXinputnormalization| 명령과
+유사하나 오직 한글과 일부 한자에 대해서만 정규화가 작동하는 점에서
+\XeTeX의 그것에 비해 기능이 한참 모자란다.
+
+\section{}\label{sec:uhcencoding}
+권장하지 않지만 불가피하게 입력 인코딩이 UHC {\small(CP949라고도 하며
+EUC-KR을 포함한다)}인 파일을 처리할 때는 |\luatexuhcinputencoding=1|을
+선언한다. |0|을 할당하면 다시 UTF-8 입력으로 간주한다.
+\XeTeX의 |\XeTeXinputencoding| 명령과 유사하나 오직 한글만 처리할 수
+있어 \XeTeX의 그것에 비해 기능이 한참 모자란다.
+
+\section{}
+마찬가지로 바람직하지는 않지만 불가피하게 파일 이름이 UHC로 인코딩되어
+있다면 |\luatexuhcfilenames=1|을 선언한다. |0|을 할당하면 다시 UTF-8
+이름으로 간주한다.  윈도 계열 운영체제에서만 문제될 것이다.
+
+\begin{flushright}
+  \fboxsep=-\fboxrule
+  \fbox{\vbox to 1em{\hbox to 1em{\hss}\vss}}
+\end{flushright}
+
+\end{document}
