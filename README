@@ -33,19 +33,19 @@ Please report any errors or suggestions to Dohyun Kim ``<nomos at ktug org>``.
 Files
 -----
 
-- TeXinputs
+### TeXinputs
 
-		luatexko.sty		-> tex/luatex/luatexko/
-		luatexko-core.sty	-> tex/luatex/luatexko/
-		luatexko.lua		-> tex/luatex/luatexko/
-		luatexko-normalize.lua	-> tex/luatex/luatexko/
-		luatexko-uhc2utf8.lua	-> tex/luatex/luatexko/
+	luatexko.sty		-> tex/luatex/luatexko/
+	luatexko-core.sty	-> tex/luatex/luatexko/
+	luatexko.lua		-> tex/luatex/luatexko/
+	luatexko-normalize.lua	-> tex/luatex/luatexko/
+	luatexko-uhc2utf8.lua	-> tex/luatex/luatexko/
 
-- Documents
+### Documents
 
-		luatexko-doc.pdf	-> doc/luatex/luatexko/
-		luatexko-doc.tex	-> doc/luatex/luatexko/
-		README (this file)	-> doc/luatex/luatexko/
+	luatexko-doc.pdf	-> doc/luatex/luatexko/
+	luatexko-doc.tex	-> doc/luatex/luatexko/
+	README (this file)	-> doc/luatex/luatexko/
 
 
 Loading
@@ -53,106 +53,98 @@ Loading
 
 For a LaTeX user, declaring
 
-		\usepackage{luatexko}
+	\usepackage{luatexko}
 or
 
-		\usepackage{kotex}
+	\usepackage{kotex}
 is sufficient to load the package, which will load fontspec as well.
 Notice that kotex.sty is a file provided by cjk-ko package.
 
 Under plain TeX:
 
-		\input luatexko.sty 
+	\input luatexko.sty 
 
 
 Package Options
 ---------------
 
-* ``[hangul]``
+	[hangul]
+Load Hangul captions. Besides, this option adjusts interword and
+interline spacing.
 
-    Load Hangul captions. Besides, this option adjusts interword and
-    interline spacing.
+	[hanja]
+Load Hanja captions. Also adjusts spacing as [hangul] option does.
 
-* ``[hanja]``
-
-    Load Hanja captions. Also adjusts spacing as [hangul] option does.
-
-* ``[unfonts]``
-
-    Load font setting predefined for Un TrueType fonts available at
-    [this link](http://kldp.net/projects/unfonts/).
+	[unfonts]
+Load font setting predefined for Un TrueType fonts available at
+[this link](http://kldp.net/projects/unfonts/).
 
 
 Hangul Font Commands
 --------------------
 
-		\setmainhangulfont
-		\setsanshangulfont
-		\setmonohangulfont
+	\setmainhangulfont
+	\setsanshangulfont
+	\setmonohangulfont
 Equivalent to \setmainfont et. al. of fontspec package. These fonts are
 used when the font loaded by \setmainfont et. al. does not have Hangul
 glyphs.
 
-		\setmainhanjafont
-		\setsanshanjafont
-		\setmonohanjafont
+	\setmainhanjafont
+	\setsanshanjafont
+	\setmonohanjafont
 These fonts are used when the font loaded by \setmainfont or
 \setmainhangulfont et. al. does not have Hanja glyphs.
 
 In like manner, these commands are available as well:
 
-		\hangulfontspec
-		\hanjafontspec
-		\newhangulfontfamily
-		\newhanjafontfamily
-		\addhangulfontfeature
-		\addhanjafontfeature
+	\hangulfontspec
+	\hanjafontspec
+	\newhangulfontfamily
+	\newhanjafontfamily
+	\addhangulfontfeature
+	\addhanjafontfeature
 
 
 Hangul Font Options
 -------------------
 
-* ``[InterHangul=<dimen>]``
+	[InterHangul=<dimen>]
+Set spacing between Hangul characters.
 
-    Set spacing between Hangul characters.
+	[InterLatinCJK=<dimen>]
+Set spacing between CJK and Latin characters.
 
-* ``[InterLatinCJK=<dimen>]``
+	[PunctRaise=<dimen>]
+Raise Latin fullstop and comma after CJK character.
 
-    Set spacing between CJK and Latin characters.
+	[QuoteRaise=<dimen>]
+Raise Latin quotation marks and parentheses around CJK text.
 
-* ``[PunctRaise=<dimen>]``
-
-    Raise Latin fullstop and comma after CJK character.
-
-* ``[QuoteRaise=<dimen>]``
-
-    Raise Latin quotation marks and parentheses around CJK text.
-
-* ``[CharRaise=<dimen>]``
-
-    Raise CJK characters by ``<dimen>``.
+	[CharRaise=<dimen>]
+Raise CJK characters by ``<dimen>``.
 
 
 Other User Commands
 -------------------
 
-		\luatexuhcinputencoding=<number>
+	\luatexuhcinputencoding=<number>
 When ``<number>`` is 1 or greater, UHC (aka. Windows CP949) input encoding
 is allowed. ``<number>`` 0 restores UTF-8, the default input encoding.
 
-		\dotemph{...}
+	\dotemph{...}
 Emphasise Hangul or Hanja by putting dot above.
 
-		\ruby{<base text>}{<ruby text>}
+	\ruby{<base text>}{<ruby text>}
 Typeset ruby annotations.
 
-		\uline{...}
-		\sout{...}
-		\uuline{...}
-		\xout{...}
-		\uwave{...}
-		\dashuline{...}
-		\dotuline{...}
+	\uline{...}
+	\sout{...}
+	\uuline{...}
+	\xout{...}
+	\uwave{...}
+	\dashuline{...}
+	\dotuline{...}
 Same functionality as ulem package provides.
 
 *END of README*
