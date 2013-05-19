@@ -1,0 +1,13 @@
+2013-05-19      Dohyun Kim <nomos at ktug org>
+
+	Version 1.1
+
+	* luatexko.sty: fix a bug wrt. hyperref pdf string
+
+	* luatexko.lua, luatexko-core.sty: remove redundant code wrt.
+	font switching
+
+2013-05-10      Dohyun Kim <nomos at ktug org>
+
+	Initial release. Version 1.0
+

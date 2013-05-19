@@ -224,25 +224,8 @@
   \check@hangul@family
   \ifdefined\hangul@font \hangul@font \fi
   \expandafter\endgroup
-  \directlua{
-    local i = font.current()
-    local name = fonts.hashes.identifiers[i]
-    name = name and name.properties and name.properties.name
-    luatexko.tmpfntname = name or "luatexkodefault"
-  }%
-  \directlua{
-    local name = luatexko.tmpfntname
-    local hang = luatexko.hangulfont[name]
-    if hang then
-      tex.setattribute("hangfntattr", hang)
-    else
-      local c = luatexko.hangulcount
-      c = c + 1
-      luatexko.hangulcount = c
-      tex.setattribute("hangfntattr",c)
-      luatexko.hangulfont[name] = c
-      luatexko.hangulfont[c] = name
-    end }%
+  \directlua{ luatexko.cjkfontidtmp = font.current() }%
+  \hangfntattr\directlua{ tex.sprint(luatexko.cjkfontidtmp) }%
 }
 \def\luatexko@hanja@selectfont{%
   \begingroup
@@ -251,25 +234,8 @@
   \check@hanja@family
   \ifdefined\hanja@font \hanja@font \fi
   \expandafter\endgroup
-  \directlua{
-    local i = font.current()
-    local name = fonts.hashes.identifiers[i]
-    name = name and name.properties and name.properties.name
-    luatexko.tmpfntname = name or "luatexkodefault"
-  }%
-  \directlua{
-    local name = luatexko.tmpfntname
-    local hanj = luatexko.hangulfont[name]
-    if hanj then
-      tex.setattribute("hanjfntattr", hanj)
-    else
-      local c = luatexko.hangulcount
-      c = c + 1
-      luatexko.hangulcount = c
-      tex.setattribute("hanjfntattr",c)
-      luatexko.hangulfont[name] = c
-      luatexko.hangulfont[c] = name
-    end }%
+  \directlua{ luatexko.cjkfontidtmp = font.current() }%
+  \hanjfntattr\directlua{ tex.sprint(luatexko.cjkfontidtmp) }%
   \ifnum\cjtypesetattr>\z@\luatexkolatinspaceskip\fi
 }
 \let\check@hangul@family\relax

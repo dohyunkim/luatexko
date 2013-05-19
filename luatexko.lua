@@ -88,8 +88,6 @@ local emsize = 655360
 dotemphnode	= {}
 rubynode	= {}
 ulinebox	= {}
-hangulfont	= {}
-hangulcount	= 0
 hanjafontforhanja = false
 
 local cjkclass = {
@@ -1355,10 +1353,8 @@ local hangulfontlist = {}
 local function font_substitute(head)
   for curr in traverse_id(glyphnode, head) do
     local eng = get_font_table(curr.font)
-    local engsize = eng and eng.size
     local engfontchar = get_font_char(curr.font, curr.char)
-    if not engsize then -- no font table of plain tex cm font
-      engsize = tex_sp(tex.pdffontsize(font.current()))
+    if not eng then -- no font table of plain tex cm font
       engfontchar = get_cjk_class(curr.char) == 10
     end
     if curr.char and not engfontchar then
@@ -1366,29 +1362,13 @@ local function font_substitute(head)
       local hangul = has_attribute(curr, hangfntattr)
       local hanja  = has_attribute(curr, hanjfntattr)
       local ftable = {hangul, hanja}
-
       if hanjafontforhanja then
 	local uni = get_unicode_char(curr)
 	uni = uni and get_cjk_class(uni)
 	if uni and uni < 7 then ftable = {hanja, hangul} end
       end
-      for _,fallback in ipairs(ftable) do
-	local fkey = fallback and hangulfont[fallback]
-	if fkey then
-	  local fname, fsize = stringmatch(fkey, "(.+) at (.+)")
-	  if not fname then fname = fkey end
-	  if fsize then
-	    fsize = tex_sp(fsize)
-	  else
-	    fsize = engsize
-	  end
-	  fkey = fname .. "@" .. fsize
-	  local fid = hangulfontlist[fkey]
-	  if not fid then
-	    fid = font_define_func(fname, fsize, font.nextid())
-	    if type(fid) == "table" then fid = fontdefine(fid) end
-	    hangulfontlist[fkey] = fid
-	  end
+      for _,fid in ipairs(ftable) do
+	if fid then
 	  local c = get_font_char(fid, curr.char)
 	  if c then
 	    korid = true

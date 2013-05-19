@@ -27,7 +27,10 @@ See each file for details.
 Author
 ------
 
-Please report any errors or suggestions to Dohyun Kim ``<nomos at ktug org>``.
+Please report any errors or suggestions to
+	Dohyun Kim <nomos at ktug org>
+or leave messages in the issue tracker at:
+	<http://github.com/dohyunkim/luatexko>
 
 
 Files
@@ -122,15 +125,15 @@ Raise Latin fullstop and comma after CJK character.
 Raise Latin quotation marks and parentheses around CJK text.
 
 	[CharRaise=<dimen>]
-Raise CJK characters by ``<dimen>``.
+Raise CJK characters by <dimen>.
 
 
 Other User Commands
 -------------------
 
 	\luatexuhcinputencoding=<number>
-When ``<number>`` is 1 or greater, UHC (aka. Windows CP949) input encoding
-is allowed. ``<number>`` 0 restores UTF-8, the default input encoding.
+When <number> is 1 or greater, UHC (aka. Windows CP949) input encoding
+is allowed. <number> 0 restores UTF-8, the default input encoding.
 
 	\dotemph{...}
 Emphasise Hangul or Hanja by putting dot above.
@@ -146,5 +149,6 @@ Typeset ruby annotations.
 	\dashuline{...}
 	\dotuline{...}
 Same functionality as ulem package provides.
+
 
 *END of README*

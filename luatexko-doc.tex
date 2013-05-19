@@ -11,14 +11,14 @@
 \usepackage[hangul]{luatexko}
 \usepackage{luamplib}
 \setmainhangulfont[
-  AutoFakeSlant,
+  %AutoFakeSlant,
   InterLatinCJK=.125em,
   QuoteRaise=.1em,
   Expansion,
   ]{NanumMyeongjo}
 \setmainhanjafont[AutoFakeSlant]{UnBatang}
 \setsanshangulfont[
-  AutoFakeSlant,
+  %AutoFakeSlant,
   InterLatinCJK=.125em,
   ]{NanumGothic}
 \usepackage[svgnames]{xcolor}
@@ -39,7 +39,9 @@
 
 \begin{document}
 \title{\luatexko\ 간단 매뉴얼}
-\author{Dohyun Kim <|nomos at ktug org|>}
+\author{Dohyun Kim \normalsize <|nomos at ktug org|>\\
+  \normalsize <|http://github.com/dohyunkim/luatexko|>}
+\date{Version 1.1\quad\today}
 \maketitle
 
 \begin{quote}\small
@@ -70,8 +72,8 @@ CP949 인코딩에 관해서는 제\ref{sec:uhcencoding}절 참조.
 \section{}
 패키지 옵션으로 |[hangul]|과 |[hanja]|가 제공된다.  장 제목이나
 표·그림 캡션 따위가 한글 또는 한자 방식으로 표시된다.  다만
-장(chapter) 제목과 편(part) 제목에만 “제(第)”가 붙어 ``제~1 편''
-“제~3 장”과 같은 방식으로 표시되며 절 제목 이하에는 붙지 않는다.
+장(chapter) 제목과 편(part) 제목에만 ``제(第)''가 붙어 ``제~1 편''
+``제~3 장''과 같은 방식으로 표시되며 절 제목 이하에는 붙지 않는다.
 
 또한 |[unfonts]|는 은글꼴을 불러오는 패키지 옵션이다.
 이전 버전과 달리 \hemph{은글꼴이 기본으로 로드되지 않음}에 유의할 것.
