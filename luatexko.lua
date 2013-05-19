@@ -14,8 +14,8 @@ module('luatexko', package.seeall)
 
 local err,warn,info,log = luatexbase.provides_module({
   name	      = 'luatexko',
-  date	      = '2013/05/10',
-  version     = 1.0,
+  date	      = '2013/05/19',
+  version     = '1.1',
   description = 'Korean linebreaking and font-switching',
   author      = 'Dohyun Kim',
   license     = 'LPPL v1.3+',
