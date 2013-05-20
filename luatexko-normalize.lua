@@ -1,4 +1,4 @@
--- $Id: luatexko-normalize.lua,v 1.5 2012/06/01 08:31:05 nomos Exp $
+-- luatexko-normalize.lua
 --
 -- Copyright (c) 2013 Dohyun Kim  <nomos at ktug org>
 --

@@ -1,4 +1,4 @@
--- $Id: luatexko.lua,v 1.29 2012/12/13 09:13:22 nomos Exp $
+-- luatexko.lua
 --
 -- Copyright (c) 2013 Dohyun Kim  <nomos at ktug org>
 --

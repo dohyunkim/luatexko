@@ -1,10 +1,10 @@
 %% !TEX program = lualatex
 %% !TEX encoding = UTF-8
 %%
+%% luatexko-doc.tex
+%%
 %% written by Dohyun Kim <nomos at ktug org>
 %% public domain
-%%
-%% $Id: luatexko-doc.tex,v 1.67 2011/07/20 09:56:06 nomos Exp $
 
 \documentclass[a4paper]{article}
 \usepackage{typearea}
@@ -37,7 +37,7 @@
 
 \begin{document}
 \title{\luatexko\ 간단 매뉴얼}
-\author{Dohyun Kim \normalsize <|nomos at ktug org|>\\
+\author{Dohyun Kim \normalsize <|nomos at ktug org|> \and
   \normalsize <|http://github.com/dohyunkim/luatexko|>}
 \date{Version 1.1\quad\today}
 \maketitle
@@ -50,16 +50,16 @@
     \item 플레인텍에서도 luatexko.sty을 불러야 한다.
     \item 패키지 옵션 |unfonts|가 선언되지 않으면 은글꼴을 자동으로
       부르지 않는다.
-    \item 글꼴 옵션에 |QuoteRaise|가 추가되었다.
+    \item 글꼴 옵션에 |QuoteRaise|가 추가되었다. 또한 옵션값을
+      |<dimen>|으로 지시한다.
     \item 세로쓰기를 더 이상 공식적으로 지원하지 않는다.
     \item \MP\ 코드를 넣으려면 luamplib 패키지를 불러야 한다.
   \end{itemize}
 \end{quote}
 
 \section{}
-\texlive\ 2013 이상을 사용해야 한다.  실행 명령은 레이텍의 경우
-|lualatex|, 플레인텍은 |luatex|이다.  아직 \luatex은 베타 상태로 개발
-중에 있으므로 안정적인 동작을 보장하지 않는다.
+\hemph{\texlive\ 2013 이상}을 사용해야 한다.
+아직 \luatex은 베타 상태로 개발 중에 있으므로 안정적인 동작을 보장하지 않는다.
 
 \section{}
 \luatexko\ 로드하기: |\usepackage{luatexko}|.  플레인텍은

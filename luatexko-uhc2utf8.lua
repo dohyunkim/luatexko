@@ -1,4 +1,4 @@
--- $Id: luatexko-uhc2utf8.lua,v 1.4 2011/07/08 15:23:52 nomos Exp $
+-- luatexko-uhc2utf8.lua
 --
 -- Copyright (c) 2013 Dohyun Kim  <nomos at ktug org>
 --

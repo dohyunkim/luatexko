@@ -49,6 +49,7 @@ Files
 	luatexko-doc.pdf	-> doc/luatex/luatexko/
 	luatexko-doc.tex	-> doc/luatex/luatexko/
 	README (this file)	-> doc/luatex/luatexko/
+	ChangeLog		-> doc/luatex/luatexko/
 
 
 Loading
@@ -148,7 +149,7 @@ Typeset ruby annotations.
 	\uwave{...}
 	\dashuline{...}
 	\dotuline{...}
-Same functionality as ulem package provides.
+Same functionality as those ulem package provides.
 
 
 *END of README*
