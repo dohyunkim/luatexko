@@ -150,7 +150,8 @@
   \luatexko@hangul@selectfont\luatexko@hanja@selectfont}
 
 % don't forget to redefine \normalfont
-\protected\edef\normalfont{\unexpanded{\let\hangul@font\luatexko@undefined}%
+\protected\edef\normalfont{\unexpanded{%
+  \let\hangul@font\luatexko@undefined\let\hanja@font\luatexko@undefined}%
   \unexpanded\expandafter{\normalfont}}
 \let\reset@font\normalfont
 

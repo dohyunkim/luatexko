@@ -2,7 +2,7 @@
 
 	Version 1.1
 
-	* luatexko.sty: fix a bug wrt. hyperref pdf string
+	* luatexko.sty: fix a bug regarding hyperref pdf string
 
 	* luatexko.lua, luatexko-core.sty: remove redundant code wrt.
 	font switching
