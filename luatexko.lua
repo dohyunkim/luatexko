@@ -10,16 +10,24 @@
 -- and version 1.3c or later is part of all distributions of LaTeX
 -- version 2006/05/20 or later.
 
-module('luatexko', package.seeall)
-
 local err,warn,info,log = luatexbase.provides_module({
   name	      = 'luatexko',
   date	      = '2013/05/19',
-  version     = '1.1',
+  version     = 1.1,
   description = 'Korean linebreaking and font-switching',
   author      = 'Dohyun Kim',
   license     = 'LPPL v1.3+',
 })
+
+luatexko	= luatexko or {}
+local luatexko	= luatexko
+
+local dotemphnode,rubynode,ulinebox = {},{},{}
+luatexko.dotemphnode	= dotemphnode
+luatexko.rubynode	= rubynode
+luatexko.ulinebox	= ulinebox
+luatexko.hangulmain	= luatexko.hangulmain or false
+luatexko.hanjafontforhanja = luatexko.hanjafontforhanja or false
 
 local stringbyte	= string.byte
 local stringgsub	= string.gsub
@@ -84,11 +92,6 @@ local new_kern 		= node.new(kernnode,1)
 local new_rule 		= node.new(rulenode)
 
 local emsize = 655360
-
-dotemphnode	= {}
-rubynode	= {}
-ulinebox	= {}
-hanjafontforhanja = false
 
 local cjkclass = {
   [0x2018] = 1, -- ‘
@@ -1362,7 +1365,7 @@ local function font_substitute(head)
       local hangul = has_attribute(curr, hangfntattr)
       local hanja  = has_attribute(curr, hanjfntattr)
       local ftable = {hangul, hanja}
-      if hanjafontforhanja then
+      if luatexko.hanjafontforhanja then
 	local uni = get_unicode_char(curr)
 	uni = uni and get_cjk_class(uni)
 	if uni and uni < 7 then ftable = {hanja, hangul} end
@@ -1375,7 +1378,9 @@ local function font_substitute(head)
 	    curr.font = fid
 	    -- adjust next glue by hangul font space
 	    local nxt = curr.next
-	    if hangulmain and nxt and nxt.id == gluenode and nxt.subtype and nxt.subtype == 0 then
+	    local hangulmain = eng and nxt and luatexko.hangulmain
+	    hangulmain = hangulmain and get_font_char(fid, 32)
+	    if hangulmain and nxt.id == gluenode and nxt.subtype and nxt.subtype == 0 then
 	      local sp,st,sh = hangulspaceskip(eng, fid, nxt)
 	      if sp and st and sh then
 		nxt.spec.width   = sp

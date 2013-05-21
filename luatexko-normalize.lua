@@ -10,8 +10,6 @@
 -- and version 1.3c or later is part of all distributions of LaTeX
 -- version 2006/05/20 or later.
 
-module('luatexkonormalize', package.seeall)
-
 luatexbase.provides_module({
   name	      = "luatexko-normalize",
   version     = 1.0,

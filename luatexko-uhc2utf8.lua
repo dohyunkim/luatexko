@@ -10,8 +10,6 @@
 -- and version 1.3c or later is part of all distributions of LaTeX
 -- version 2006/05/20 or later.
 
-module('luatexkouhc2utf8', package.seeall)
-
 luatexbase.provides_module({
   name        = "luatexko-uhc2utf8",
   version     = 1.0,
