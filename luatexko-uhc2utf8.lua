@@ -19,6 +19,9 @@ luatexbase.provides_module({
   license     = "LPPL v1.3+",
 })
 
+luatexkouhc2utf8 = luatexkouhc2utf8 or {}
+local luatexkouhc2utf8 = luatexkouhc2utf8
+
 local find = string.find
 local gsub = string.gsub
 local byte = string.byte
@@ -75,13 +78,15 @@ local uhc_to_utf8 = function(buffer)
   return buffer
 end
 
-function startconvert ()
+local function startconvert ()
   add_to_callback('process_input_buffer', uhc_to_utf8, 'luatexko-uhctoutf8', 1)
 end
+luatexkouhc2utf8.startconvert = startconvert
 
-function stopconvert ()
+local function stopconvert ()
   remove_from_callback('process_input_buffer', 'luatexko-uhctoutf8')
 end
+luatexkouhc2utf8.stopconvert = stopconvert
 
 -----------------------------------------
 -- Hangul Windows OS uses CP949 filenames
@@ -115,14 +120,16 @@ local function uhc_find_file (file, ...)
   return f
 end
 
-function start_uhc_filename ()
+local function start_uhc_filename ()
   add_to_callback('find_read_file', function(id, name) return uhc_find_file(name) end, 'luatexko-touhc-findreadfile')
   add_to_callback('find_image_file', uhc_find_file, 'luatexko-touhc-findimagefile')
   kpse.find_file = uhc_find_file
 end
+luatexkouhc2utf8.start_uhc_filename = start_uhc_filename
 
-function stop_uhc_filename ()
+local function stop_uhc_filename ()
   remove_from_callback('find_read_file', 'luatexko-touhc-findreadfile')
   remove_from_callback('find_image_file', 'luatexko-touhc-findimagefile')
   kpse.find_file = kpse_find_file
 end
+luatexkouhc2utf8.stop_uhc_filename = stop_uhc_filename

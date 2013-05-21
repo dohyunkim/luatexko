@@ -19,6 +19,9 @@ luatexbase.provides_module({
   license     = "LPPL v1.3+",
 })
 
+luatexkonormalize = luatexkonormalize or {}
+local luatexkonormalize = luatexkonormalize
+
 local cho   = "[\225\132\128-\225\132\146]"
 local jung  = "[\225\133\161-\225\133\181]"
 local jong  = "[\225\134\168-\225\135\130]"
@@ -459,26 +462,28 @@ end
 
 local loaded = false
 
-function compose()
+local function compose()
   if loaded then
     remove_from_callback('process_input_buffer', 'luatexko-hangul-normalize')
   end
   loaded = true
   add_to_callback('process_input_buffer', hangulcompose, 'luatexko-hangul-normalize')
 end
+luatexkonormalize.compose = compose
 
-function decompose()
+local function decompose()
   if loaded then
     remove_from_callback('process_input_buffer', 'luatexko-hangul-normalize')
   end
   loaded = true
   add_to_callback('process_input_buffer', hanguldecompose, 'luatexko-hangul-normalize')
 end
+luatexkonormalize.decompose = decompose
 
-function unload()
+local function unload()
   if loaded then
     remove_from_callback('process_input_buffer', 'luatexko-hangul-normalize')
   end
   loaded = false
 end
-
+luatexkonormalize.unload = unload
