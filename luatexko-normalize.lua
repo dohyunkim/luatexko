@@ -404,7 +404,7 @@ local char = unicode.utf8.char
 local add_to_callback = luatexbase.add_to_callback
 local remove_from_callback = luatexbase.remove_from_callback
 
-local syllable2jamo = function(l,v,t)
+local jamo2syllable = function(l,v,t)
   l, v = byte(l), byte(v)
   local s = (l - 0x1100) * 21
   s = (s + v - 0x1161) * 28
@@ -450,9 +450,9 @@ end
 
 local hangulcompose = function(buffer)
   buffer = hanguldecompose(buffer)
-  buffer = gsub(buffer, "("..cho..")("..jung..")("..jong..")", syllable2jamo)
+  buffer = gsub(buffer, "("..cho..")("..jung..")("..jong..")", jamo2syllable)
   buffer = gsub(buffer, "("..cho..")("..jung..ojong..")", "%1\1%2")
-  buffer = gsub(buffer, "("..cho..")("..jung..")", syllable2jamo)
+  buffer = gsub(buffer, "("..cho..")("..jung..")", jamo2syllable)
   buffer = gsub(buffer, "([\225\132\128-\225\133\153])\225\133\160", jamo2cjamocho)
   buffer = gsub(buffer, "\225\133\159([\225\133\161-\225\134\161])", jamo2cjamojung)
   buffer = gsub(buffer, "\1", "")
