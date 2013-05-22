@@ -1351,8 +1351,6 @@ local function hangulspaceskip (engfont, hfontid, nglue)
   return tex_round(hsp), tex_round(hst), tex_round(hsh)
 end
 
-local hangulfontlist = {}
-
 local function font_substitute(head)
   for curr in traverse_id(glyphnode, head) do
     local eng = get_font_table(curr.font)
