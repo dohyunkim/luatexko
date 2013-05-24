@@ -1356,6 +1356,7 @@ local function font_substitute(head)
     local eng = get_font_table(curr.font)
     local engfontchar = get_font_char(curr.font, curr.char)
     if not eng then -- no font table of plain tex cm font
+		    -- this should not occur now, as of font.fonts[id] patch
       engfontchar = get_cjk_class(curr.char) == 10
     end
     if curr.char and not engfontchar then
