@@ -531,7 +531,7 @@ local function get_font_table (fid)
     if fontdata[fid] then
       return fontdata[fid]
     else
-      return font.getfont(fid)
+      return font.fonts[fid]
     end
   end
 end
