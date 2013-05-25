@@ -223,9 +223,9 @@
   \let\luatexko@hanja@selectfont\relax
   \check@hangul@family
   \ifdefined\hangul@font \hangul@font \fi
-  \expandafter\endgroup
-  \directlua{ luatexko.cjkfontidtmp = font.current() }%
-  \hangfntattr\directlua{ tex.sprint(luatexko.cjkfontidtmp) }\relax
+  \expandafter\expandafter\expandafter
+  \endgroup
+  \expandafter\hangfntattr\luatexfontid\font
 }
 \def\luatexko@hanja@selectfont{%
   \begingroup
@@ -233,9 +233,9 @@
   \let\luatexko@hanja@selectfont\relax
   \check@hanja@family
   \ifdefined\hanja@font \hanja@font \fi
-  \expandafter\endgroup
-  \directlua{ luatexko.cjkfontidtmp = font.current() }%
-  \hanjfntattr\directlua{ tex.sprint(luatexko.cjkfontidtmp) }\relax
+  \expandafter\expandafter\expandafter
+  \endgroup
+  \expandafter\hanjfntattr\luatexfontid\font
   \ifnum\cjtypesetattr>\z@\luatexkolatinspaceskip\fi
 }
 \let\check@hangul@family\relax
