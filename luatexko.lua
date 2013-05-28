@@ -1363,7 +1363,8 @@ local function font_substitute(head)
 	uni = uni and get_cjk_class(uni)
 	if uni and uni < 7 then ftable = {hanja, hangul} end
       end
-      for _,fid in ipairs(ftable) do
+      for i=1,#ftable do
+	local fid = ftable[i]
 	if fid then
 	  local c = get_font_char(fid, curr.char)
 	  if c then
