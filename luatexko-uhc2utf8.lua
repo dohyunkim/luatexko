@@ -31,7 +31,6 @@ local ugsub = unicode.utf8.gsub
 local ubyte = unicode.utf8.byte
 local uchar = unicode.utf8.char
 local floor = math.floor
-local isfile = lfs.isfile
 local kpse_find_file = kpse.find_file
 local add_to_callback = luatexbase.add_to_callback
 local remove_from_callback = luatexbase.remove_from_callback

@@ -75,7 +75,6 @@ local add_to_callback	= luatexbase.add_to_callback
 local gluenode		= node.id("glue")
 local gluespecnode	= node.id("glue_spec")
 local glyphnode		= node.id("glyph")
-local discnode		= node.id("disc")
 local mathnode		= node.id("math")
 local hlistnode		= node.id("hlist")
 local vlistnode		= node.id("vlist")
