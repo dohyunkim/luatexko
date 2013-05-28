@@ -1368,16 +1368,6 @@ local function font_substitute(head)
 	if fid then
 	  local c = get_font_char(fid, curr.char)
 	  if c then
-	    ---[[ for plain tex only
-	    local cjk = eng.size and get_font_table(fid)
-	    if cjk and eng.size ~= cjk.size then
-	      local fname = cjk.properties and cjk.properties.name
-	      if fname then
-		fid = font_define_func(fname, eng.size, font.nextid())
-		if type(fid) == "table" then fid = fontdefine(fid) end
-	      end
-	    end
-	    -- for plain tex only ]]
 	    korid = true
 	    curr.font = fid
 	    -- adjust next glue by hangul font space
