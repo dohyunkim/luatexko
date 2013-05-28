@@ -791,7 +791,6 @@ local function cjk_insert_nodes(head,curr,currchar,currfont,prevchar,prevfont)
   if has_attribute(curr,dotemphattr)
     and c ~= 0
     and c ~= 7
-    and p ~= 8
     and c ~= 8 then
     unset_attribute(curr,dotemphattr)
   end
@@ -1354,10 +1353,6 @@ local function font_substitute(head)
   for curr in traverse_id(glyphnode, head) do
     local eng = get_font_table(curr.font)
     local engfontchar = get_font_char(curr.font, curr.char)
-    if not eng then -- no font table of plain tex cm font
-		    -- this should not occur now, as of font.fonts[id] patch
-      engfontchar = get_cjk_class(curr.char) == 10
-    end
     if curr.char and not engfontchar then
       local korid  = false
       local hangul = has_attribute(curr, hangfntattr)
@@ -1372,6 +1367,16 @@ local function font_substitute(head)
 	if fid then
 	  local c = get_font_char(fid, curr.char)
 	  if c then
+	    ---[[ for plain tex only
+	    local cjk = eng.size and get_font_table(fid)
+	    if cjk and eng.size ~= cjk.size then
+	      local fname = cjk.properties and cjk.properties.name
+	      if fname then
+		fid = font_define_func(fname, eng.size, font.nextid())
+		if type(fid) == "table" then fid = fontdefine(fid) end
+	      end
+	    end
+	    -- for plain tex only ]]
 	    korid = true
 	    curr.font = fid
 	    -- adjust next glue by hangul font space
