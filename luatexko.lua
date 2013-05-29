@@ -1590,10 +1590,10 @@ local function after_linebreak_dotemph (head)
       if attr and attr > 0 then
 	local d = copy_node(dotemphnode[attr])
 	local dot = d.head
-	d.head = get_kernnode(-curr.width/2-d.width/2)
+	d.head = get_kernnode(curr.width/2-d.width/2)
 	d.head.next = dot
 	d.width = 0
-	insert_after(head,curr,d)
+	insert_before(head,curr,d)
 	unset_attribute(curr,dotemphattr)
       end
     end
