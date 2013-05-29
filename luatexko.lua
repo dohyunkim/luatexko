@@ -1583,7 +1583,7 @@ end, 'luatexko.pre_linebreak_filter')
 local function after_linebreak_dotemph (head)
   for curr in traverse(head) do
     if curr.id == hlistnode then -- hlist may be nested!!!
-      after_linebreak_dotemph(curr.head)
+      curr.head = after_linebreak_dotemph(curr.head)
     elseif curr.id == glyphnode then
       local attr = has_attribute(curr,dotemphattr)
       if attr and attr > 0 then
@@ -1592,11 +1592,12 @@ local function after_linebreak_dotemph (head)
 	d.head = get_kernnode(curr.width/2-d.width/2)
 	d.head.next = dot
 	d.width = 0
-	insert_before(head,curr,d)
+	head = insert_before(head,curr,d)
 	unset_attribute(curr,dotemphattr)
       end
     end
   end
+  return head
 end
 
 -------------------------------
@@ -1647,9 +1648,10 @@ local function draw_underline(head,curr,width,ulinenum,ulstart)
       and nd.subtype == whatsitspecial
       and nd.data
       and stringfind(nd.data,"luako:uline") then
-      remove_node(head,nd)
+      head = remove_node(head,nd)
     end
   end
+  return head
 end
 
 local function after_linebreak_underline(head,glueorder,glueset,gluesign,ulinenum)
@@ -1657,7 +1659,7 @@ local function after_linebreak_underline(head,glueorder,glueset,gluesign,ulinenu
   if ulstart and ulstart.id == gluenode then ulstart = ulstart.next end
   for curr in traverse(head) do
     if curr.id == hlistnode then
-      ulinenum = after_linebreak_underline(curr.head,curr.glue_order,curr.glue_set,curr.glue_sign,ulinenum)
+      curr.head,ulinenum = after_linebreak_underline(curr.head,curr.glue_order,curr.glue_set,curr.glue_sign,ulinenum)
     elseif curr.id == whatsitnode and curr.subtype == whatsitspecial
       and curr.data then
       if stringfind(curr.data,"luako:ulinebegin=") then
@@ -1666,33 +1668,33 @@ local function after_linebreak_underline(head,glueorder,glueset,gluesign,ulinenu
       elseif ulstart and ulinenum
 	and stringfind(curr.data,'luako:ulineend') then
 	local wd = nodedimensions(glueset,gluesign,glueorder,ulstart,curr)
-	draw_underline(head,curr,wd,ulinenum,ulstart)
+	head = draw_underline(head,curr,wd,ulinenum,ulstart)
 	ulinebox[ulinenum] = nil
 	ulinenum = nil
       end
     end
     if ulstart and ulinenum and curr == nodetail(head) then
       local wd = nodedimensions(glueset,gluesign,glueorder,ulstart,curr)
-      draw_underline(head,curr,wd,ulinenum,ulstart)
+      head = draw_underline(head,curr,wd,ulinenum,ulstart)
     end
   end
-  return ulinenum
+  return head, ulinenum
 end
 
 -----------------------------------
 -- add to callback : post-linebreak
 -----------------------------------
 add_to_callback('vpack_filter', function(head)
-  after_linebreak_dotemph(head)
+  head = after_linebreak_dotemph(head)
   after_linebreak_ruby(head)
-  after_linebreak_underline(head)
-  return true
+  head = after_linebreak_underline(head)
+  return head
 end, 'luatexko.vpack_filter')
 
 add_to_callback("post_linebreak_filter", function(head)
-  after_linebreak_dotemph(head)
+  head = after_linebreak_dotemph(head)
   after_linebreak_ruby(head)
-  after_linebreak_underline(head)
-  return true
+  head = after_linebreak_underline(head)
+  return head
 end, 'luatexko.post_linebreak_filter')
 
