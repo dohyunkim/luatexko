@@ -120,7 +120,7 @@ Set spacing between Hangul characters.
 Set spacing between CJK and Latin characters.
 
 	[PunctRaise=<dimen>]
-Raise Latin fullstop and comma after CJK character.
+Raise Latin fullstop after CJK character.
 
 	[QuoteRaise=<dimen>]
 Raise Latin quotation marks and parentheses around CJK text.
