@@ -40,10 +40,9 @@ local mathfloor		= math.floor
 local tex_round		= tex.round
 local tex_sp		= tex.sp
 local fontdefine	= font.define
+local utf8char		= unicode.utf8.char
 
 local fontdata		= fonts.hashes.identifiers
-local font_define_func	= callback.find("define_font")
-local utf8char		= unicode.utf8.char
 
 local remove_node	= node.remove
 local insert_before	= node.insert_before
