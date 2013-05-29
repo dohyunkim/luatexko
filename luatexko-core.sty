@@ -95,15 +95,19 @@
     \vrule width\z@ height.88em depth\z@\relax #1}%
   \setbox\tw@\hbox{% ruby
     \ifdefined\rubyfont \rubyfont \fi
-    \expandafter\dimen@\pdffontsize\the\font
-    \dimen@\rubysize\dimen@
     \ifcsname selectfont\endcsname
+      \expandafter\dimen@\pdffontsize\font
+      \dimen@\rubysize\dimen@
       \fontsize\dimen@\dimen@\selectfont
     \else
       \ifdefined\rubyfont \else
-	\resize@cjk@font{\font\lua@ko@tmp@font}{\the\dimen@}%
-	\ifdefined\hangul@font\resize@cjk@font\hangulfont{\the\dimen@}\fi
-	\ifdefined\hanja@font \resize@cjk@font\hanjafont {\the\dimen@}\fi
+	\luatexko@resize@font\font\resized@font\font\rubysize
+	\ifdefined\hangul@font
+	  \luatexko@resize@font\hangulfont{}\hangul@font\rubysize
+	\fi
+	\ifdefined\hanja@font
+	  \luatexko@resize@font\hanjafont{}\hanja@font\rubysize
+	\fi
       \fi
     \fi #2}\ht\tw@\z@\dp\tw@\z@
   \directlua{%
@@ -115,23 +119,21 @@
   \endgroup}
 
 \ifcsname selectfont\endcsname\else
-  % hangul font resize under plain tex
-  %  eg: \resize@cjk@font{\hangulfont}{12pt}
-  \def\resize@cjk@font#1#2{%
-    \ifx#1\hangulfont \let\hangul@or@hanja@font\hangul@font
-    \else\ifx#1\hanjafont \let\hangul@or@hanja@font\hanja@font
-    \else \let\hangul@or@hanja@font\font \fi\fi
-    #1={\directlua{
-	local f = \luatexfontid\hangul@or@hanja@font\space
+  % font resize under plain tex
+  \def\luatexko@resize@font#1#2#3#4{%
+    \expandafter\dimen@\pdffontsize#3\relax
+    \edef\luatexko@tmp@fontname{%
+      \directlua{
+	local f = \luatexfontid#3\space
 	f = f and fonts.hashes.identifiers[f]
 	f = f and f.properties and f.properties.name
 	if not f then
-	  f = "\fontname\hangul@or@hanja@font"
+	  f = "\fontname#3"
 	  f = string.gsub(f," at .+","")
 	end
-	tex.sprint(f) }} at #2
-    \ifx\hangul@or@hanja@font\font \lua@ko@tmp@font \fi
-  }
+	tex.sprint(f) }}%
+    #1#2={\luatexko@tmp@fontname} at #4\dimen@
+    #2}
 \fi
 
 %% vertical typesetting
