@@ -786,14 +786,6 @@ local function cjk_insert_nodes(head,curr,currchar,currfont,prevchar,prevfont)
       end
     end
   end
-  -- for dot emphasis
-  if has_attribute(curr,dotemphattr)
-    and c ~= 0
-    and c ~= 7
-    and c ~= 8 then
-    unset_attribute(curr,dotemphattr)
-  end
-
   return currchar,currfont
 end
 
@@ -1587,12 +1579,30 @@ local function after_linebreak_dotemph (head)
     elseif curr.id == glyphnode then
       local attr = has_attribute(curr,dotemphattr)
       if attr and attr > 0 then
-	local d = copy_node(dotemphnode[attr])
-	local dot = d.head
-	d.head = get_kernnode(curr.width/2-d.width/2)
-	d.head.next = dot
-	d.width = 0
-	head = insert_before(head,curr,d)
+	local cc = get_cjk_class(get_unicode_char(curr))
+	if cc and (cc == 0 or cc == 7 or cc == 8) then
+	  local basewd = curr.width or 0
+	  if cc == 8 then -- check next char for old hangul jung/jongseong
+	    local nn = curr.next
+	    while nn do
+	      if nn.id ~= glyphnode then break end
+	      local uni = get_unicode_char(nn)
+	      local nc = get_cjk_class(uni)
+	      if nc and nc == 9 and uni ~= 0x302E and uni ~= 0x302F then
+		basewd = basewd + (nn.width or 0)
+	      else
+		break
+	      end
+	      nn = nn.next
+	    end
+	  end
+	  local d = copy_node(dotemphnode[attr])
+	  local dot = d.head
+	  d.head = get_kernnode(basewd/2-d.width/2)
+	  d.head.next = dot
+	  d.width = 0
+	  head = insert_before(head,curr,d)
+	end
 	unset_attribute(curr,dotemphattr)
       end
     end
