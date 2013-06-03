@@ -124,15 +124,10 @@
     \expandafter\dimen@\pdffontsize#3\relax
     \edef\luatexko@tmp@fontname{%
       \directlua{
-	local f = \luatexfontid#3\space
-	f = f and fonts.hashes.identifiers[f]
-	f = f and f.properties and f.properties.name
-	if not f then
-	  f = "\fontname#3"
-	  f = string.gsub(f," at .+","")
-	end
+	local f = [===[\fontname#3]===]
+	f = string.gsub(f," at .+","")
 	tex.sprint(f) }}%
-    #1#2={\luatexko@tmp@fontname} at #4\dimen@
+    #1#2=\luatexko@tmp@fontname\space at #4\dimen@
     #2}
 \fi
 
