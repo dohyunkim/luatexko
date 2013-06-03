@@ -228,7 +228,7 @@
   \ifdefined\hangul@font \hangul@font \fi
   \expandafter\expandafter\expandafter
   \endgroup
-  \expandafter\hangfntattr\luatexfontid\font
+  \expandafter\hangfntattr\luatexfontid\font\relax
 }
 \def\luatexko@hanja@selectfont{%
   \begingroup
@@ -238,7 +238,7 @@
   \ifdefined\hanja@font \hanja@font \fi
   \expandafter\expandafter\expandafter
   \endgroup
-  \expandafter\hanjfntattr\luatexfontid\font
+  \expandafter\hanjfntattr\luatexfontid\font\relax
   \ifnum\cjtypesetattr>\z@\luatexkolatinspaceskip\fi
 }
 \let\check@hangul@family\relax
@@ -253,7 +253,7 @@
 \def\setmathhangulblock#1#2{%
   \count@="#1
   \loop
-    \luatexUmathcode\count@ = 7 \symmathhangul \count@
+    \Umathcode\count@ = 7 \symmathhangul \count@
     \ifnum\count@<"#2
       \advance\count@\@ne
   \repeat}
