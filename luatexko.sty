@@ -219,6 +219,9 @@
 \fi
 
 \AtBeginDocument{
+\unless\ifdefined\serifhangul@font\let\serifhangul@font\relax\fi
+\unless\ifdefined\sanshangul@font \let\sanshangul@font\serifhangul@font\fi
+\unless\ifdefined\monohangul@font \let\monohangul@font\sanshangul@font\fi
 % for hyperref
 \@ifpackageloaded{hyperref}{\pdfstringdefDisableCommands{%
   \let\dotemph\@firstofone
