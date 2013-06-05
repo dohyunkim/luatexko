@@ -163,26 +163,6 @@
 \edef\verbatim@font{\unexpanded\expandafter{\verbatim@font
   \unsetluatexattribute\finemathattr}}
 
-%% hangul in math --- latex
-\protected\def\setmathhangulfont{%
-  \@ifnextchar[{\setmathhangul@font@}{\setmathhangul@font@[]}}
-\def\setmathhangul@font@[#1]#2{%
-  \zf@fontspec{#1}{#2}\xdef\luatexko@math@hangul@family{\zf@family}}
-\AtBeginDocument{%
-  \begingroup
-    \unless\ifdefined\luatexko@math@hangul@family
-      \check@hangul@family
-      \ifdefined\hangul@font \hangul@font \fi
-      \xdef\luatexko@math@hangul@family{\f@family}%
-    \fi
-  \endgroup
-  \DeclareSymbolFont{mathhangul}\zf@enc\luatexko@math@hangul@family\mddefault\updefault
-  \ifcsname\zf@enc/\luatexko@math@hangul@family/\bfdefault/\updefault\endcsname
-    \SetSymbolFont{mathhangul}{bold}\zf@enc\luatexko@math@hangul@family\bfdefault\updefault
-  \fi
-  \setmathhangulblock{AC00}{D7A3}
-}
-
 %% package options
 \newif\if@hangul
 \newif\if@hanja
@@ -219,9 +199,10 @@
 \fi
 
 \AtBeginDocument{
-\unless\ifdefined\serifhangul@font\let\serifhangul@font\relax\fi
+\unless\ifdefined\serifhangul@font\let\serifhangul@font\sanshangul@font\fi
 \unless\ifdefined\sanshangul@font \let\sanshangul@font\serifhangul@font\fi
-\unless\ifdefined\monohangul@font \let\monohangul@font\sanshangul@font\fi
+\unless\ifdefined\monohangul@font \let\monohangul@font\sanshangul@font \fi
+\luatexko@hangul@selectfont
 % for hyperref
 \@ifpackageloaded{hyperref}{\pdfstringdefDisableCommands{%
   \let\dotemph\@firstofone
@@ -245,6 +226,26 @@
   \def\으{으}%
   \def\로{로}%
   }}{}
+}
+
+%% hangul in math --- latex
+\protected\def\setmathhangulfont{%
+  \@ifnextchar[{\setmathhangul@font@}{\setmathhangul@font@[]}}
+\def\setmathhangul@font@[#1]#2{%
+  \zf@fontspec{#1}{#2}\xdef\luatexko@math@hangul@family{\zf@family}}
+\AtBeginDocument{%
+  \begingroup
+    \unless\ifdefined\luatexko@math@hangul@family
+      \check@hangul@family
+      \ifdefined\hangul@font \hangul@font \fi
+      \xdef\luatexko@math@hangul@family{\f@family}%
+    \fi
+  \endgroup
+  \DeclareSymbolFont{mathhangul}\zf@enc\luatexko@math@hangul@family\mddefault\updefault
+  \ifcsname\zf@enc/\luatexko@math@hangul@family/\bfdefault/\updefault\endcsname
+    \SetSymbolFont{mathhangul}{bold}\zf@enc\luatexko@math@hangul@family\bfdefault\updefault
+  \fi
+  \setmathhangulblock{AC00}{D7A3}
 }
 
 \RequirePackage{kolabels-utf}
