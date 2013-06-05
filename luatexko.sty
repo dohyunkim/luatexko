@@ -113,7 +113,7 @@
 \protected\def\addhangulfontfeature#1{%
   \begingroup
     \check@hangul@family
-    \hangul@font\addfontfeature{#1}\global
+    \ifdefined\hangul@font\hangul@font\fi\addfontfeature{#1}\global
     \let\luatexko@fontspec@temp\f@family
   \endgroup
   \def\hangul@font{\fontfamily\luatexko@fontspec@temp
@@ -122,7 +122,7 @@
 \protected\def\addhanjafontfeature#1{%
   \begingroup
     \check@hanja@family
-    \hanja@font\addfontfeature{#1}\global
+    \ifdefined\hanja@font\hanja@font\fi\addfontfeature{#1}\global
     \let\luatexko@fontspec@temp\f@family
   \endgroup
   \def\hanja@font{\fontfamily\luatexko@fontspec@temp
@@ -218,10 +218,7 @@
   ]{UnDotum}
 \fi
 
-\AtBeginDocument{% [unfonts] 없는 경우 에러 방지
-\unless\ifdefined\serifhangul@font\let\serifhangul@font\relax\fi
-\unless\ifdefined\sanshangul@font \let\sanshangul@font\serifhangul@font\fi
-\unless\ifdefined\monohangul@font \let\monohangul@font\sanshangul@font\fi
+\AtBeginDocument{
 % for hyperref
 \@ifpackageloaded{hyperref}{\pdfstringdefDisableCommands{%
   \let\dotemph\@firstofone

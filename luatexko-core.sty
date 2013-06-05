@@ -252,13 +252,13 @@
     \ifnum\count@<"#2
       \advance\count@\@ne
   \repeat}
+\def\setmathhangulfont#1#{\setmathhangul@font@}
 \ifdefined\ProvidesPackage
-  \let\setmathhangulfont\@gobble
+  \let\setmathhangul@font@\@gobble
 \else
   % for plain; see luatexko.sty for latex
   \newfam\symmathhangul
-  \def\setmathhangulfont#1#{\setmathhangulfont@}
-  \def\setmathhangulfont@#1{%
+  \def\setmathhangul@font@#1{%
     \font\tenhangul   = "#1" at 10pt
     \font\sevenhangul = "#1" at 7pt
     \font\fivehangul  = "#1" at 5pt
