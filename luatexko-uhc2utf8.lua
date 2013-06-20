@@ -12,8 +12,8 @@
 
 luatexbase.provides_module({
   name        = "luatexko-uhc2utf8",
-  version     = 1.0,
-  date        = "2013/05/10",
+  version     = 1.2,
+  date        = "2013/06/10",
   author      = "Dohyun Kim",
   description = "UHC (CP949) input encoding",
   license     = "LPPL v1.3+",

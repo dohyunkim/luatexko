@@ -12,8 +12,8 @@
 
 local err,warn,info,log = luatexbase.provides_module({
   name	      = 'luatexko',
-  date	      = '2013/05/19',
-  version     = 1.1,
+  date	      = '2013/06/20',
+  version     = 1.2,
   description = 'Korean linebreaking and font-switching',
   author      = 'Dohyun Kim',
   license     = 'LPPL v1.3+',
@@ -384,6 +384,7 @@ local latin_fullstop = {
 
 local latin_quotes = {
   [0x0028] = 0x0029, -- ( )
+  [0x003C] = 0x003E, -- < >
   [0x2018] = 0x2019, -- ‘ ’
   [0x201C] = 0x201D, -- “ ”
 }
@@ -571,9 +572,6 @@ local function get_unicode_char(curr)
   return curr.char
 end
 
-----------------------------
--- cjk linebreak and spacing
-----------------------------
 local function get_hlist_class_first (hlist)
   local curr = hlist.head
   while curr do
@@ -607,6 +605,9 @@ local function get_hlist_class_last (hlist,prevchar,prevfont)
   return prevchar, prevfont
 end
 
+----------------------------
+-- cjk linebreak and spacing
+----------------------------
 local function kanjiskip (head,curr)
   insert_before(head,curr,make_luako_glue(0, emsize*0.1, emsize*0.02))
 end
@@ -1404,7 +1405,7 @@ end
 
 
 ------------------------------------
--- vetical typesetting: EXPERIMENTAL -- don't use this
+-- vertical typesetting: EXPERIMENTAL -- don't use this
 ------------------------------------
 ---[[no vwidth in luaotfload v2
 local tsbtable = {}
@@ -1513,10 +1514,12 @@ local function cjk_vertical_font (vf)
 end
 
 local function activate_vertical_virtual (tfmdata,value)
-  if value then
+  local loaded = luatexbase.priority_in_callback("luaotfload.patch_font",
+  "luatexko.vertical_virtual_font")
+  if value and not loaded then
     add_to_callback("luaotfload.patch_font",
     cjk_vertical_font,
-    "luatexko.vetical_virtual_font")
+    "luatexko.vertical_virtual_font")
   end
 end
 
@@ -1529,6 +1532,28 @@ otffeatures.register {
   }
 }
 --no vwidth in luaotfload v2]]
+
+local function reorderTM (head)
+  for curr in traverse_id(glyphnode, head) do
+    if curr.width > 0 then -- old hangul vertical typesetting is broken?
+      local uni = get_unicode_char(curr)
+      if uni and (uni == 0x302E or uni == 0x302F) then
+	local p = curr.prev
+	while p do
+	  if p.id ~= glyphnode then break end
+	  local pc = get_cjk_class(get_unicode_char(p))
+	  if pc == 7 or pc == 8 then
+	    head = insert_before(head,p,copy_node(curr))
+	    head = remove_node(head,curr)
+	    break
+	  end
+	  p = p.prev
+	end
+      end
+    end
+  end
+  return head
+end
 
 ----------------------------------
 -- add to callback : pre-linebreak
@@ -1547,6 +1572,7 @@ add_to_callback('hpack_filter', function(head)
   spread_ruby_base_box(head)
   head = compress_fullwidth_punctuations(head)
   -- head = no_ruby_at_margin(head)
+  head = reorderTM(head)
   return head
 end, 'luatexko.hpack_filter')
 
@@ -1565,6 +1591,7 @@ add_to_callback('pre_linebreak_filter', function(head)
   head = compress_fullwidth_punctuations(head)
   discourage_char_widow(head, nodeslide(head))
   head = no_ruby_at_margin(head)
+  head = reorderTM(head)
   return head
 end, 'luatexko.pre_linebreak_filter')
 
