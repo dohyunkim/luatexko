@@ -566,7 +566,11 @@ local function get_char_boundingbox(fid, chr)
 end
 
 local function get_unicode_char(curr)
-  if curr.char > 0 and curr.char < 0xF0000 then return curr.char end
+  if (curr.char > 0 and curr.char < 0xD800) -- no pua or surrogate
+    or (curr.char > 0xF8FF and curr.char < 0xF0000) then
+    return curr.char
+  end
+  -- tounicode is not reliable. backend bug
   local uni = has_attribute(curr, luakounicodeattr)
   if uni then return uni end
   return curr.char
