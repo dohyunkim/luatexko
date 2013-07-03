@@ -1,3 +1,13 @@
+2013-07-03      Dohyun Kim <nomos at ktug org>
+
+	Version 1.2
+
+	* luatexko.sty: move caption setting to AtBeginDocument
+
+	* luatexko.lua: reorder hangul tone marks; fix a bug wrt.
+	\dotemph of old hangul; adapt to the recent update of
+	luaotfload
+
 2013-05-19      Dohyun Kim <nomos at ktug org>
 
 	Version 1.1
