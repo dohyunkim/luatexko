@@ -12,7 +12,7 @@
 
 local err,warn,info,log = luatexbase.provides_module({
   name	      = 'luatexko',
-  date	      = '2013/06/20',
+  date	      = '2013/07/03',
   version     = 1.2,
   description = 'Korean linebreaking and font-switching',
   author      = 'Dohyun Kim',
@@ -36,6 +36,7 @@ local stringfind	= string.find
 local stringmatch	= string.match
 local stringgmatch	= string.gmatch
 local stringformat	= string.format
+local string_sub	= string.sub
 local mathfloor		= math.floor
 local tex_round		= tex.round
 local tex_sp		= tex.sp
@@ -566,12 +567,16 @@ local function get_char_boundingbox(fid, chr)
 end
 
 local function get_unicode_char(curr)
-  if (curr.char > 0 and curr.char < 0xD800) -- no pua or surrogate
+  if (curr.char > 0 and curr.char < 0xE000) -- no pua
     or (curr.char > 0xF8FF and curr.char < 0xF0000) then
     return curr.char
   end
   -- tounicode is not reliable. backend bug
-  local uni = has_attribute(curr, luakounicodeattr)
+  local uni = get_font_char(curr.font, curr.char)
+  uni = uni and uni.tounicode
+  uni = uni and string_sub(uni,1,4) -- seems ok for old hangul
+  if uni then return tonumber(uni,16) end
+  uni = has_attribute(curr, luakounicodeattr)
   if uni then return uni end
   return curr.char
 end
@@ -738,7 +743,7 @@ local function cjk_insert_nodes(head,curr,currchar,currfont,prevchar,prevfont)
 	local stretch = 0
 	local shrink  = emsize * cjk_glue_spec[p][c][2]
 	insert_before(head,curr,make_luako_glue(width, stretch, shrink))
-      elseif p < 10 and c < 10 and p ~= 8 and c ~= 9 then
+      elseif p < 10 and c < 9 then -- break between chosong and chosong
 	kanjiskip(head,curr)
       elseif (p < 10 and c == 10) or (p == 10 and c < 10) then
 	if xspcode[currchar] then
@@ -786,7 +791,7 @@ local function cjk_insert_nodes(head,curr,currchar,currfont,prevchar,prevfont)
 	koreanlatinskip(head,curr,currfont,prevfont,was_penalty)
       elseif p == 7 and c == 7 then
 	interhangulskip(head,curr,currfont,prevfont,was_penalty)
-      elseif p < 10 and c < 10 and p ~= 8 and c ~= 9 then
+      elseif p < 10 and c < 9 then -- break between chosong and chosong
 	interhanjaskip(head,curr,was_penalty)
       end
     end
