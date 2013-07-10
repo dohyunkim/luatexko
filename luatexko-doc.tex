@@ -40,7 +40,7 @@
 \title{\luatexko\ 간단 매뉴얼}
 \author{Dohyun Kim \normalsize <|nomos at ktug org|> \and
   \normalsize <|http://github.com/dohyunkim/luatexko|>}
-\date{Version 1.2\quad\today}
+\date{Version 1.3\quad\today}
 \maketitle
 
 \begin{quote}\small
@@ -55,6 +55,7 @@
       |<dimen>|으로 지시한다.
     \item 세로쓰기를 더 이상 공식적으로 지원하지 않는다.
     \item \MP\ 코드를 넣으려면 luamplib 패키지를 불러야 한다.
+    \item fallbackfont 계열의 명령이 추가되었다.
   \end{itemize}
 \end{quote}
 
@@ -83,20 +84,21 @@ CP949 인코딩에 관해서는 제\ref{sec:uhcencoding}절 참조.
 
 한국어 글꼴을 위해 새로 마련한 명령은 다음과 같다.
 \begin{verbatim}
-  \setmainhangulfont     \setmainhanjafont
-  \setsanshangulfont     \setsanshanjafont
-  \setmonohangulfont     \setmonohanjafont
-  \newhangulfontfamily   \newhanjafontfamily
-  \addhangulfontfeature  \addhanjafontfeature
-  \hangulfontspec        \hanjafontspec
+  \setmainhangulfont     \setmainhanjafont    \setmainfallbackfont
+  \setsanshangulfont     \setsanshanjafont    \setsansfallbackfont
+  \setmonohangulfont     \setmonohanjafont    \setmonofallbackfont
+  \newhangulfontfamily   \newhanjafontfamily  \newfallbackfontfamily
+  \addhangulfontfeature  \addhanjafontfeature \addfallbackfontfeature
+  \hangulfontspec        \hanjafontspec       \fallbackfontspec
 \end{verbatim}
-|\adhochangulfont| |\adhochanjafont|는 각각 |\hangulfontspec|
-|\hanjafontspec|의 다른 이름이다.
+|\adhochangulfont| |\adhochanjafont| |\addhocfallbackfont|는 각각
+|\hangulfontspec| |\hanjafontspec| |\fallbackfontspec|의 다른 이름이다.
 \begin{itemize}\item[]
 플레인텍에서 한글 글꼴 설정은 영문 글꼴 지정하는 방식과 거의 같다.
 \begin{verbatim}
   \hangulfont=UnDotum\relax
   \hanjafont=UnDotum at 14pt
+  \fallbackfont=HanaMinB at 12pt
   \hangulfont=UnDotum scaled 2000
   \hanjafont{HCR Batang LVT}\relax
   \hangulfont={HCR Batang LVT:script=hang;+dlig} at 12pt
@@ -105,7 +107,8 @@ CP949 인코딩에 관해서는 제\ref{sec:uhcencoding}절 참조.
 
 \section{}
 원칙적으로 \luatexko에서는 영문폰트에 지정한 글자가 없으면 한글폰트에서,
-한글폰트에도 없으면 한자폰트에서 글자를 찾아 찍는다.  기존 \kotex과는
+한글폰트에도 없으면 한자폰트에서, 한자폰트에도 없으면 fallback 폰트에서
+글자를 찾아 찍는다.  기존 \kotex과는
 글꼴 대체 방식이 다르므로 주의해야 한다.
 
 하지만 |\hanjabyhanjafont=1|을 선언하면 한자는 우선 한자글꼴로

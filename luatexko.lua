@@ -12,8 +12,8 @@
 
 local err,warn,info,log = luatexbase.provides_module({
   name	      = 'luatexko',
-  date	      = '2013/07/03',
-  version     = 1.2,
+  date	      = '2013/07/10',
+  version     = 1.3,
   description = 'Korean linebreaking and font-switching',
   author      = 'Dohyun Kim',
   license     = 'LPPL v1.3+',
@@ -66,6 +66,7 @@ local autojosaattr	= luatexbase.attributes.autojosaattr
 local luakorubyattr	= luatexbase.attributes.luakorubyattr
 local hangfntattr	= luatexbase.attributes.hangfntattr
 local hanjfntattr	= luatexbase.attributes.hanjfntattr
+local fallbackfntattr   = luatexbase.attributes.fallbackfntattr
 local luakoglueattr	= luatexbase.new_attribute("luakoglueattr")
 local luakounicodeattr	= luatexbase.new_attribute("luakounicodeattr")
 local quoteraiseattr	= luatexbase.new_attribute("quoteraiseattr")
@@ -567,12 +568,12 @@ local function get_char_boundingbox(fid, chr)
 end
 
 local function get_unicode_char(curr)
-  if (curr.char > 0 and curr.char < 0xE000) -- no pua
-    or (curr.char > 0xF8FF and curr.char < 0xF0000) then
-    return curr.char
+  local uni = curr.char
+  if (uni > 0 and uni < 0xE000) or (uni > 0xF8FF and uni < 0xF0000) then
+    return uni -- no pua
   end
-  -- tounicode is not reliable. backend bug
-  local uni = get_font_char(curr.font, curr.char)
+  -- tounicode is now reliable. backend is fixed
+  uni = get_font_char(curr.font, curr.char)
   uni = uni and uni.tounicode
   uni = uni and string_sub(uni,1,4) -- seems ok for old hangul
   if uni then return tonumber(uni,16) end
@@ -1358,11 +1359,12 @@ local function font_substitute(head)
       local korid  = false
       local hangul = has_attribute(curr, hangfntattr)
       local hanja  = has_attribute(curr, hanjfntattr)
-      local ftable = {hangul, hanja}
+      local fallback = has_attribute(curr,fallbackfntattr)
+      local ftable = {hangul, hanja, fallback}
       if luatexko.hanjafontforhanja then
 	local uni = get_unicode_char(curr)
 	uni = uni and get_cjk_class(uni)
-	if uni and uni < 7 then ftable = {hanja, hangul} end
+	if uni and uni < 7 then ftable = {hanja, hangul, fallback} end
       end
       for i=1,#ftable do
 	local fid = ftable[i]

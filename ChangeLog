@@ -1,3 +1,10 @@
+2013-07-10      Dohyun Kim <nomos at ktug org>
+
+	Version 1.3
+
+	* luatexko.sty, luatexko-core.sty, luatexko.lua: added new
+	macros \setmainfallbackfont \setsansfallbackfont etc.
+
 2013-07-03      Dohyun Kim <nomos at ktug org>
 
 	Version 1.2

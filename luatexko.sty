@@ -22,7 +22,7 @@
   \expandafter\endinput
 \fi
 
-\ProvidesPackage{luatexko}[2013/07/03 v1.2 Typesetting Korean with LuaLaTeX]
+\ProvidesPackage{luatexko}[2013/07/10 v1.3 Typesetting Korean with LuaLaTeX]
 \RequirePackage{fontspec}
 \RequirePackage{luatexko-core}
 
@@ -69,10 +69,13 @@
 %% macros for Korean fonts
 \protected\def\setmainhangulfont{\newfontfamily\serifhangul@font}
 \protected\def\setmainhanjafont {\newfontfamily\serifhanja@font}
+\protected\def\setmainfallbackfont{\newfontfamily\seriffallback@font}
 \protected\def\setsanshangulfont{\newfontfamily\sanshangul@font}
 \protected\def\setsanshanjafont {\newfontfamily\sanshanja@font}
+\protected\def\setsansfallbackfont{\newfontfamily\sansfallback@font}
 \protected\def\setmonohangulfont{\newfontfamily\monohangul@font}
 \protected\def\setmonohanjafont {\newfontfamily\monohanja@font}
+\protected\def\setmonofallbackfont{\newfontfamily\monofallback@font}
 
 \protected\def\newhangulfontfamily#1{%
   \protected\def#1{\expandafter\let\expandafter\hangul@font
@@ -84,6 +87,11 @@
   \csname luatexko@\string#1\endcsname
   \luatexko@hanja@selectfont}\expandafter\newfontfamily
   \csname luatexko@\string#1\endcsname}
+\protected\def\newfallbackfontfamily#1{%
+  \protected\def#1{\expandafter\let\expandafter\fallback@font
+  \csname luatexko@\string#1\endcsname
+  \luatexko@fallback@selectfont}\expandafter\newfontfamily
+  \csname luatexko@\string#1\endcsname}
 
 \protected\def\newhangulfontface#1{%
   \protected\def#1{\expandafter\let\expandafter\hangul@font
@@ -94,6 +102,11 @@
   \protected\def#1{\expandafter\let\expandafter\hanja@font
   \csname luatexko@\string#1\endcsname
   \luatexko@hanja@selectfont}\expandafter\newfontface
+  \csname luatexko@\string#1\endcsname}
+\protected\def\newfallbackfontface#1{%
+  \protected\def#1{\expandafter\let\expandafter\fallback@font
+  \csname luatexko@\string#1\endcsname
+  \luatexko@fallback@selectfont}\expandafter\newfontface
   \csname luatexko@\string#1\endcsname}
 
 \protected\def\hangulfontspec#1#{%
@@ -108,6 +121,12 @@
   \expandafter\newfontfamily\expandafter\hanja@font\luatexko@fontspec@temp{#1}%
   \luatexko@hanja@selectfont\ignorespaces}
 \let\adhochanjafont\hanjafontspec
+\protected\def\fallbackfontspec#1#{%
+  \def\luatexko@fontspec@temp{#1}\fallbackfontspec@}
+\def\fallbackfontspec@#1{%
+  \expandafter\newfontfamily\expandafter\fallback@font\luatexko@fontspec@temp{#1}%
+  \luatexko@fallback@selectfont\ignorespaces}
+\let\adhocfallbackfont\fallbackfontspec
 
 % add{hangul/hanja}fontfeature
 \protected\def\addhangulfontfeature#1{%
@@ -128,6 +147,15 @@
   \def\hanja@font{\fontfamily\luatexko@fontspec@temp
     \luatexko@orig@selectfont}\luatexko@hanja@selectfont \ignorespaces}
 \let\addhanjafontfeatures\addhanjafontfeature
+\protected\def\addfallbackfontfeature#1{%
+  \begingroup
+    \check@fallback@family
+    \ifdefined\fallback@font\fallback@font\fi\addfontfeature{#1}\global
+    \let\luatexko@fontspec@temp\f@family
+  \endgroup
+  \def\fallback@font{\fontfamily\luatexko@fontspec@temp
+    \luatexko@orig@selectfont}\luatexko@fallback@selectfont \ignorespaces}
+\let\addfallbackfontfeatures\addfallbackfontfeature
 
 % check hangul/hanja family
 \def\check@hangul@family{%
@@ -144,14 +172,27 @@
   \else \let\hanja@font\serifhanja@font
   \fi\fi\fi
 }
+\def\check@fallback@family{%
+  \unless\ifdefined\fallback@font
+  \ifx\f@family\sfdefault \let\fallback@font\sansfallback@font
+  \else\ifx\f@family\ttdefault \let\fallback@font\monofallback@font
+  \else \let\fallback@font\seriffallback@font
+  \fi\fi\fi
+}
 
 \let\luatexko@orig@selectfont\selectfont
 \protected\def\selectfont{\luatexko@orig@selectfont
-  \luatexko@hangul@selectfont\luatexko@hanja@selectfont}
+  \luatexko@hangul@selectfont
+  \luatexko@hanja@selectfont
+  \luatexko@fallback@selectfont
+}
 
 % don't forget to redefine \normalfont
 \protected\edef\normalfont{\unexpanded{%
-  \let\hangul@font\luatexko@undefined\let\hanja@font\luatexko@undefined}%
+    \let\hangul@font\luatexko@undefined
+    \let\hanja@font\luatexko@undefined
+    \let\fallback@font\luatexko@undefined
+  }%
   \unexpanded\expandafter{\normalfont}}
 \let\reset@font\normalfont
 

@@ -14,7 +14,7 @@
   \input luaotfload.sty
   \catcode`@ = 11
 \else
-  \ProvidesPackage{luatexko-core}[2013/07/03 v1.2 Typesetting Korean with LuaTeX]
+  \ProvidesPackage{luatexko-core}[2013/07/10 v1.3 Typesetting Korean with LuaTeX]
   \RequirePackage{luaotfload}[2013/05/23]
 \fi
 
@@ -26,6 +26,7 @@
 \newluatexattribute\luakorubyattr \chardef\luakorubyattrnum\the\allocationnumber
 \newluatexattribute\hangfntattr
 \newluatexattribute\hanjfntattr
+\newluatexattribute\fallbackfntattr
 
 %% load lua modules
 \RequireLuaModule{luatexko}
@@ -218,6 +219,7 @@
   \begingroup
   \let\luatexko@hangul@selectfont\relax
   \let\luatexko@hanja@selectfont\relax
+  \let\luatexko@fallback@selectfont\relax
   \check@hangul@family
   \ifdefined\hangul@font \hangul@font \fi
   \expandafter\expandafter\expandafter
@@ -228,20 +230,36 @@
   \begingroup
   \let\luatexko@hangul@selectfont\relax
   \let\luatexko@hanja@selectfont\relax
+  \let\luatexko@fallback@selectfont\relax
   \check@hanja@family
   \ifdefined\hanja@font \hanja@font \fi
   \expandafter\expandafter\expandafter
   \endgroup
   \expandafter\hanjfntattr\luatexfontid\font\relax
-  \ifnum\cjtypesetattr>\z@\luatexkolatinspaceskip\fi
+%  \ifnum\cjtypesetattr>\z@\luatexkolatinspaceskip\fi
+}
+\def\luatexko@fallback@selectfont{%
+  \begingroup
+  \let\luatexko@hangul@selectfont\relax
+  \let\luatexko@hanja@selectfont\relax
+  \let\luatexko@fallback@selectfont\relax
+  \check@fallback@family
+  \ifdefined\fallback@font \fallback@font \fi
+  \expandafter\expandafter\expandafter
+  \endgroup
+  \expandafter\fallbackfntattr\luatexfontid\font\relax
+%  \ifnum\cjtypesetattr>\z@\luatexkolatinspaceskip\fi
 }
 \let\check@hangul@family\relax
 \let\check@hanja@family \relax
+\let\check@fallback@family\relax
 % user interface for plain tex
 \protected\def\hangulfont
   {\afterassignment\luatexko@hangul@selectfont\font\hangul@font}
 \protected\def\hanjafont
   {\afterassignment\luatexko@hanja@selectfont \font\hanja@font }
+\protected\def\fallbackfont
+  {\afterassignment\luatexko@fallback@selectfont\font\fallback@font}
 
 %% hangul in math mode -- general
 \def\setmathhangulblock#1#2{%
