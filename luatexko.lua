@@ -724,6 +724,18 @@ local function cjk_insert_nodes(head,curr,currchar,currfont,prevchar,prevfont)
 	end
 	nn = nn.next
       end
+    elseif currchar == 0x2014 and not has_attribute(curr,quoteraiseattr) then
+      -- raise emdash by quoteraise value
+      local np, nn = curr.prev, curr.next
+      if np.id == glyphnode and nn.id == glyphnode then
+	local praise = get_font_feature(np.font, "quoteraise")
+	local nraise = get_font_feature(nn.font, "quoteraise")
+	if praise and nraise and praise == nraise then
+	  local raise = tex_sp(praise)
+	  curr.yoffset = raise + (curr.yoffset or 0)
+	  set_attribute(curr,quoteraiseattr,1)
+	end
+      end
     end
   end
   --raise latin puncts]]
