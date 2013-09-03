@@ -7,16 +7,18 @@
 %% public domain
 
 \documentclass[a4paper]{article}
-\usepackage{typearea}
+\usepackage[hmargin=3.9cm]{geometry}
 \usepackage[hangul]{luatexko}
 \usepackage{luamplib}
 \setmainhangulfont[
+  Ligatures=TeX,
   InterLatinCJK=.125em,
-  QuoteRaise=.1em,
+  CharRaise=-0.1ex,
   Expansion,
   ]{NanumMyeongjo}
 \setmainhanjafont{UnBatang}
 \setsanshangulfont[
+  Ligatures=TeX,
   InterLatinCJK=.125em,
   ]{NanumGothic}
 \usepackage[svgnames]{xcolor}
@@ -51,11 +53,11 @@
     \item 플레인텍에서도 luatexko.sty을 불러야 한다.
     \item 패키지 옵션 |unfonts|가 선언되지 않으면 은글꼴을 자동으로
       부르지 않는다.
-    \item 글꼴 옵션에 |QuoteRaise|가 추가되었다. 또한 옵션값을
-      |<dimen>|으로 지시한다.
+    \item 글꼴 옵션값을 |<dimen>|으로 지시한다.
     \item 세로쓰기를 더 이상 공식적으로 지원하지 않는다.
     \item \MP\ 코드를 넣으려면 luamplib 패키지를 불러야 한다.
     \item fallbackfont 계열의 명령이 추가되었다.
+    \item |\hangulpunctuations| 선언이 추가되었다.
   \end{itemize}
 \end{quote}
 
@@ -107,14 +109,18 @@ CP949 인코딩에 관해서는 제\ref{sec:uhcencoding}절 참조.
 
 \section{}
 원칙적으로 \luatexko에서는 영문폰트에 지정한 글자가 없으면 한글폰트에서,
-한글폰트에도 없으면 한자폰트에서, 한자폰트에도 없으면 fallback 폰트에서
-글자를 찾아 찍는다.  기존 \kotex과는
-글꼴 대체 방식이 다르므로 주의해야 한다.
+한글폰트에도 없으면 한자폰트에서, \hemph{한자폰트에도 없으면 fallback
+폰트에서} 글자를 찾아 찍는다.  기존 \kotex과는 글꼴 대체 방식이 다르므로
+주의해야 한다.
 
 하지만 |\hanjabyhanjafont=1|을 선언하면 한자는 우선 한자글꼴로
 식자한다.  |0|을 선언하면 원래 방식으로 되돌아간다. 이 명령은 문단
 중간에서 사용하지 않도록 주의해야 한다. 문단 중에 사용되었다면
 그 문단의 처음부터 효력이 발생한다.
+
+|\hangulpunctuations=1|을 선언하면 영문 \hemph{문장부호들을 한글 폰트로}
+식자한다. |0|을 지시하면 원래 상태로 되돌린다.
+|[hangul]| 옵션을 주면 |\hangulpunctuations=1|이 자동으로 선언된다.
 
 \section{}
 fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이
@@ -161,23 +167,25 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이
   [InterLatinCJK=0.125em]
 \end{verbatim}
 
+\item[CharRaise] 글자의 세로 위치를
+  {\addhangulfontfeature{CharRaise=.3em} 조절}할 수 있는 기능이다.
+  이로써 주변에 식자되는 다른 글꼴과 조화를 이루게 한다.
+\begin{verbatim}
+  [CharRaise=0.1em]
+\end{verbatim}
+
 \item[PunctRaise] 한글 또는 한자 다음에 라틴 구두점이 왔을 때 그 세로
   위치를 조절할 수 있다.
+  |\hangulpunctuations|로 인해 거의 쓸 일이 없게 되었다.
 \begin{verbatim}
   [PunctRaise=-0.125em]
 \end{verbatim}
 
 \item[QuoteRaise] 한글 또는 한자 주변에 라틴 인용부호나 \hemph{괄호}가 왔을 때
   그 세로 위치를 조절할 수 있다.
+  |\hangulpunctuations|로 인해 거의 쓸 일이 없게 되었다.
 \begin{verbatim}
   [QuoteRaise=0.125em]
-\end{verbatim}
-
-\item[CharRaise] 글자의 세로 위치를
-  {\addhangulfontfeature{CharRaise=.3em} 조절}할 수 있는 기능이다.
-  이로써 주변에 식자되는 다른 글꼴과 조화를 이루게 한다.
-\begin{verbatim}
-  [CharRaise=0.1em]
 \end{verbatim}
 
 \item[Protrusion] 특정 글자가 행 끌에 왔을 때 판면 바깥으로 끌어내는
@@ -272,7 +280,7 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이
 
 \section{}
 전처리부에서 |\usepackage{luamplib}|을 선언하면 \MP\ 코드를 문서 중간에 삽입할 수 있다.
-한글이나 수식은 |btex| ... |etex| 안에 넣어야 한다. 그림~\ref{fig:mplib} 참조.
+한글이나 수식은 |btex| $\ldots$ |etex| 안에 넣어야 한다. 그림~\ref{fig:mplib} 참조.
 
 \begin{figure}
 \setbox0\hbox{%

@@ -12,7 +12,7 @@
 
 local err,warn,info,log = luatexbase.provides_module({
   name	      = 'luatexko',
-  date	      = '2013/07/10',
+  date	      = '2013/09/03',
   version     = 1.3,
   description = 'Korean linebreaking and font-switching',
   author      = 'Dohyun Kim',
@@ -67,6 +67,7 @@ local luakorubyattr	= luatexbase.attributes.luakorubyattr
 local hangfntattr	= luatexbase.attributes.hangfntattr
 local hanjfntattr	= luatexbase.attributes.hanjfntattr
 local fallbackfntattr   = luatexbase.attributes.fallbackfntattr
+local hangulpunctsattr  = luatexbase.attributes.hangulpunctsattr
 local luakoglueattr	= luatexbase.new_attribute("luakoglueattr")
 local luakounicodeattr	= luatexbase.new_attribute("luakounicodeattr")
 local quoteraiseattr	= luatexbase.new_attribute("quoteraiseattr")
@@ -378,10 +379,11 @@ local cjk_glue_spec = { [0] =
 }
 
 local latin_fullstop = {
-  [0x2e] = 1,
-  [0x21] = 2,
-  [0x3f] = 2,
-  [0x2026] = 1, -- \ldots
+  [0x2e] = 1, -- .
+--  [0x21] = 2, -- !
+--  [0x2c] = 2, -- ,
+--  [0x3f] = 2, -- ?
+--  [0x2026] = 1, -- \ldots
 }
 
 local latin_quotes = {
@@ -389,6 +391,32 @@ local latin_quotes = {
   [0x003C] = 0x003E, -- < >
   [0x2018] = 0x2019, -- ‘ ’
   [0x201C] = 0x201D, -- “ ”
+}
+
+local hangulpunctuations = {
+  [0x21] = true, -- !
+  [0x27] = true, -- '
+  [0x28] = true, -- (
+  [0x29] = true, -- )
+  [0x2C] = true, -- ,
+  -- [0x2D] = true, -- -
+  [0x2E] = true, -- .
+  [0x3A] = true, -- :
+  [0x3B] = true, -- ;
+  [0x3C] = true, -- <
+  [0x3E] = true, -- >
+  [0x3F] = true, -- ?
+  [0x5B] = true, -- [
+  [0x5D] = true, -- ]
+  [0x60] = true, -- `
+  [0xB7] = true, -- periodcentered
+  -- [0x2014] = true, -- emdash
+  [0x2018] = true, -- quoteleft
+  [0x2019] = true, -- quoteright
+  [0x201C] = true, -- quotedblleft
+  [0x201D] = true, -- quotedblright
+  [0x2026] = true, -- ellipsis
+  [0x203B] = true, -- ※
 }
 
 local josa_list = { -- automatic josa selection
@@ -676,7 +704,7 @@ local function cjk_insert_nodes(head,curr,currchar,currfont,prevchar,prevfont)
     if c < 10 then -- not ttfamily
       local nn, raise = curr.next, nil
       while nn do
-	if nn.id == glyphnode and currfont ~= nn.font and latin_fullstop[nn.char] then
+	if nn.id == glyphnode and latin_fullstop[nn.char] then
 	  if not raise then
 	    raise = get_font_feature(currfont, "punctraise")
 	    raise = raise and tex_sp(raise)
@@ -693,7 +721,7 @@ local function cjk_insert_nodes(head,curr,currchar,currfont,prevchar,prevfont)
 	end
       end
     elseif latin_quotes[currchar] and not has_attribute(curr,quoteraiseattr) then
-      local nn, raise, cjkfont, depth, todotbl = curr.next, nil, nil, 1, {curr}
+      local nn, raise, depth, todotbl = curr.next, nil, 1, {curr}
       while nn do
 	if nn.id == glyphnode then
 	  if latin_quotes[nn.char] == latin_quotes[currchar] then
@@ -703,7 +731,7 @@ local function cjk_insert_nodes(head,curr,currchar,currfont,prevchar,prevfont)
 	    depth = depth - 1
 	    todotbl[#todotbl + 1] = nn
 	    if depth == 0 then
-	      if raise and nn.font == currfont and cjkfont ~= currfont then
+	      if raise and nn.font == currfont then
 		for _,n in ipairs(todotbl) do
 		  n.yoffset = n.yoffset or 0
 		  n.yoffset = n.yoffset + raise
@@ -718,7 +746,6 @@ local function cjk_insert_nodes(head,curr,currchar,currfont,prevchar,prevfont)
 	    if get_cjk_class(get_unicode_char(nn)) < 10 then
 	      raise = get_font_feature(nn.font, "quoteraise")
 	      raise = raise and tex_sp(raise)
-	      if raise then cjkfont = nn.font end
 	    end
 	  end
 	end
@@ -1364,52 +1391,70 @@ local function hangulspaceskip (engfont, hfontid, nglue)
 end
 
 local function font_substitute(head)
-  for curr in traverse_id(glyphnode, head) do
-    local eng = get_font_table(curr.font)
-    local engfontchar = get_font_char(curr.font, curr.char)
-    if curr.char and not engfontchar then
-      local korid  = false
-      local hangul = has_attribute(curr, hangfntattr)
-      local hanja  = has_attribute(curr, hanjfntattr)
-      local fallback = has_attribute(curr,fallbackfntattr)
-      local ftable = {hangul, hanja, fallback}
-      if luatexko.hanjafontforhanja then
-	local uni = get_unicode_char(curr)
-	uni = uni and get_cjk_class(uni)
-	if uni and uni < 7 then ftable = {hanja, hangul, fallback} end
+  local noinmath = true
+  for curr in traverse(head) do
+    if curr.id == mathnode then
+      if curr.subtype == 0 then
+	noinmath = false
+      else
+	noinmath = true
       end
-      for i=1,#ftable do
-	local fid = ftable[i]
-	if fid then
-	  local c = get_font_char(fid, curr.char)
-	  if c then
-	    korid = true
-	    curr.font = fid
-	    -- adjust next glue by hangul font space
-	    local nxt = curr.next
-	    local hangulmain = eng and nxt and luatexko.hangulmain
-	    hangulmain = hangulmain and get_font_char(fid, 32)
-	    if hangulmain and nxt.id == gluenode and nxt.subtype and nxt.subtype == 0 then
-	      local sp,st,sh = hangulspaceskip(eng, fid, nxt)
-	      if sp and st and sh then
-		nxt.spec.width   = sp
-		nxt.spec.stretch = st
-		nxt.spec.shrink  = sh
+    elseif noinmath and curr.id == glyphnode then
+      local eng = get_font_table(curr.font)
+      local engfontchar = nil
+      if eng and eng.encodingbytes and eng.encodingbytes == 2 -- exclude type1
+	and hangulpunctuations[curr.char]
+	and has_attribute(curr, hangulpunctsattr)
+	and has_attribute(curr, finemathattr) == 1
+	and not get_font_char(curr.font, 0xAC00) -- exclude hangul font
+	then
+      else
+	engfontchar = get_font_char(curr.font, curr.char)
+      end
+      if curr.char and not engfontchar then
+	local korid  = false
+	local hangul = has_attribute(curr, hangfntattr)
+	local hanja  = has_attribute(curr, hanjfntattr)
+	local fallback = has_attribute(curr,fallbackfntattr)
+	local ftable = {hangul, hanja, fallback}
+	if luatexko.hanjafontforhanja then
+	  local uni = get_unicode_char(curr)
+	  uni = uni and get_cjk_class(uni)
+	  if uni and uni < 7 then ftable = {hanja, hangul, fallback} end
+	end
+	for i=1,#ftable do
+	  local fid = ftable[i]
+	  if fid then
+	    local c = get_font_char(fid, curr.char)
+	    if c then
+	      korid = true
+	      curr.font = fid
+	      -- adjust next glue by hangul font space
+	      local nxt = curr.next
+	      local hangulmain = eng and nxt and luatexko.hangulmain
+	      hangulmain = hangulmain and get_font_char(fid, 32)
+	      if hangulmain and nxt.id == gluenode and nxt.subtype and nxt.subtype == 0 then
+		local sp,st,sh = hangulspaceskip(eng, fid, nxt)
+		if sp and st and sh then
+		  nxt.spec.width   = sp
+		  nxt.spec.stretch = st
+		  nxt.spec.shrink  = sh
+		end
 	      end
+	      --- charraise option charraise
+	      local charraise = get_font_feature(fid, "charraise")
+	      if charraise then
+		charraise = tex_sp(charraise)
+		curr.yoffset = curr.yoffset and (curr.yoffset + charraise) or charraise
+	      end
+	      ---
+	      break
 	    end
-	    --- charraise option charraise
-	    local charraise = get_font_feature(fid, "charraise")
-	    if charraise then
-	      charraise = tex_sp(charraise)
-	      curr.yoffset = curr.yoffset and (curr.yoffset + charraise) or charraise
-	    end
-	    ---
-	    break
 	  end
 	end
-      end
-      if not korid then
-	warn("!Missing character: %s U+%04X", utf8char(curr.char),curr.char)
+	if not korid then
+	  warn("!Missing character: %s U+%04X", utf8char(curr.char),curr.char)
+	end
       end
     end
   end

@@ -3,7 +3,8 @@
 	Version 1.3
 
 	* luatexko.sty, luatexko-core.sty, luatexko.lua: added new
-	macros \setmainfallbackfont \setsansfallbackfont etc.
+	macros \setmainfallbackfont \setsansfallbackfont etc;
+	added a new macro \hangulpunctuations.
 
 2013-07-03      Dohyun Kim <nomos at ktug org>
 

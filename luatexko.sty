@@ -22,7 +22,7 @@
   \expandafter\endinput
 \fi
 
-\ProvidesPackage{luatexko}[2013/07/10 v1.3 Typesetting Korean with LuaLaTeX]
+\ProvidesPackage{luatexko}[2013/09/03 v1.3 Typesetting Korean with LuaLaTeX]
 \RequirePackage{fontspec}
 \RequirePackage{luatexko-core}
 
@@ -296,6 +296,7 @@
   \footnotesep=1.3888\footnotesep
   \skip\footins=1.3888\skip\footins plus6pt minus3pt
   \directlua{luatexko.hangulmain = true}
+  \hangulpunctuations=1
 \fi
 
 \endinput

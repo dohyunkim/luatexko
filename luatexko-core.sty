@@ -14,7 +14,7 @@
   \input luaotfload.sty
   \catcode`@ = 11
 \else
-  \ProvidesPackage{luatexko-core}[2013/07/10 v1.3 Typesetting Korean with LuaTeX]
+  \ProvidesPackage{luatexko-core}[2013/09/03 v1.3 Typesetting Korean with LuaTeX]
   \RequirePackage{luaotfload}[2013/05/23]
 \fi
 
@@ -27,6 +27,7 @@
 \newluatexattribute\hangfntattr
 \newluatexattribute\hanjfntattr
 \newluatexattribute\fallbackfntattr
+\newluatexattribute\hangulpunctsattr
 
 %% load lua modules
 \RequireLuaModule{luatexko}
@@ -327,10 +328,20 @@
     \directlua{ luatexko.hanjafontforhanja = false }%
   \fi}
 
+% latin punctuations typeset with hangul fonts
+\def\hangulpunctuations{\afterassignment\h@ngulpunctu@tions\count@}
+\def\h@ngulpunctu@tions{%
+  \ifnum\count@>\z@
+    \hangulpunctsattr\@ne
+  \else
+    \unsetluatexattribute\hangulpunctsattr
+  \fi
+}
+
 %% frenchspacing is default
 \frenchspacing
 
 %% 말줄임표
-\def\hellipsis{^^^^2026\kern-.1em ^^^^2026}
+\def\hellipsis{^^^^2026^^^^2026}
 
 \endinput

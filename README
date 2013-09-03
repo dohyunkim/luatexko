@@ -146,6 +146,10 @@ Other User Commands
 When <number> is 1 or greater, UHC (aka. Windows CP949) input encoding
 is allowed. <number> 0 restores UTF-8, the default input encoding.
 
+	\hangulpunctuations=<number>
+When <number> is 1 or greater, latin punctuations will be typeset with
+hangul fonts.
+
 	\dotemph{...}
 Emphasise Hangul or Hanja by putting dot above.
 
