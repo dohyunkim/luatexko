@@ -14,7 +14,7 @@
   \input luaotfload.sty
   \catcode`@ = 11
 \else
-  \ProvidesPackage{luatexko-core}[2013/09/03 v1.3 Typesetting Korean with LuaTeX]
+  \ProvidesPackage{luatexko-core}[2013/09/05 v1.3 Typesetting Korean with LuaTeX]
   \RequirePackage{luaotfload}[2013/05/23]
 \fi
 
@@ -335,6 +335,22 @@
     \hangulpunctsattr\@ne
   \else
     \unsetluatexattribute\hangulpunctsattr
+  \fi
+}
+\def\registerpunctuations#1{\registerpunctu@tions#1,,}
+\def\registerpunctu@tions#1,{%
+  \ifx\empty#1\empty
+  \else
+    \directlua{ luatexko.hangulpunctuations[\number#1]=true }
+    \expandafter\registerpunctu@tions
+  \fi
+}
+\def\unregisterpunctuations#1{\unregisterpunctu@tions#1,,}
+\def\unregisterpunctu@tions#1,{%
+  \ifx\empty#1\empty
+  \else
+    \directlua{ luatexko.hangulpunctuations[\number#1]=nil }
+    \expandafter\unregisterpunctu@tions
   \fi
 }
 

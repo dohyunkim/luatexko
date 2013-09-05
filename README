@@ -1,4 +1,4 @@
-LuaTeX-ko Package version 1.3 (2013/07/10)
+LuaTeX-ko Package version 1.3 (2013/09/05)
 ==========================================
 
 This is a Lua(La)TeX macro package that supports typesetting Korean
@@ -36,7 +36,7 @@ or leave messages in the issue tracker at:
 Files
 -----
 
-### TeXinputs
+TeXinputs
 
 	luatexko.sty		-> tex/luatex/luatexko/
 	luatexko-core.sty	-> tex/luatex/luatexko/
@@ -44,7 +44,7 @@ Files
 	luatexko-normalize.lua	-> tex/luatex/luatexko/
 	luatexko-uhc2utf8.lua	-> tex/luatex/luatexko/
 
-### Documents
+Documents
 
 	luatexko-doc.pdf	-> doc/luatex/luatexko/
 	luatexko-doc.tex	-> doc/luatex/luatexko/
@@ -74,10 +74,10 @@ Package Options
 
 	[hangul]
 Load Hangul captions. Besides, this option adjusts interword and
-interline spacing.
+interline spacing. Declares \hangulpunctuations=1 as well.
 
 	[hanja]
-Load Hanja captions. Also adjusts spacing as [hangul] option does.
+Load Hanja captions. Also apply other settings as [hangul] option does.
 
 	[unfonts]
 Load font setting predefined for Un TrueType fonts available at
@@ -109,15 +109,9 @@ glyphs.
 
 In like manner, these commands are available as well:
 
-	\hangulfontspec
-	\hanjafontspec
-	\fallbackfontspec
-	\newhangulfontfamily
-	\newhanjafontfamily
-	\newfallbackfontfamily
-	\addhangulfontfeature
-	\addhanjafontfeature
-	\addfallbackfontfeature
+	\hangulfontspec   \newhangulfontfamily   \addhangulfontfeature
+	\hanjafontspec    \newhanjafontfamily    \addhanjafontfeature
+	\fallbackfontspec \newfallbackfontfamily \addfallbackfontfeature
 
 
 Hangul Font Options
@@ -128,12 +122,6 @@ Set spacing between Hangul characters.
 
 	[InterLatinCJK=<dimen>]
 Set spacing between CJK and Latin characters.
-
-	[PunctRaise=<dimen>]
-Raise Latin fullstop after CJK character.
-
-	[QuoteRaise=<dimen>]
-Raise Latin quotation marks and parentheses around CJK text.
 
 	[CharRaise=<dimen>]
 Raise CJK characters by <dimen>.

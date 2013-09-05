@@ -12,7 +12,7 @@
 
 local err,warn,info,log = luatexbase.provides_module({
   name	      = 'luatexko',
-  date	      = '2013/09/03',
+  date	      = '2013/09/05',
   version     = 1.3,
   description = 'Korean linebreaking and font-switching',
   author      = 'Dohyun Kim',
@@ -393,7 +393,7 @@ local latin_quotes = {
   [0x201C] = 0x201D, -- “ ”
 }
 
-local hangulpunctuations = {
+local hangulpunctuations = luatexko.hangulpunctuations or {
   [0x21] = true, -- !
   [0x27] = true, -- '
   [0x28] = true, -- (
@@ -409,8 +409,11 @@ local hangulpunctuations = {
   [0x5B] = true, -- [
   [0x5D] = true, -- ]
   [0x60] = true, -- `
+  [0x7B] = true, -- {
+  [0x7D] = true, -- }
   [0xB7] = true, -- periodcentered
   -- [0x2014] = true, -- emdash
+  -- [0x2015] = true, -- horizontal bar
   [0x2018] = true, -- quoteleft
   [0x2019] = true, -- quoteright
   [0x201C] = true, -- quotedblleft
@@ -418,6 +421,7 @@ local hangulpunctuations = {
   [0x2026] = true, -- ellipsis
   [0x203B] = true, -- ※
 }
+luatexko.hangulpunctuations = hangulpunctuations
 
 local josa_list = { -- automatic josa selection
   --	    리을,	중성,	종성
