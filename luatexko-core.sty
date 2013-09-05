@@ -337,21 +337,23 @@
     \unsetluatexattribute\hangulpunctsattr
   \fi
 }
-\def\registerpunctuations#1{\registerpunctu@tions#1,,}
+\def\registerpunctuations#1{\registerpunctu@tions#1,*,}
 \def\registerpunctu@tions#1,{%
   \ifx\empty#1\empty
-  \else
-    \directlua{ luatexko.hangulpunctuations[\number#1]=true }
     \expandafter\registerpunctu@tions
-  \fi
+  \else\ifx*#1\else
+    \directlua{ luatexko.hangulpunctuations[\number#1]=true }
+    \expandafter\expandafter\expandafter\registerpunctu@tions
+  \fi\fi
 }
-\def\unregisterpunctuations#1{\unregisterpunctu@tions#1,,}
+\def\unregisterpunctuations#1{\unregisterpunctu@tions#1,*,}
 \def\unregisterpunctu@tions#1,{%
   \ifx\empty#1\empty
-  \else
-    \directlua{ luatexko.hangulpunctuations[\number#1]=nil }
     \expandafter\unregisterpunctu@tions
-  \fi
+  \else\ifx*#1\else
+    \directlua{ luatexko.hangulpunctuations[\number#1]=nil }
+    \expandafter\expandafter\expandafter\unregisterpunctu@tions
+  \fi\fi
 }
 
 %% frenchspacing is default
