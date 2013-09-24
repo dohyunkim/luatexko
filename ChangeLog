@@ -1,10 +1,11 @@
-2013-09-03      Dohyun Kim <nomos at ktug org>
+2013-09-24      Dohyun Kim <nomos at ktug org>
 
 	Version 1.3
 
 	* luatexko.sty, luatexko-core.sty, luatexko.lua: added new
 	macros \setmainfallbackfont \setsansfallbackfont etc;
-	added new macros \hangulpunctuations \registerpunctuations etc.
+	added new macros \hangulpunctuations \registerpunctuations etc;
+	removed [QuoteRaise] font option.
 
 2013-07-03      Dohyun Kim <nomos at ktug org>
 

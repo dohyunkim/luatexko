@@ -12,7 +12,7 @@
 
 local err,warn,info,log = luatexbase.provides_module({
   name	      = 'luatexko',
-  date	      = '2013/09/05',
+  date	      = '2013/09/24',
   version     = 1.3,
   description = 'Korean linebreaking and font-switching',
   author      = 'Dohyun Kim',
@@ -70,7 +70,6 @@ local fallbackfntattr   = luatexbase.attributes.fallbackfntattr
 local hangulpunctsattr  = luatexbase.attributes.hangulpunctsattr
 local luakoglueattr	= luatexbase.new_attribute("luakoglueattr")
 local luakounicodeattr	= luatexbase.new_attribute("luakounicodeattr")
-local quoteraiseattr	= luatexbase.new_attribute("quoteraiseattr")
 
 local add_to_callback	= luatexbase.add_to_callback
 
@@ -386,13 +385,6 @@ local latin_fullstop = {
 --  [0x2026] = 1, -- \ldots
 }
 
-local latin_quotes = {
-  [0x0028] = 0x0029, -- ( )
-  [0x003C] = 0x003E, -- < >
-  [0x2018] = 0x2019, -- ‘ ’
-  [0x201C] = 0x201D, -- “ ”
-}
-
 local hangulpunctuations = luatexko.hangulpunctuations or {
   [0x21] = true, -- !
   [0x27] = true, -- '
@@ -704,68 +696,23 @@ local function cjk_insert_nodes(head,curr,currchar,currfont,prevchar,prevfont)
   local p = get_cjk_class(prevchar, currentcjtype)
   local c = get_cjk_class(currchar, currentcjtype)
   ---[[raise latin puncts
-  if curr.id == glyphnode and has_attribute(curr,finemathattr) == 1 then -- not ttfamily
-    if c < 10 then -- not ttfamily
-      local nn, raise = curr.next, nil
-      while nn do
-	if nn.id == glyphnode and latin_fullstop[nn.char] then
-	  if not raise then
-	    raise = get_font_feature(currfont, "punctraise")
-	    raise = raise and tex_sp(raise)
-	  end
-	  if raise then
-	    nn.yoffset = nn.yoffset or 0
-	    nn.yoffset = nn.yoffset + raise
-	  end
-	  nn = nn.next
-	elseif nn.id == kernnode then
-	  nn = nn.next
-	else
-	  break
+  if curr.id == glyphnode and has_attribute(curr,finemathattr) == 1 and c < 10 then -- not ttfamily
+    local nn, raise = curr.next, nil
+    while nn do
+      if nn.id == glyphnode and latin_fullstop[nn.char] then
+	if not raise then
+	  raise = get_font_feature(currfont, "punctraise")
+	  raise = raise and tex_sp(raise)
 	end
-      end
-    elseif latin_quotes[currchar] and not has_attribute(curr,quoteraiseattr) then
-      local nn, raise, depth, todotbl = curr.next, nil, 1, {curr}
-      while nn do
-	if nn.id == glyphnode then
-	  if latin_quotes[nn.char] == latin_quotes[currchar] then
-	    depth = depth + 1
-	    todotbl[#todotbl + 1] = nn
-	  elseif nn.char == latin_quotes[currchar] then
-	    depth = depth - 1
-	    todotbl[#todotbl + 1] = nn
-	    if depth == 0 then
-	      if raise and nn.font == currfont then
-		for _,n in ipairs(todotbl) do
-		  n.yoffset = n.yoffset or 0
-		  n.yoffset = n.yoffset + raise
-		end
-	      end
-	      for _,n in ipairs(todotbl) do
-		set_attribute(n, quoteraiseattr, 1)
-	      end
-	      break
-	    end
-	  elseif not raise then
-	    if get_cjk_class(get_unicode_char(nn)) < 10 then
-	      raise = get_font_feature(nn.font, "quoteraise")
-	      raise = raise and tex_sp(raise)
-	    end
-	  end
+	if raise then
+	  nn.yoffset = nn.yoffset or 0
+	  nn.yoffset = nn.yoffset + raise
 	end
 	nn = nn.next
-      end
-    elseif currchar == 0x2014 and not has_attribute(curr,quoteraiseattr) then
-      -- raise emdash by quoteraise value
-      local np, nn = curr.prev, curr.next
-      if np.id == glyphnode and nn.id == glyphnode then
-	local praise = get_font_feature(np.font, "quoteraise")
-	local nraise = get_font_feature(nn.font, "quoteraise")
-	if praise and nraise and praise == nraise then
-	  local raise = tex_sp(praise)
-	  curr.yoffset = raise + (curr.yoffset or 0)
-	  set_attribute(curr,quoteraiseattr,1)
-	end
+      elseif nn.id == kernnode then
+	nn = nn.next
+      else
+	break
       end
     end
   end
