@@ -57,7 +57,8 @@
     \item 세로쓰기를 더 이상 공식적으로 지원하지 않는다.
     \item \MP\ 코드를 넣으려면 luamplib 패키지를 불러야 한다.
     \item fallbackfont 계열의 명령이 추가되었다.
-    \item |\hangulpunctuations| 선언 및 관련 매크로가 추가되었다.
+    \item |\hangulpunctuations| 선언 및 관련 매크로가 추가되었고, 대신
+      |QuoteRaise| 옵션이 없어졌다.
   \end{itemize}
 \end{quote}
 
@@ -186,13 +187,6 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이
   |\hangulpunctuations|로 인해 거의 쓸 일이 없게 되었다.
 \begin{verbatim}
   [PunctRaise=-0.125em]
-\end{verbatim}
-
-\item[QuoteRaise] 한글 또는 한자 주변에 라틴 인용부호나 \hemph{괄호}가 왔을 때
-  그 세로 위치를 조절할 수 있다.
-  |\hangulpunctuations|로 인해 거의 쓸 일이 없게 되었다.
-\begin{verbatim}
-  [QuoteRaise=0.125em]
 \end{verbatim}
 
 \item[Protrusion] 특정 글자가 행 끌에 왔을 때 판면 바깥으로 끌어내는
