@@ -34,11 +34,11 @@
     \fontspec_define_font_feature:n {#1}
     \keys_define:nn {fontspec}
       {
-	#1 .default:n = {#3} ,
-	#1 / unknown .code:n = {
-	  \fontspec_update_fontid:n  {#2:##1}
-	  \fontspec_update_featstr:n {#2=##1}#4
-	}
+        #1 .default:n = {#3} ,
+        #1 / unknown .code:n = {
+          \fontspec_update_fontid:n  {#2:##1}
+          \fontspec_update_featstr:n {#2=##1}#4
+        }
       }
   }
 

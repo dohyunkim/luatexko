@@ -11,9 +11,9 @@
 -- version 2006/05/20 or later.
 
 luatexbase.provides_module({
-  name	      = "luatexko-normalize",
+  name        = "luatexko-normalize",
   version     = 1.2,
-  date	      = "2013/06/10",
+  date        = "2013/06/10",
   author      = "Dohyun Kim",
   description = "Hangul normalization",
   license     = "LPPL v1.3+",

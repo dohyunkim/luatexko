@@ -1,21 +1,22 @@
-2013-09-24      Dohyun Kim <nomos at ktug org>
+2013-11-14      Dohyun Kim <nomos at ktug org>
 
 	Version 1.3
 
-	* luatexko.sty, luatexko-core.sty, luatexko.lua: added new
-	macros \setmainfallbackfont \setsansfallbackfont etc;
-	added new macros \hangulpunctuations \registerpunctuations etc;
-	removed [QuoteRaise] font option.
+	* luatexko.lua: ignore characters inside parentheses during
+	automatic josa selection. Inspired at KTS workshop 2013.
+	* luatexko.sty, luatexko-core.sty, luatexko.lua: new macros
+	\hangulpunctuations \registerpunctuations etc; removed [QuoteRaise]
+	font option.
+	* luatexko.sty, luatexko-core.sty, luatexko.lua: new macros
+	\setmainfallbackfont \setsansfallbackfont etc.
 
 2013-07-03      Dohyun Kim <nomos at ktug org>
 
 	Version 1.2
 
 	* luatexko.sty: move Hangul caption setting to AtBeginDocument
-
 	* luatexko.lua: implemented reordering of hangul tone marks;
 	fix a bug wrt. \dotemph of old hangul.
-
 	* luatexko-core.sty: adapt to \fontname fix by luaotfload
 
 2013-05-19      Dohyun Kim <nomos at ktug org>
@@ -23,7 +24,6 @@
 	Version 1.1
 
 	* luatexko.sty: fix a bug regarding hyperref pdf string
-
 	* luatexko.lua, luatexko-core.sty: remove redundant code wrt.
 	font switching
 

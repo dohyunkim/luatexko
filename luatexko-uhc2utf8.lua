@@ -45,11 +45,11 @@ local function get_uhc_uni_table()
       if not line then break end
       local _,_,ea,eb,uni = find(line,"<(%x+)>%s+<(%x+)>%s+<(%x+)>")
       if ea and eb and uni then
-	ea, eb, uni = tonumber(ea,16),tonumber(eb,16),tonumber(uni,16)
-	for i=ea,eb do
-	  t_uhc2ucs[i] = uni
-	  uni = uni + 1
-	end
+        ea, eb, uni = tonumber(ea,16),tonumber(eb,16),tonumber(uni,16)
+        for i=ea,eb do
+          t_uhc2ucs[i] = uni
+          uni = uni + 1
+        end
       end
     end
     file:close()

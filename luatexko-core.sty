@@ -103,13 +103,13 @@
       \fontsize\dimen@\dimen@\selectfont
     \else
       \ifdefined\rubyfont \else
-	\luatexko@resize@font\font\resized@font\font\rubysize
-	\ifdefined\hangul@font
-	  \luatexko@resize@font\hangulfont{}\hangul@font\rubysize
-	\fi
-	\ifdefined\hanja@font
-	  \luatexko@resize@font\hanjafont{}\hanja@font\rubysize
-	\fi
+        \luatexko@resize@font\font\resized@font\font\rubysize
+        \ifdefined\hangul@font
+          \luatexko@resize@font\hangulfont{}\hangul@font\rubysize
+        \fi
+        \ifdefined\hanja@font
+          \luatexko@resize@font\hanjafont{}\hanja@font\rubysize
+        \fi
       \fi
     \fi #2}\ht\tw@\z@\dp\tw@\z@
   \directlua{%
@@ -126,9 +126,9 @@
     \expandafter\dimen@\pdffontsize#3\relax
     \edef\luatexko@tmp@fontname{%
       \directlua{
-	local f = [===[\fontname#3]===]
-	f = string.gsub(f," at .+","")
-	tex.sprint(f) }}%
+        local f = [===[\fontname#3]===]
+        f = string.gsub(f," at .+","")
+        tex.sprint(f) }}%
     #1#2=\luatexko@tmp@fontname\space at #4\dimen@
     #2}
 \fi
