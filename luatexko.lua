@@ -12,7 +12,7 @@
 
 local err,warn,info,log = luatexbase.provides_module({
   name        = 'luatexko',
-  date        = '2013/11/14',
+  date        = '2013/11/22',
   version     = 1.3,
   description = 'Korean linebreaking and font-switching',
   author      = 'Dohyun Kim',
@@ -26,7 +26,6 @@ local dotemphnode,rubynode,ulinebox = {},{},{}
 luatexko.dotemphnode        = dotemphnode
 luatexko.rubynode           = rubynode
 luatexko.ulinebox           = ulinebox
-luatexko.hangulmain         = luatexko.hangulmain or false
 luatexko.hanjafontforhanja  = luatexko.hanjafontforhanja or false
 
 local stringbyte    = string.byte
@@ -1327,11 +1326,11 @@ end
 ------------------------------
 -- switch to hangul/hanja font
 ------------------------------
-local function hangulspaceskip (engfont, hfontid, nglue)
+local function hangulspaceskip (engfont, hfontid, spec)
   local eng = engfont.parameters
   if not eng then return end
-  local spec = nglue.spec
   if not spec then return end
+  if spec.stretch_order ~= 0 or spec.shrink_order ~= 0 then return end
   local gsp, gst, gsh = spec.width, spec.stretch, spec.shrink
   local esp, est, esh = eng.space, eng.space_stretch, eng.space_shrink
   esp = esp and tex_round(esp)
@@ -1387,14 +1386,16 @@ local function font_substitute(head)
               curr.font = fid
               -- adjust next glue by hangul font space
               local nxt = curr.next
-              local hangulmain = eng and nxt and luatexko.hangulmain
-              hangulmain = hangulmain and get_font_char(fid, 32)
-              if hangulmain and nxt.id == gluenode and nxt.subtype and nxt.subtype == 0 then
-                local sp,st,sh = hangulspaceskip(eng, fid, nxt)
+              if eng
+                and nxt and nxt.id == gluenode
+                and nxt.subtype and nxt.subtype == 0
+                and nxt.spec and nxt.spec.writable
+                and get_font_char(fid,32) then
+                local sp,st,sh = hangulspaceskip(eng, fid, nxt.spec)
                 if sp and st and sh then
-                  nxt.spec.width   = sp
-                  nxt.spec.stretch = st
-                  nxt.spec.shrink  = sh
+                  local hg = copy_node(nxt.spec)
+                  hg.width, hg.stretch, hg.shrink = sp, st, sh
+                  nxt.spec = hg
                 end
               end
               --- charraise option charraise
