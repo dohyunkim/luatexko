@@ -12,7 +12,7 @@
 
 local err,warn,info,log = luatexbase.provides_module({
   name        = 'luatexko',
-  date        = '2013/11/22',
+  date        = '2013/11/28',
   version     = 1.3,
   description = 'Korean linebreaking and font-switching',
   author      = 'Dohyun Kim',
@@ -1091,10 +1091,11 @@ end
 ------------------------------
 -- discourage character orphan
 ------------------------------
-local function inject_char_widow_penalty (head,curr,uni,pv,cjattr)
+local function inject_char_widow_penalty (head,curr,uni,cjattr)
   if uni and prebreakpenalty[uni] ~= 10000 then
     local class = get_cjk_class(uni, cjattr)
     if class and class < 9 then
+      local pv =  cjattr and 500 or 5000
       if curr.prev and curr.prev.id == rulenode then
         curr = curr.prev
       end
@@ -1102,39 +1103,36 @@ local function inject_char_widow_penalty (head,curr,uni,pv,cjattr)
         curr = curr.prev
       end
       if curr.prev and curr.prev.id == penaltynode then
-        if curr.prev.penalty < pv then
-          curr.prev.penalty = pv
+        curr = curr.prev
+        if curr.penalty < pv then
+          curr.penalty = pv
         end
-      else
-        insert_before(head,curr,get_penaltynode(pv))
+      elseif curr and curr.id == gluenode then
+        head, curr = insert_before(head,curr,get_penaltynode(pv))
       end
-      return true
     end
   end
+  return curr
 end
 
 local function discourage_char_widow (head,curr)
   while curr do
-    local cjattr = has_attribute(curr,cjtypesetattr)
-    local pv =  cjattr and 500 or 5000
+    if curr == head then return end
     if curr.id == glyphnode then
       emsize = get_font_emsize(curr.font)
-      local width = curr.width or 0
-      if width >= 2*emsize then return end
+      local remwd = node.dimensions(curr)
+      if remwd > 2*emsize then return end
+      local cjattr = has_attribute(curr,cjtypesetattr)
       local uni = get_unicode_char(curr)
-      if inject_char_widow_penalty(head,curr,uni,pv,cjattr) then
-        return true
-      end
+      curr = inject_char_widow_penalty(head,curr,uni,cjattr)
     elseif curr.id == hlistnode and curr.id == vlistnode then
-      local width = curr.width or 0
+      local remwd = node.dimensions(curr)
       local uni,fid = get_hlist_class_first(curr)
       emsize = get_font_emsize(fid)
-      if width >= 2*emsize then return end
-      if inject_char_widow_penalty(head,curr,uni,pv,cjattr) then
-        return true
-      end
+      if remwd > 2*emsize then return end
+      local cjattr = has_attribute(curr,cjtypesetattr)
+      curr = inject_char_widow_penalty(head,curr,uni,cjattr)
     end
-    if not curr.prev then return end
     curr = curr.prev
   end
 end
