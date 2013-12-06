@@ -12,7 +12,7 @@
 
 local err,warn,info,log = luatexbase.provides_module({
   name        = 'luatexko',
-  date        = '2013/11/28',
+  date        = '2013/12/06',
   version     = 1.3,
   description = 'Korean linebreaking and font-switching',
   author      = 'Dohyun Kim',
@@ -1269,15 +1269,15 @@ local function get_josacode (prevs)
   return 2
 end
 
-local function get_josaprevs(curr,josaprev,halt)
+local function get_josaprevs(curr,josaprev,ignoreparens,halt)
   if type(halt) ~= "number" then halt = 0 end
   while curr do
     if curr.id == glyphnode then
       local chr = get_unicode_char(curr)
       -- ignore chars inside parentheses (KTS workshop 2013.11.09)
-      if chr == 0x29 then -- right parenthesis
+      if ignoreparens and chr == 0x29 then -- right parenthesis
         halt = halt + 1
-      elseif chr == 0x28 then -- left parenthesis
+      elseif ignoreparens and chr == 0x28 then -- left parenthesis
         halt = halt - 1
       elseif xspcode[chr]
         or inhibitxspcode[chr]
@@ -1290,7 +1290,7 @@ local function get_josaprevs(curr,josaprev,halt)
         josaprev[#josaprev + 1] = chr
       end
     elseif curr.id == hlistnode or curr.id == vlistnode then
-      josaprev = get_josaprevs(nodeslide(curr.head),josaprev,halt)
+      josaprev = get_josaprevs(nodeslide(curr.head),josaprev,ignoreparens,halt)
     end
     if #josaprev == 3 then break end
     curr = curr.prev
@@ -1301,8 +1301,9 @@ end
 local function korean_autojosa (head)
   for curr in traverse_id(glyphnode,head) do
     if has_attribute(curr,autojosaattr) and has_attribute(curr,finemathattr) then
+      local ignoreparens = has_attribute(curr,autojosaattr) > 1 and true or false
       local josaprev = {}
-      josaprev = get_josaprevs(curr.prev,josaprev)
+      josaprev = get_josaprevs(curr.prev,josaprev,ignoreparens)
       local josacode = get_josacode(josaprev)
       local thischar = get_unicode_char(curr)
       if thischar == 0xC774 then

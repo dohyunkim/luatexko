@@ -63,7 +63,8 @@
     \item fallbackfont 계열의 명령이 추가되었다.
     \item |\hangulpunctuations| 선언 및 관련 매크로가 추가되었고, 대신
       |QuoteRaise| 옵션이 없어졌다.
-    \item 자동조사 결정시 괄호 부분을 무시한다.
+    \item |\josaignoreparens=1|이 선언되면 자동조사 결정시 괄호 부분을
+      무시한다.
   \end{itemize}
 \end{quote}
 
@@ -372,10 +373,17 @@ ulem 패키지가 \luatexko와 궁합이 잘 맞지 않아{\small (줄바꿈에 
 자동조사는 \kotex 과 동일하게 |\은| |\는| |\이| |\가| |\을| |\를|
 |\와| |\과| |\로| |\으로| |\라| |\이라| 따위를 사용한다.  문장 중에서도
 작동할 뿐만 아니라 플레인텍도 지원한다.
-버전 1.3부터는 \hemph{괄호 부분을 건너뛰고} 그 앞 글자에 매칭한다.
+버전 1.3부터는 |\josaignoreparens=1|이 선언되어 있으면 자동조사는
+\hemph{괄호 부분을 건너뛰고} 그 앞 글자에 매칭한다.
+|0|이 선언되면 원래 방식으로 돌아간다.
 \begin{quote}
+  |\josaignoreparens=1| \josaignoreparens=1 \\
   |홍길동(1992)\는|\quad$\Rightarrow$\quad 홍길동(1992)\는\\
-  |홍길동(2001)\은|\quad$\Rightarrow$\quad 홍길동(2001)\는
+  |홍길동(2001)\로|\quad$\Rightarrow$\quad 홍길동(2001)\로
+  \medbreak
+  |\josaignoreparens=0| \josaignoreparens=0 \\
+  |홍길동(1992)\는|\quad$\Rightarrow$\quad 홍길동(1992)\는\\
+  |홍길동(2001)\로|\quad$\Rightarrow$\quad 홍길동(2001)\로
 \end{quote}
 
 \section{}

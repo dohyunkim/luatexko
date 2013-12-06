@@ -1,9 +1,9 @@
-2013-11-22      Dohyun Kim <nomos at ktug org>
+2013-12-06      Dohyun Kim <nomos at ktug org>
 
 	Version 1.3
 
-	* luatexko.lua: ignore characters inside parentheses during
-	automatic josa selection. Inspired at KTS workshop 2013.
+	* luatexko.lua: if \josaignoreparens=1, then characters inside
+	parentheses are ignored during automatic josa selection routine.
 	* luatexko.sty, luatexko-core.sty, luatexko.lua: new macros
 	\hangulpunctuations \registerpunctuations etc; removed [QuoteRaise]
 	font option.
