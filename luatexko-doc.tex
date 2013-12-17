@@ -33,7 +33,7 @@
 \edef\verbatim{\unexpanded\expandafter{\verbatim
   \linespread{1.1}\selectfont\color{MidnightBlue}}}
 \edef\itemize{\unexpanded\expandafter{\itemize\small}}
-\catcode`|=13 \def|{\verb|\color{MidnightBlue}\let\\=\string} %|
+\catcode`|=13 \def|{\verb|\color{MidnightBlue}\let\\=\textbackslash} %|
 \def\logoko{\textsf{k}\kern-.0625em\textit{o}}
 \def\luatexko{\luatex-\logoko}
 \def\texlive{\TeX\ Live}
@@ -278,11 +278,11 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이
 \luatex 에서는 아직 \hemph{세로쓰기를 지원하지 않는다}.%
 \footnote{굳이 세로쓰기를 실험해보고자 한다면 |ttx -t vmtx <폰트>.ttf|
   명령의 결과물인 |<폰트>.ttx| 파일을 현재 디렉토리에 두어야 한다. 그런 다음
-  |\\\begin\\{vertical\\}\\{<dimen>\\}...\\\end\\{vertical\\}|
+  |\\begin\{vertical\}\{<dimen>\}...\\end\{vertical\}|
   환경을 이용하라. ttx에 대해선
   \url{http://sourceforge.net/projects/fonttools/} 참조.
   문서 전체에 대해 세로쓰기를 하려면 이 환경을 쓰는 대신
-  |\\\verticaltypesetting| 명령을 전처리부에 선언한다.}
+  |\\verticaltypesetting| 명령을 전처리부에 선언한다.}
 
 \section{}
 전처리부에서 |\usepackage{luamplib}|을 선언하면 \MP\ 코드를 문서 중간에 삽입할 수 있다.
