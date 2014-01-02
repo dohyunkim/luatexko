@@ -12,8 +12,8 @@
 
 local err,warn,info,log = luatexbase.provides_module({
   name        = 'luatexko',
-  date        = '2013/12/06',
-  version     = 1.3,
+  date        = '2014/01/02',
+  version     = 1.31,
   description = 'Korean linebreaking and font-switching',
   author      = 'Dohyun Kim',
   license     = 'LPPL v1.3+',
@@ -1669,7 +1669,7 @@ local function after_linebreak_ruby (head)
     after_linebreak_ruby(curr.head) -- hlist may be nested!!!
     local attr = has_attribute(curr,luakorubyattr)
     if attr then
-      local ruby = rubynode[attr][1]
+      local ruby = rubynode[attr] and rubynode[attr][1]
       if ruby then
         if ruby.width < curr.width then
           local rubyhead = ruby.head
