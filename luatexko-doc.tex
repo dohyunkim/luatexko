@@ -289,16 +289,7 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이
 한글이나 수식은 |btex| $\ldots$ |etex| 안에 넣어야 한다. 그림~\ref{fig:mplib} 참조.
 
 \begin{figure}
-\setbox0\hbox{%
-\begin{mplibcode}
-beginfig(1);
-    draw fullcircle scaled 2cm;
-    dotlabel.bot(btex\TeX etex, origin);
-    dotlabel.rt(btex 루아 etex, dir 45*1cm);
-endfig;
-\end{mplibcode}
-}%
-\setbox2\vbox{\bigskip
+\setbox0\vbox{%
 \begin{verbatim}
   \usepackage{luamplib}
   ...
@@ -309,8 +300,18 @@ endfig;
       dotlabel.rt(btex 루아 etex, dir 45*1cm);
     endfig;
   \end{mplibcode}
-\end{verbatim}}\wd2=.7\linewidth
-\framebox[\linewidth]{\box2 \raise.8cm\box0 }
+\end{verbatim}
+\vskip-5\baselineskip
+\begin{mplibcode}
+verbatimtex \moveright95mm etex;
+beginfig(1);
+    draw fullcircle scaled 2cm;
+    dotlabel.bot(btex\TeX etex, origin);
+    dotlabel.rt(btex 루아 etex, dir 45*1cm);
+endfig;
+\end{mplibcode}
+\vskip\baselineskip}
+\framebox[\linewidth]{\box0 }
 \caption{mplib 용례}\label{fig:mplib}
 \end{figure}
 
