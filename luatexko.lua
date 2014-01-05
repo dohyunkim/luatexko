@@ -12,8 +12,8 @@
 
 local err,warn,info,log = luatexbase.provides_module({
   name        = 'luatexko',
-  date        = '2014/01/02',
-  version     = 1.31,
+  date        = '2014/01/06',
+  version     = 1.4,
   description = 'Korean linebreaking and font-switching',
   author      = 'Dohyun Kim',
   license     = 'LPPL v1.3+',
@@ -890,60 +890,64 @@ end
 ----------------------------------
 local function compress_fullwidth_punctuations (head)
   for curr in traverse_id(glyphnode,head) do
-    local uni = get_unicode_char(curr)
-    local class = uni and get_cjk_class(uni, has_attribute(curr, cjtypesetattr))
-    local chr = get_font_char(curr.font, curr.char)
-    if chr and class and class >= 1 and class <= 4 then
-      local width = curr.width or 655360
-      emsize = get_font_emsize(curr.font)
-      local ensize = emsize/2
-      local oneoften = emsize/10
-      local bbox = get_char_boundingbox(curr.font, curr.char)
-      if not bbox then return head end --
-      if class == 2 or class == 4 then
-        local wd
-        if get_font_feature(curr.font,'vertical') then
-          wd = ensize<width and ensize-width or 0
-        else
-          wd = (bbox[3] < ensize) and ensize-width or bbox[3]-width+oneoften
-        end
-        if chr.right_protruding then
-          -- kern is a breakpoint if followed by a glue
-          insert_after(head, curr, get_kernnode(wd))
-        else
-          insert_after(head, curr, get_rulenode(wd))
-        end
-      elseif class == 1 then
-        local wd
-        if get_font_feature(curr.font,'vertical') then
-          wd = ensize<width and ensize-width or 0
-        else
-          wd = (width-bbox[1] < ensize) and ensize-width or -bbox[1]+oneoften
-        end
-        if chr.left_protruding then
-          head = insert_before(head, curr, get_kernnode(wd))
-        else
-          head = insert_before(head, curr, get_rulenode(wd))
-        end
-      elseif class == 3 then
-        local lwd, rwd
-        local quarter, thirdquarter, halfwd = ensize/2, ensize*1.5, width/2
-        if get_font_feature(curr.font,'vertical') then
-          rwd = quarter<halfwd and quarter-halfwd or 0
-          lwd = rwd
-        else
-          rwd = (bbox[3] < thirdquarter) and quarter-halfwd or bbox[3]-width
-          lwd = (width-bbox[1] < thirdquarter) and quarter-halfwd or -bbox[1]
-        end
-        if chr.left_protruding then
-          head = insert_before(head, curr, get_kernnode(lwd))
-        else
-          head = insert_before(head, curr, get_rulenode(lwd))
-        end
-        if chr.right_protruding then
-          insert_after (head, curr, get_kernnode(rwd))
-        else
-          insert_after (head, curr, get_rulenode(rwd))
+    if get_font_feature(curr.font,'halt') or get_font_feature(curr.font,'vhal') then
+    else
+      local uni = get_unicode_char(curr)
+      local class = uni and get_cjk_class(uni, has_attribute(curr, cjtypesetattr))
+      local chr = get_font_char(curr.font, curr.char)
+      if chr and class and class >= 1 and class <= 4 then
+        local width = curr.width or 655360
+        emsize = get_font_emsize(curr.font)
+        local ensize = emsize/2
+        local oneoften = emsize/10
+        local bbox = get_char_boundingbox(curr.font, curr.char)
+        if not bbox then return head end --
+        if class == 2 or class == 4 then
+          local wd
+          if get_font_feature(curr.font,'vertical') then
+            wd = ensize<width and ensize-width or 0
+          else
+            wd = (bbox[3] < ensize) and ensize-width or bbox[3]-width+oneoften
+          end
+          if chr.right_protruding then
+            -- kern is a breakpoint if followed by a glue
+            insert_after(head, curr, get_kernnode(wd))
+          else
+            insert_after(head, curr, get_rulenode(wd))
+          end
+        elseif class == 1 then
+          local wd
+          if get_font_feature(curr.font,'vertical') then
+            wd = ensize<width and ensize-width or 0
+            wd = ensize>-wd and wd or -ensize -- for buggy hcr fonts
+          else
+            wd = (width-bbox[1] < ensize) and ensize-width or -bbox[1]+oneoften
+          end
+          if chr.left_protruding then
+            head = insert_before(head, curr, get_kernnode(wd))
+          else
+            head = insert_before(head, curr, get_rulenode(wd))
+          end
+        elseif class == 3 then
+          local lwd, rwd
+          local quarter, thirdquarter, halfwd = ensize/2, ensize*1.5, width/2
+          if get_font_feature(curr.font,'vertical') then
+            rwd = quarter<halfwd and quarter-halfwd or 0
+            lwd = rwd
+          else
+            rwd = (bbox[3] < thirdquarter) and quarter-halfwd or bbox[3]-width
+            lwd = (width-bbox[1] < thirdquarter) and quarter-halfwd or -bbox[1]
+          end
+          if chr.left_protruding then
+            head = insert_before(head, curr, get_kernnode(lwd))
+          else
+            head = insert_before(head, curr, get_rulenode(lwd))
+          end
+          if chr.right_protruding then
+            insert_after (head, curr, get_kernnode(rwd))
+          else
+            insert_after (head, curr, get_rulenode(rwd))
+          end
         end
       end
     end
@@ -1464,7 +1468,7 @@ local function cjk_vertical_font (vf)
   if not vf.shared.features["vertical"] then return end
   if vf.type == "virtual" then return end
 
-  --- for read-ttx
+  ---[[ for read-ttx
   local filename = vf.filename
   filename = stringgsub(filename,".*/","")
   filename = stringgsub(filename,"[tToO][tT][fF]$","ttx")
@@ -1473,7 +1477,7 @@ local function cjk_vertical_font (vf)
     warn("Cannot read %s. Aborting vertical typesetting.",filename)
     return
   end
-  ---
+  --]]
 
   local tmp = table.copy(vf) -- fastcopy takes time too long.
   local id = fontdefine(tmp)
@@ -1496,7 +1500,7 @@ local function cjk_vertical_font (vf)
     local dsc = descriptions[i]
     local gname = dsc.name
     -- local vw = dsc and dsc.vwidth
-    --- for read-ttx
+    ---[[ for read-ttx
     local vw = tsbtable and tsbtable[gname] and tsbtable[gname].height
     local tsb = tsbtable and tsbtable[gname] and tsbtable[gname].tsb
     if not vw and dsc.index then
@@ -1505,26 +1509,18 @@ local function cjk_vertical_font (vf)
       tsb = tsbtable and tsbtable[cid] and tsbtable[cid].tsb
     end
     tsb = tsb and factor and tsb*factor
-    ---
-    vw = vw and factor and vw * factor
-    vw = vw or quad
-    local vh = dsc and dsc.boundingbox and dsc.boundingbox[3]
-    vh = vh and factor and vh * factor
-    vh = vh and (vh - quad/2) or quad/2
-    vh = vh + halfxht
-    vh = (vh > 0) and vh or nil
-    local vd = dsc and dsc.boundingbox and dsc.boundingbox[1]
-    vd = vd and factor and vd * factor
-    vd = vd and (quad/2 - vd) or quad/2
-    vd = vd - halfxht
-    vd = (vd > 0) and vd or nil
+    --]]
+    vw = vw and vw * factor or quad
+    local hw = v.width or quad
+    local offset = hw/2 - quad/2 + halfxht
+    local vh = (hw > 0) and hw/2 or nil
     local bb4 = dsc and dsc.boundingbox and dsc.boundingbox[4]
-    bb4 = bb4 and factor and bb4*factor
-    local asc = bb4 and tsb and bb4 + tsb
+    bb4 = bb4 and bb4*factor
+    local asc = bb4 and tsb and (bb4 + tsb)
     asc = asc or ascender
     v.commands = {
       {'right', asc}, -- bbox4 + top_side_bearing! But, tsb not available!
-      {'down', halfxht},
+      {'down', offset},
       {'special', 'pdf: q 0 1 -1 0 0 0 cm'},
       {'push'},
       {'char', i},
@@ -1533,16 +1529,17 @@ local function cjk_vertical_font (vf)
     }
     v.width = vw
     v.height = vh
-    v.depth = vd
+    v.depth = vh
   end
-  ---[[ vertical gpos
-  local halfem = quad/2
+  --- vertical gpos
   local vposkeys = {}
   local res = vf.resources
   local seq = res and res.sequences
   for _,v in ipairs(seq) do
     if v.type == "gpos_single" and v.subtables then -- todo: gpos_pair...
-      vposkeys = v.subtables
+      for _,vv in ipairs(v.subtables) do
+        vposkeys[#vposkeys+1] = vv
+      end
     end
   end
   local lookups = res and res.lookuphash
@@ -1551,12 +1548,11 @@ local function cjk_vertical_font (vf)
     if vp then
       for i,v in pairs(vp) do
         if #v == 4 then
-          vp[i] = { -v[2], v[1], v[4], v[3] } -- bug of context?
+          vp[i] = { -v[2], v[1], v[4], v[3] }
         end
       end
     end
   end
-  --]]
   return vf
 end
 
