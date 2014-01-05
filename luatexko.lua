@@ -1488,9 +1488,10 @@ local function cjk_vertical_font (vf)
   vf.fonts = {{ id = id }}
   local quad = vf.parameters and vf.parameters.quad or 655360
   local descriptions = vf.shared and vf.shared.rawdata and vf.shared.rawdata.descriptions
-  local ascender = vf.parameters and vf.parameters.ascender
-  local factor = vf.parameters and vf.parameters.factor
-  local halfxht = (vf.parameters and vf.parameters.x_height and vf.parameters.x_height/2) or quad/4
+  local ascender = vf.parameters and vf.parameters.ascender or quad*0.8
+  local factor = vf.parameters and vf.parameters.factor or 655.36
+  local xheight = vf.parameters and vf.parameters.x_height or quad/2
+  local halfxht = xheight and xheight/2 or quad/4
   for i,v in pairs(vf.characters) do
     local dsc = descriptions[i]
     local gname = dsc.name
@@ -1509,14 +1510,14 @@ local function cjk_vertical_font (vf)
     vw = vw or quad
     local vh = dsc and dsc.boundingbox and dsc.boundingbox[3]
     vh = vh and factor and vh * factor
-    vh = vh and vh - quad/2 or quad/2
+    vh = vh and (vh - quad/2) or quad/2
     vh = vh + halfxht
-    vh = vh > 0 and vh or nil
+    vh = (vh > 0) and vh or nil
     local vd = dsc and dsc.boundingbox and dsc.boundingbox[1]
     vd = vd and factor and vd * factor
-    vd = vd and quad/2 - vd or quad/2
+    vd = vd and (quad/2 - vd) or quad/2
     vd = vd - halfxht
-    vd = vd > 0 and vd or nil
+    vd = (vd > 0) and vd or nil
     local bb4 = dsc and dsc.boundingbox and dsc.boundingbox[4]
     bb4 = bb4 and factor and bb4*factor
     local asc = bb4 and tsb and bb4 + tsb
@@ -1534,6 +1535,28 @@ local function cjk_vertical_font (vf)
     v.height = vh
     v.depth = vd
   end
+  ---[[ vertical gpos
+  local halfem = quad/2
+  local vposkeys = {}
+  local res = vf.resources
+  local seq = res and res.sequences
+  for _,v in ipairs(seq) do
+    if v.type == "gpos_single" and v.subtables then -- todo: gpos_pair...
+      vposkeys = v.subtables
+    end
+  end
+  local lookups = res and res.lookuphash
+  for _,k in ipairs(vposkeys) do
+    local vp = lookups[k]
+    if vp then
+      for i,v in pairs(vp) do
+        if #v == 4 then
+          vp[i] = { -v[2], v[1], v[4], v[3] } -- bug of context?
+        end
+      end
+    end
+  end
+  --]]
   return vf
 end
 
