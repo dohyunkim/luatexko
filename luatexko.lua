@@ -1539,8 +1539,11 @@ local function cjk_vertical_font (vf)
   local seq = res.sequences or {}
   for _,v in ipairs(seq) do
     if v.type == "gpos_single" and v.subtables then -- todo: gpos_pair...
-      for _,vv in ipairs(v.subtables) do
-        vposkeys[#vposkeys+1] = vv
+      local feature = v.features or {}
+      if feature.vhal or feature.vkrn or feature.valt or feature.vpal then
+        for _,vv in ipairs(v.subtables) do
+          vposkeys[#vposkeys+1] = vv
+        end
       end
     end
   end
