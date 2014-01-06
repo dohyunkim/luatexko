@@ -1486,7 +1486,6 @@ local function cjk_vertical_font (vf)
   hash = hash or (vf.name and vf.size and vf.name..' @ '..vf.size..' @ vertical')
 
   vf.properties = vf.properties or {}
-  vf.properties.hash = vf.properties.hash or ""
   vf.properties.hash = hash
   vf.type = 'virtual'
   vf.fonts = {{ id = id }}
@@ -1495,7 +1494,7 @@ local function cjk_vertical_font (vf)
   local ascender = vf.parameters and vf.parameters.ascender or quad*0.8
   local factor = vf.parameters and vf.parameters.factor or 655.36
   local xheight = vf.parameters and vf.parameters.x_height or quad/2
-  local halfxht = xheight and xheight/2 or quad/4
+  local halfxht = xheight/2
   for i,v in pairs(vf.characters) do
     local dsc = descriptions[i]
     local gname = dsc.name
@@ -1532,9 +1531,12 @@ local function cjk_vertical_font (vf)
     v.depth = vh
   end
   --- vertical gpos
+  local res = vf.resources or {}
+  if res.verticalgposhack then
+    return vf -- avoid multiple running
+  end
   local vposkeys = {}
-  local res = vf.resources
-  local seq = res and res.sequences
+  local seq = res.sequences or {}
   for _,v in ipairs(seq) do
     if v.type == "gpos_single" and v.subtables then -- todo: gpos_pair...
       for _,vv in ipairs(v.subtables) do
@@ -1542,17 +1544,18 @@ local function cjk_vertical_font (vf)
       end
     end
   end
-  local lookups = res and res.lookuphash
-  for _,k in ipairs(vposkeys) do
-    local vp = lookups[k]
+  local lookups = res.lookuphash or {}
+  for _,v in ipairs(vposkeys) do
+    local vp = lookups[v]
     if vp then
-      for i,v in pairs(vp) do
-        if #v == 4 then
-          vp[i] = { -v[2], v[1], v[4], v[3] }
+      for i,vv in pairs(vp) do
+        if #vv == 4 then
+          vp[i] = { -vv[2], vv[1], vv[4], vv[3] }
         end
       end
     end
   end
+  res.verticalgposhack = true
   return vf
 end
 
