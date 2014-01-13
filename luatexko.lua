@@ -1431,157 +1431,9 @@ local function assign_unicode_codevalue (head)
   return head
 end
 
-
-------------------------------------
--- vertical typesetting: EXPERIMENTAL -- don't use this
-------------------------------------
----[[no vwidth in luaotfload v2
-local tsbtable = {}
-
-local function read_tsb_table(filename)-- for ttx-generated vmtx table
-  if tsbtable[filename] then
-    return tsbtable[filename]
-  end
-  local filepath = kpse.find_file(filename)
-  if not filepath then return end
-  local file = io.open(filepath, "r")
-  if not file then return end
-  local tsbtb = {}
-  local patt = 'name="(.-)" height="(.-)" tsb="(.-)"'
-  while true do
-    local l = file:read("*line")
-    if not l then break end
-    for name, height, tsb in stringgmatch(l,patt) do
-      tsbtb[name] = {}
-      tsbtb[name].height = height
-      tsbtb[name].tsb = tsb
-    end
-  end
-  file:close()
-  tsbtable[filename] = tsbtb
-  return tsbtb
-end
-
-local function cjk_vertical_font (vf)
-  if not vf.shared then return end
-  if not vf.shared.features then return end
-  if not vf.shared.features["vertical"] then return end
-  if vf.type == "virtual" then return end
-
-  ---[[ for read-ttx
-  local filename = vf.filename
-  filename = stringgsub(filename,".*/","")
-  filename = stringgsub(filename,"[tToO][tT][fF]$","ttx")
-  local tsbtable = read_tsb_table(filename)
-  if not tsbtable then
-    warn("Cannot read %s. Aborting vertical typesetting.",filename)
-    return
-  end
-  --]]
-
-  local tmp = table.copy(vf) -- fastcopy takes time too long.
-  local id = fontdefine(tmp)
-
-  local hash = vf.properties and vf.properties.hash and vf.properties.hash..' @ vertical'
-  hash = hash or (vf.name and vf.size and vf.name..' @ '..vf.size..' @ vertical')
-
-  vf.properties = vf.properties or {}
-  vf.properties.hash = hash
-  vf.type = 'virtual'
-  vf.fonts = {{ id = id }}
-  local quad = vf.parameters and vf.parameters.quad or 655360
-  local descriptions = vf.shared and vf.shared.rawdata and vf.shared.rawdata.descriptions
-  local ascender = vf.parameters and vf.parameters.ascender or quad*0.8
-  local factor = vf.parameters and vf.parameters.factor or 655.36
-  local xheight = vf.parameters and vf.parameters.x_height or quad/2
-  local halfxht = xheight/2
-  for i,v in pairs(vf.characters) do
-    local dsc = descriptions[i]
-    local gname = dsc.name
-    -- local vw = dsc and dsc.vwidth
-    ---[[ for read-ttx
-    local vw = tsbtable and tsbtable[gname] and tsbtable[gname].height
-    local tsb = tsbtable and tsbtable[gname] and tsbtable[gname].tsb
-    if not vw and dsc.index then
-      local cid = stringformat("cid%05d", dsc.index)
-      vw = tsbtable and tsbtable[cid] and tsbtable[cid].height
-      tsb = tsbtable and tsbtable[cid] and tsbtable[cid].tsb
-    end
-    tsb = tsb and factor and tsb*factor
-    --]]
-    vw = vw and vw * factor or quad
-    local hw = v.width or quad
-    local offset = hw/2 - quad/2 + halfxht
-    local vh = (hw > 0) and hw/2 or nil
-    local bb4 = dsc and dsc.boundingbox and dsc.boundingbox[4]
-    bb4 = bb4 and bb4*factor
-    local asc = bb4 and tsb and (bb4 + tsb)
-    asc = asc or ascender
-    v.commands = {
-      {'right', asc}, -- bbox4 + top_side_bearing! But, tsb not available!
-      {'down', offset},
-      {'special', 'pdf: q 0 1 -1 0 0 0 cm'},
-      {'push'},
-      {'char', i},
-      {'pop'},
-      {'special', 'pdf: Q'},
-    }
-    v.width = vw
-    v.height = vh
-    v.depth = vh
-  end
-  --- vertical gpos
-  local res = vf.resources or {}
-  if res.verticalgposhack then
-    return vf -- avoid multiple running
-  end
-  local vposkeys = {}
-  local seq = res.sequences or {}
-  for _,v in ipairs(seq) do
-    if v.type == "gpos_single" and v.subtables then -- todo: gpos_pair...
-      local feature = v.features or {}
-      if feature.vhal or feature.vkrn or feature.valt or feature.vpal then
-        for _,vv in ipairs(v.subtables) do
-          vposkeys[#vposkeys+1] = vv
-        end
-      end
-    end
-  end
-  local lookups = res.lookuphash or {}
-  for _,v in ipairs(vposkeys) do
-    local vp = lookups[v]
-    if vp then
-      for i,vv in pairs(vp) do
-        if #vv == 4 then
-          vp[i] = { -vv[2], vv[1], vv[4], vv[3] }
-        end
-      end
-    end
-  end
-  res.verticalgposhack = true
-  return vf
-end
-
-local function activate_vertical_virtual (tfmdata,value)
-  local loaded = luatexbase.priority_in_callback("luaotfload.patch_font",
-  "luatexko.vertical_virtual_font")
-  if value and not loaded then
-    add_to_callback("luaotfload.patch_font",
-    cjk_vertical_font,
-    "luatexko.vertical_virtual_font")
-  end
-end
-
-local otffeatures = fonts.constructors.newfeatures("otf")
-otffeatures.register {
-  name         = "vertical",
-  description  = "vertical typesetting",
-  initializers = {
-    node = activate_vertical_virtual,
-  }
-}
---no vwidth in luaotfload v2]]
-
+-----------------------------
+-- reorder hangul tone marks
+-----------------------------
 local function reorderTM (head)
   for curr in traverse_id(glyphnode, head) do
     if curr.width > 0 then -- old hangul vertical typesetting is broken?
@@ -1783,4 +1635,177 @@ add_to_callback("post_linebreak_filter", function(head)
   head = after_linebreak_underline(head)
   return head
 end, 'luatexko.post_linebreak_filter')
+
+
+------------------------------------
+-- vertical typesetting: EXPERIMENTAL -- don't use this
+------------------------------------
+---[[no vwidth in luaotfload v2
+local tsbtable = {}
+
+local function read_tsb_table(filename)-- for ttx-generated vmtx table
+  if tsbtable[filename] then
+    return tsbtable[filename]
+  end
+  local filepath = kpse.find_file(filename)
+  if not filepath then return end
+  local file = io.open(filepath, "r")
+  if not file then return end
+  local tsbtb = {}
+  local patt = 'name="(.-)" height="(.-)" tsb="(.-)"'
+  while true do
+    local l = file:read("*line")
+    if not l then break end
+    for name, height, tsb in stringgmatch(l,patt) do
+      tsbtb[name] = {}
+      tsbtb[name].height = height
+      tsbtb[name].tsb = tsb
+    end
+  end
+  file:close()
+  tsbtable[filename] = tsbtb
+  return tsbtb
+end
+
+local function cjk_vertical_font (vf)
+  if not vf.shared then return end
+  if not vf.shared.features then return end
+  if not vf.shared.features["vertical"] then return end
+  if vf.type == "virtual" then return end
+
+  ---[[ for read-ttx
+  local filename = vf.filename
+  filename = stringgsub(filename,".*/","")
+  filename = stringgsub(filename,"[tToO][tT][fF]$","ttx")
+  local tsbtable = read_tsb_table(filename)
+  if not tsbtable then
+    warn("Cannot read %s. Aborting vertical typesetting.",filename)
+    return
+  end
+  --]]
+
+  local tmp = table.copy(vf) -- fastcopy takes time too long.
+  local id = fontdefine(tmp)
+
+  local hash = vf.properties and vf.properties.hash and vf.properties.hash..' @ vertical'
+  hash = hash or (vf.name and vf.size and vf.name..' @ '..vf.size..' @ vertical')
+
+  vf.properties = vf.properties or {}
+  vf.properties.hash = hash
+  vf.type = 'virtual'
+  vf.fonts = {{ id = id }}
+  local quad = vf.parameters and vf.parameters.quad or 655360
+  local descriptions = vf.shared and vf.shared.rawdata and vf.shared.rawdata.descriptions
+  local ascender = vf.parameters and vf.parameters.ascender or quad*0.8
+  local factor = vf.parameters and vf.parameters.factor or 655.36
+  local xheight = vf.parameters and vf.parameters.x_height or quad/2
+  local halfxht = xheight/2
+  for i,v in pairs(vf.characters) do
+    local dsc = descriptions[i]
+    local gname = dsc.name
+    -- local vw = dsc and dsc.vwidth
+    ---[[ for read-ttx
+    local vw = tsbtable and tsbtable[gname] and tsbtable[gname].height
+    local tsb = tsbtable and tsbtable[gname] and tsbtable[gname].tsb
+    if not vw and dsc.index then
+      local cid = stringformat("cid%05d", dsc.index)
+      vw = tsbtable and tsbtable[cid] and tsbtable[cid].height
+      tsb = tsbtable and tsbtable[cid] and tsbtable[cid].tsb
+    end
+    tsb = tsb and factor and tsb*factor
+    --]]
+    vw = vw and vw * factor or quad
+    local hw = v.width or quad
+    local offset = hw/2 - quad/2 + halfxht
+    local vh = (hw > 0) and hw/2 or nil
+    local bb4 = dsc and dsc.boundingbox and dsc.boundingbox[4]
+    bb4 = bb4 and bb4*factor
+    local asc = bb4 and tsb and (bb4 + tsb)
+    asc = asc or ascender
+    v.commands = {
+      {'right', asc}, -- bbox4 + top_side_bearing! But, tsb not available!
+      {'down', offset},
+      {'special', 'pdf: q 0 1 -1 0 0 0 cm'},
+      {'push'},
+      {'char', i},
+      {'pop'},
+      {'special', 'pdf: Q'},
+    }
+    v.width = vw
+    v.height = vh
+    v.depth = vh
+  end
+  --- vertical gpos
+  local res = vf.resources or {}
+  if res.verticalgposhack then
+    return vf -- avoid multiple running
+  end
+  local vposkeys = {}
+  local seq = res.sequences or {}
+  for _,v in ipairs(seq) do
+    if v.type == "gpos_single" and v.subtables then -- todo: gpos_pair...
+      local feature = v.features or {}
+      if feature.vhal or feature.vkrn or feature.valt or feature.vpal then
+        for _,vv in ipairs(v.subtables) do
+          vposkeys[#vposkeys+1] = vv
+        end
+      end
+    end
+  end
+  local lookups = res.lookuphash or {}
+  for _,v in ipairs(vposkeys) do
+    local vp = lookups[v]
+    if vp then
+      for i,vv in pairs(vp) do
+        if #vv == 4 then
+          vp[i] = { -vv[2], vv[1], vv[4], vv[3] }
+        end
+      end
+    end
+  end
+  res.verticalgposhack = true
+  return vf
+end
+
+local function activate_vertical_virtual (tfmdata,value)
+  local loaded = luatexbase.priority_in_callback("luaotfload.patch_font",
+  "luatexko.vertical_virtual_font")
+  if value and not loaded then
+    add_to_callback("luaotfload.patch_font",
+    cjk_vertical_font,
+    "luatexko.vertical_virtual_font")
+  end
+end
+
+local otffeatures = fonts.constructors.newfeatures("otf")
+otffeatures.register {
+  name         = "vertical",
+  description  = "vertical typesetting",
+  initializers = {
+    node = activate_vertical_virtual,
+  }
+}
+--no vwidth in luaotfload v2]]
+
+------------------------------------
+-- italic correction for fake-slant font
+------------------------------------
+local function fakeslant_itlc (tfmdata)
+  local slfactor = tfmdata.parameters.slantfactor
+  if slfactor and slfactor > 0 then else return end
+  tfmdata.parameters.slant = slfactor * 65536
+  local factor = tfmdata.parameters.factor or 655.36
+  local itlcoff = (tfmdata.shared.rawdata.metadata.uwidth or 40)/2 * factor
+  local chrs = tfmdata.characters
+  for i,v in pairs(chrs) do
+    local italic = v.height * slfactor - itlcoff
+    if italic > 0 then
+      chrs[i].italic = italic
+    end
+  end
+end
+
+add_to_callback("luaotfload.patch_font",
+                fakeslant_itlc,
+                "luatexko.fakeslant_itlc")
 
