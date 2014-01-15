@@ -22,7 +22,7 @@
   \expandafter\endinput
 \fi
 
-\ProvidesPackage{luatexko}[2013/11/22 v1.3 Typesetting Korean with LuaLaTeX]
+\ProvidesPackage{luatexko}[2014/01/15 v1.4 Typesetting Korean with LuaLaTeX]
 \RequirePackage{fontspec}
 \RequirePackage{luatexko-core}
 
@@ -179,12 +179,13 @@
   \fi\fi\fi
 }
 
+\AtBeginDocument{
 \let\luatexko@orig@selectfont\selectfont
 \protected\def\selectfont{\luatexko@orig@selectfont
   \luatexko@hangul@selectfont
   \luatexko@hanja@selectfont
   \luatexko@fallback@selectfont
-}
+}}
 
 % don't forget to redefine \normalfont
 \protected\edef\normalfont{\unexpanded{%
