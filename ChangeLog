@@ -4,7 +4,7 @@
 
 	* luatexko.lua: italic correction of fakeslant font
 	* luatexko.sty: use everysel.sty to redefine selectfont. This fixes
-	a bug reported by Hoze Lee & Juho Lee.
+	a bug reported by Hoze Yi & Juho Lee.
 
 2013-12-06      Dohyun Kim <nomos at ktug org>
 
