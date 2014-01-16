@@ -528,6 +528,11 @@ local function is_jungjongsong (c)
   or c == 0x302E  or  c == 0x302F -- tone marks
 end
 
+local function is_unicode_vs (c)
+  return (c >= 0xFE00  and c <= 0xFE0F )
+      or (c >= 0xE0100 and c <= 0xE01EF)
+end
+
 local function get_cjk_class (ch, cjtype)
   if ch then
     if is_hangul(ch) then return 7 end        -- hangul = 7
@@ -1412,7 +1417,7 @@ local function font_substitute(head)
             end
           end
         end
-        if not korid then
+        if not korid and not is_unicode_vs(curr.char) then
           warn("!Missing character: %s U+%04X", utf8char(curr.char),curr.char)
         end
       end
@@ -1456,6 +1461,29 @@ local function reorderTM (head)
   return head
 end
 
+-----------------------------
+-- ideographic variation selector
+-----------------------------
+local function hanja_vs_support (head)
+  for curr in traverse_id(glyphnode, head) do
+    local cc = curr.char
+    if is_unicode_vs(cc) then
+      local prev = curr.prev
+      if prev and prev.id == glyphnode then
+        local f = get_font_table(prev.font)
+        local ivs = f and f.resources and f.resources.variants
+        ivs = ivs and ivs[cc] and ivs[cc][prev.char]
+        -- !!! ARRRG! the font table doesn't have variants for non-BMP chars.
+        if ivs then
+          prev.char = ivs
+          head = remove_node(head,curr)
+        end
+      end
+    end
+  end
+  return head
+end
+
 ----------------------------------
 -- add to callback : pre-linebreak
 ----------------------------------
@@ -1464,6 +1492,7 @@ add_to_callback('hpack_filter', function(head)
   korean_autojosa(head)
   remove_cj_spaceskip(head)
   font_substitute(head)
+  head = hanja_vs_support(head)
   return head
 end, 'luatexko.hpack_filter_first',1)
 
@@ -1482,6 +1511,7 @@ add_to_callback('pre_linebreak_filter', function(head)
   korean_autojosa(head)
   remove_cj_spaceskip(head)
   font_substitute(head)
+  head = hanja_vs_support(head)
   return head
 end, 'luatexko.pre_linebreak_filter_first',1)
 
