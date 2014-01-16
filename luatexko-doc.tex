@@ -45,7 +45,7 @@
 \title{\luatexko\ 간단 매뉴얼}
 \author{Dohyun Kim \normalsize |<nomos at ktug org>| \and
   \normalsize |<http://github.com/dohyunkim/luatexko>|}
-\date{Version 1.3\quad\today}
+\date{Version 1.4\quad\today}
 \maketitle
 
 \begin{quote}\small
@@ -145,8 +145,8 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이
 \begin{figure}
   \fboxsep=1em
   \fbox{\vbox{\hsize\dimexpr\linewidth-2.1em\relax
-      \fontspec[Script=Hangul]{malgungothic}
-      \centering
+      \fontspec[Script=Hangul,Ligatures=Required]{HCR Dotum LVT}
+      \leftskip2.5cm
 뎨 가ᄂᆞᆫ 뎌 각시 본 듯도 ᄒᆞᆫ뎌이고.\\
 天텬上상白ᄇᆡᆨ玉옥京경을 엇디ᄒᆞ야 離니別별ᄒᆞ고\\
 ᄒᆡ 다 져믄 날의 눌을 보라 가시ᄂᆞᆫ고
@@ -158,7 +158,7 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이
 엇딘디 날 보시고 네로다 녀기실ᄉᆡ\\
 나도 님을 미더 군 ᄠᅥ디 전혀 업서\\
 이ᄅᆡ야 교ᄐᆡ야 어ᄌᆞ러이 구돗ᄯᅥᆫ디\\
-반기시ᄂᆞᆫ ᄂᆞᆺ비치 녜와 엇디 다ᄅᆞ신고.\\
+반기시ᄂᆞᆫ ᄂᆞᆺ비치 녜와 엇디 다ᄅᆞ신고.%\\
 %누어 ᄉᆡᆼ각ᄒᆞ고 니러 안자 혜여ᄒᆞ니\\
 %내 몸의 지은 죄 뫼ᄀᆞ티 ᄡᅡ혀시니\\
 %하ᄂᆞᆯ히라 원망ᄒᆞ고 사ᄅᆞᆷ이라 허믈ᄒᆞ랴\\
@@ -254,8 +254,8 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이
 \section{}
 
 %\begin{figure}
-%\hfil\framebox[\linewidth]{\begin{vertical}{16em}
-%\fontspec[Vertical=RotatedGlyphs]{Adobe Myungjo Std Medium}
+%\framebox[\linewidth]{\begin{vertical}{16em}
+%\fontspec[Vertical=RotatedGlyphs,RawFeature=+vhal]{Adobe Myungjo Std}
 %\parindent-1em\leftskip1em \linespread{1.5}\selectfont
 %\noindent 님의 침묵{\small(The Silent Beloved)}
 %\smallbreak
@@ -393,9 +393,6 @@ ulem 패키지가 \luatexko와 궁합이 잘 맞지 않아{\small (줄바꿈에 
 |\gana| |\ojaso| |\ogana| |\pjaso| |\pgana| |\onum| |\pnum| |\oeng|
 |\peng| |\hnum| |\Hnum| |\hroman| |\hRoman| |\hNum| |\hanjanum| 따위를
 사용한다.
-
-\section{}
-hyperref 패키지는 |[unicode]| 옵션을 주어야 한다.
 
 \section{}
 |\luatexhangulnormalize=1|이라 지시하면 첫가끝 자모를 완성형 음절로,

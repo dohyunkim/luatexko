@@ -245,6 +245,8 @@
 \unless\ifdefined\sanshangul@font \let\sanshangul@font\serifhangul@font\fi
 \unless\ifdefined\monohangul@font \let\monohangul@font\sanshangul@font \fi
 \luatexko@hangul@selectfont
+\luatexko@hanja@selectfont
+\luatexko@fallback@selectfont
 % for hyperref
 \@ifpackageloaded{hyperref}{\pdfstringdefDisableCommands{%
   \let\dotemph\@firstofone
