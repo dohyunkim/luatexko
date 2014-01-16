@@ -131,29 +131,29 @@
 \protected\def\addhangulfontfeature#1{%
   \begingroup
     \check@hangul@family
-    \ifdefined\hangul@font\hangul@font\fi\addfontfeature{#1}\global
-    \let\luatexko@fontspec@temp\f@family
+    \ifdefined\hangul@font\hangul@font\fi\addfontfeature{#1}%
+    \global\let\luatexko@fontspec@temp\f@family
   \endgroup
-  \def\hangul@font{\fontfamily\luatexko@fontspec@temp
-    \luatexko@orig@selectfont}\luatexko@hangul@selectfont \ignorespaces}
+  \def\hangul@font{\fontfamily\luatexko@fontspec@temp\selectfont}%
+  \luatexko@hangul@selectfont \ignorespaces}
 \let\addhangulfontfeatures\addhangulfontfeature
 \protected\def\addhanjafontfeature#1{%
   \begingroup
     \check@hanja@family
-    \ifdefined\hanja@font\hanja@font\fi\addfontfeature{#1}\global
-    \let\luatexko@fontspec@temp\f@family
+    \ifdefined\hanja@font\hanja@font\fi\addfontfeature{#1}%
+    \global\let\luatexko@fontspec@temp\f@family
   \endgroup
-  \def\hanja@font{\fontfamily\luatexko@fontspec@temp
-    \luatexko@orig@selectfont}\luatexko@hanja@selectfont \ignorespaces}
+  \def\hanja@font{\fontfamily\luatexko@fontspec@temp\selectfont}%
+  \luatexko@hanja@selectfont \ignorespaces}
 \let\addhanjafontfeatures\addhanjafontfeature
 \protected\def\addfallbackfontfeature#1{%
   \begingroup
     \check@fallback@family
-    \ifdefined\fallback@font\fallback@font\fi\addfontfeature{#1}\global
-    \let\luatexko@fontspec@temp\f@family
+    \ifdefined\fallback@font\fallback@font\fi\addfontfeature{#1}%
+    \global\let\luatexko@fontspec@temp\f@family
   \endgroup
-  \def\fallback@font{\fontfamily\luatexko@fontspec@temp
-    \luatexko@orig@selectfont}\luatexko@fallback@selectfont \ignorespaces}
+  \def\fallback@font{\fontfamily\luatexko@fontspec@temp\selectfont}%
+  \luatexko@fallback@selectfont \ignorespaces}
 \let\addfallbackfontfeatures\addfallbackfontfeature
 
 % check hangul/hanja family
@@ -179,13 +179,12 @@
   \fi\fi\fi
 }
 
-\AtBeginDocument{
-\let\luatexko@orig@selectfont\selectfont
-\protected\def\selectfont{\luatexko@orig@selectfont
+\RequirePackage{everysel}
+\EverySelectfont{%
   \luatexko@hangul@selectfont
   \luatexko@hanja@selectfont
   \luatexko@fallback@selectfont
-}}
+}
 
 % don't forget to redefine \normalfont
 \protected\edef\normalfont{\unexpanded{%
@@ -298,6 +297,7 @@
   \footnotesep=1.3888\footnotesep
   \skip\footins=1.3888\skip\footins plus6pt minus3pt
   \hangulpunctuations=1
+  \frenchspacing
 \fi
 
 \endinput
