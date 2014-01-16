@@ -924,7 +924,6 @@ local function compress_fullwidth_punctuations (head)
           local wd
           if get_font_feature(curr.font,'vertical') then
             wd = ensize<width and ensize-width or 0
-            wd = ensize>-wd and wd or -ensize -- for buggy hcr fonts
           else
             wd = (width-bbox[1] < ensize) and ensize-width or -bbox[1]+oneoften
           end
