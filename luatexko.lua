@@ -12,7 +12,7 @@
 
 local err,warn,info,log = luatexbase.provides_module({
   name        = 'luatexko',
-  date        = '2014/01/06',
+  date        = '2014/02/04',
   version     = 1.4,
   description = 'Korean linebreaking and font-switching',
   author      = 'Dohyun Kim',
@@ -57,6 +57,7 @@ local nodecount       = node.count
 local nodeslide       = node.slide
 local nodedimensions  = node.dimensions
 local nodetail        = node.tail
+local end_of_math     = node.end_of_math
 
 local finemathattr      = luatexbase.attributes.finemathattr
 local cjtypesetattr     = luatexbase.attributes.cjtypesetattr
@@ -796,7 +797,8 @@ end
 
 local function cjk_spacing_linebreak (head)
   local prevchar,prevfont = nil,nil
-  for curr in traverse(head) do
+  local curr = head
+  while curr do
     if has_attribute(curr,finemathattr) then
       if curr.id == gluenode then
         prevchar,prevfont = nil,nil
@@ -815,8 +817,7 @@ local function cjk_spacing_linebreak (head)
         end
         if curr.subtype == 0 then
           cjk_insert_nodes(head,curr,currchar,nil,prevchar,prevfont)
-          prevchar,prevfont = nil,nil
-        else
+          curr = end_of_math(curr)
           prevchar,prevfont = currchar,nil
         end
         unset_attribute(curr,finemathattr)
@@ -831,6 +832,7 @@ local function cjk_spacing_linebreak (head)
     else
       prevchar,prevfont = 0,nil -- treat \verb as latin character.
     end
+    curr = curr.next
   end
 end
 
@@ -838,55 +840,61 @@ end
 -- remove japanese/chinese spaceskip
 ------------------------------------
 local function remove_cj_spaceskip (head)
-  for curr in traverse_id(gluenode,head) do
-    local cjattr = has_attribute(curr,cjtypesetattr)
-    local prv, nxt = curr.prev, curr.next
-    if cjattr and cjattr > 0 and prv and nxt then
-      local prevclass, prevchar, prevfont, nextclass
-      if prv.id == hlistnode or prv.id == vlistnode then
-        prevclass = get_hlist_class_last(prv)
-      else
-        -- what is this strange kern before \text??
-        if prv.id == kernnode and prv.kern == 0 then
-          prv = prv.prev
-        end
-        if prv.id == glyphnode then
-          prevclass = get_cjk_class(get_unicode_char(prv), cjattr)
-          prevchar, prevfont = prv.char, prv.font
-        end
-      end
-      if nxt.id == glyphnode then
-        nextclass = get_cjk_class(get_unicode_char(nxt), cjattr)
-      elseif nxt.id == hlistnode or nxt.id == vlistnode then
-        nextclass = get_hlist_class_first(nxt)
-      end
-      if (prevclass and prevclass < 10) or (nextclass and nextclass < 10) then
-        local subtype = curr.subtype
-        if subtype == 13 then -- do not touch on xspaceskip for now
-          remove_node(head,curr)
-        else -- before \text?? spaceskip is replaced by glue type 0
-          local spec = curr.spec
-          local csp = spec and spec.width
-          local cst = spec and spec.stretch
-          local csh = spec and spec.shrink
-          local fp = get_font_table(prevfont)
-          fp = fp and fp.parameters
-          local sp = fp and fp.space
-          local st = fp and fp.space_stretch
-          local sh = fp and fp.space_shrink
-          sp = sp and tex_round(sp)
-          st = st and tex_round(st)
-          sh = sh and tex_round(sh)
-          if prevchar and prevchar >= 65 and prevchar <= 90 then
-            st = st and mathfloor(st*(999/1000))
-            sh = sh and mathfloor(sh*(1001/1000))
+  local curr, prevfont = head, nil
+  while curr do
+    if curr.id == mathnode and curr.subtype == 0 then
+      curr = end_of_math(curr)
+    elseif curr.id == gluenode then
+      local cjattr = has_attribute(curr,cjtypesetattr)
+      local prv, nxt = curr.prev, curr.next
+      if cjattr and cjattr > 0 and prv and nxt then
+        local prevclass, prevchar, nextclass
+        if prv.id == hlistnode or prv.id == vlistnode then
+          prevclass = get_hlist_class_last(prv)
+        else
+          -- what is this strange kern before \text??
+          if prv.id == kernnode and prv.kern == 0 then
+            prv = prv.prev
           end
-          if sp == csp and st == cst and sh == csh then
+          if prv.id == glyphnode then
+            prevclass = get_cjk_class(get_unicode_char(prv), cjattr)
+            prevchar, prevfont = prv.char, prv.font
+          end
+        end
+        if nxt.id == glyphnode then
+          nextclass = get_cjk_class(get_unicode_char(nxt), cjattr)
+        elseif nxt.id == hlistnode or nxt.id == vlistnode then
+          nextclass = get_hlist_class_first(nxt)
+        end
+        if (prevclass and prevclass < 10) or (nextclass and nextclass < 10) then
+          local subtype = curr.subtype
+          if subtype == 13 then -- do not touch on xspaceskip for now
             remove_node(head,curr)
+          else -- before \text?? spaceskip is replaced by glue type 0
+            local spec = curr.spec
+            local csp = spec and spec.width
+            local cst = spec and spec.stretch
+            local csh = spec and spec.shrink
+            local fp = get_font_table(prevfont)
+            fp = fp and fp.parameters
+            local sp = fp and fp.space
+            local st = fp and fp.space_stretch
+            local sh = fp and fp.space_shrink
+            sp = sp and tex_round(sp)
+            st = st and tex_round(st)
+            sh = sh and tex_round(sh)
+            if prevchar and prevchar >= 65 and prevchar <= 90 then
+              st = st and mathfloor(st*(999/1000))
+              sh = sh and mathfloor(sh*(1001/1000))
+            end
+            if sp == csp and st == cst and sh == csh then
+              remove_node(head,curr)
+            end
           end
         end
       end
     end
+    curr = curr.next
   end
 end
 
@@ -1354,15 +1362,11 @@ local function hangulspaceskip (engfont, hfontid, spec)
 end
 
 local function font_substitute(head)
-  local noinmath = true
-  for curr in traverse(head) do
-    if curr.id == mathnode then
-      if curr.subtype == 0 then
-        noinmath = false
-      else
-        noinmath = true
-      end
-    elseif noinmath and curr.id == glyphnode then
+  local curr = head
+  while curr do
+    if curr.id == mathnode and curr.subtype == 0 then
+        curr = end_of_math(curr)
+    elseif curr.id == glyphnode then
       local eng = get_font_table(curr.font)
       local engfontchar = nil
       if eng and eng.encodingbytes and eng.encodingbytes == 2 -- exclude type1
@@ -1421,6 +1425,7 @@ local function font_substitute(head)
         end
       end
     end
+    curr = curr.next
   end
   return head
 end
