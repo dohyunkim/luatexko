@@ -356,6 +356,13 @@
   \fi\fi
 }
 
+% Actual Text: beware that #1 should not divided into separate pages
+\protected\def\actualtext#1{%
+  \pdfliteral direct{/Span<</ActualText(\directlua{
+    luatexko.actualtext("\luatexluaescapestring{\detokenize{#1}}")})>>BDC}%
+  #1\pdfliteral direct{EMC}%
+}
+
 %% 말줄임표
 \def\hellipsis{^^^^2026^^^^2026}
 

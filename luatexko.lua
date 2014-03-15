@@ -1839,7 +1839,64 @@ local function fakeslant_itlc (tfmdata)
   end
 end
 
-add_to_callback("luaotfload.patch_font",
-                fakeslant_itlc,
-                "luatexko.fakeslant_itlc")
+------------------------------------
+-- tounicode for old hangul
+------------------------------------
+local function tounicode_oldhangul (tfmdata)
+  local desc = tfmdata.shared and tfmdata.shared.rawdata and tfmdata.shared.rawdata.descriptions
+  local chrs = tfmdata.characters
+  if not desc or not chrs then return end
+  local last = 0
+  for _,v in ipairs({{0x1100,0x11FF},{0xA960,0xA97C},{0xD7B0,0xD7FB}}) do
+    local cnt  = v[1]
+    while cnt <= v[2] do
+      local ds = desc[cnt] and desc[cnt].slookups
+      if ds then
+        for _,s in pairs(ds) do
+          if chrs[s] and not chrs[s].tounicode then
+            if type(s) == "number" then
+              chrs[s].tounicode = stringformat("%04X",cnt)
+              last = s > last and s or last
+            end
+          end
+        end
+      end
+      cnt = cnt + 1
+    end
+  end
+  if stringfind(tfmdata.fontname,"^HCR") then
+    local touni = "1112119E"
+    for i = last+1, last+2 do
+      local dsc,chr = desc[i],chrs[i]
+      if dsc and chr and dsc.class == "ligature" and not chr.tounicode then
+        chr.tounicode = touni
+      end
+      touni = touni.."11AB"
+    end
+  end
+end
 
+add_to_callback("luaotfload.patch_font",
+  function(tfmdata)
+    fakeslant_itlc(tfmdata)
+    tounicode_oldhangul(tfmdata)
+  end, "luatexko.font_patches")
+
+
+------------------------------------
+-- Actual Text
+------------------------------------
+local function actualtext (str)
+  local t = {}
+  for uni in string.utfvalues(str) do
+    if uni < 0x10000 then
+      t[#t+1] = stringformat("\\%03o\\%03o",uni/256,uni%256)
+    else -- surrogate
+      uni = uni - 0x10000
+      local a, b = uni/0x400 + 0xD800, uni%0x400 + 0xDC00
+      t[#t+1] = stringformat("\\%03o\\%03o\\%03o\\%03o",a/256,a%256,b/256,b%256)
+    end
+  end
+  tex.sprint(stringformat("\\detokenize{\\376\\377%s}",table.concat(t)))
+end
+luatexko.actualtext = actualtext
