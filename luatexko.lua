@@ -1672,33 +1672,34 @@ end, 'luatexko.post_linebreak_filter')
 
 
 ------------------------------------
--- vertical typesetting: EXPERIMENTAL -- don't use this
+-- vertical typesetting: EXPERIMENTAL
 ------------------------------------
----[[no vwidth in luaotfload v2
 local tsbtable = {}
 
-local function read_tsb_table(filename)-- for ttx-generated vmtx table
+local function get_vwidth_tsb_table (filename)
   if tsbtable[filename] then
     return tsbtable[filename]
   end
-  local filepath = kpse.find_file(filename)
-  if not filepath then return end
-  local file = io.open(filepath, "r")
-  if not file then return end
-  local tsbtb = {}
-  local patt = 'name="(.-)" height="(.-)" tsb="(.-)"'
-  while true do
-    local l = file:read("*line")
-    if not l then break end
-    for name, height, tsb in stringgmatch(l,patt) do
-      tsbtb[name] = {}
-      tsbtb[name].height = height
-      tsbtb[name].tsb = tsb
+  local metrics = nil
+  local font = fontloader.open(filename)
+  if font then
+    metrics = fontloader.to_table(font)
+    fontloader.close(font)
+    local glyph_t = {}
+    if metrics.subfonts then
+      for _,v in ipairs(metrics.subfonts) do
+        for ii,vv in pairs(v.glyphs) do
+          glyph_t[ii] = { ht = vv.vwidth, tsb = vv.tsidebearing }
+        end
+      end
+    else
+      for i,v in ipairs(metrics.glyphs) do
+        glyph_t[i] = { ht = v.vwidth, tsb = v.tsidebearing }
+      end
     end
+    tsbtable[filename] = glyph_t
+    return glyph_t
   end
-  file:close()
-  tsbtable[filename] = tsbtb
-  return tsbtb
 end
 
 local function cjk_vertical_font (vf)
@@ -1707,16 +1708,10 @@ local function cjk_vertical_font (vf)
   if not vf.shared.features["vertical"] then return end
   if vf.type == "virtual" then return end
 
-  ---[[ for read-ttx
+  -- load font (again)
   local filename = vf.filename
-  filename = stringgsub(filename,".*/","")
-  filename = stringgsub(filename,"[tToO][tT][fF]$","ttx")
-  local tsbtable = read_tsb_table(filename)
-  if not tsbtable then
-    warn("Cannot read %s. Aborting vertical typesetting.",filename)
-    return
-  end
-  --]]
+  local tsbtable = get_vwidth_tsb_table(filename)
+  if not tsbtable then return end
 
   local tmp = table.copy(vf) -- fastcopy takes time too long.
   local id = fontdefine(tmp)
@@ -1736,18 +1731,11 @@ local function cjk_vertical_font (vf)
   local halfxht = xheight/2
   for i,v in pairs(vf.characters) do
     local dsc = descriptions[i]
-    local gname = dsc.name
-    -- local vw = dsc and dsc.vwidth
-    ---[[ for read-ttx
-    local vw = tsbtable and tsbtable[gname] and tsbtable[gname].height
-    local tsb = tsbtable and tsbtable[gname] and tsbtable[gname].tsb
-    if not vw and dsc.index then
-      local cid = stringformat("cid%05d", dsc.index)
-      vw = tsbtable and tsbtable[cid] and tsbtable[cid].height
-      tsb = tsbtable and tsbtable[cid] and tsbtable[cid].tsb
-    end
-    tsb = tsb and factor and tsb*factor
-    --]]
+    local gl = v.index
+    -- from loaded font
+    local vw  = tsbtable and tsbtable[gl] and tsbtable[gl].ht
+    local tsb = tsbtable and tsbtable[gl] and tsbtable[gl].tsb
+    tsb = tsb and tsb * factor
     vw = vw and vw * factor or quad
     local hw = v.width or quad
     local offset = hw/2 - quad/2 + halfxht
@@ -1757,7 +1745,7 @@ local function cjk_vertical_font (vf)
     local asc = bb4 and tsb and (bb4 + tsb)
     asc = asc or ascender
     v.commands = {
-      {'right', asc}, -- bbox4 + top_side_bearing! But, tsb not available!
+      {'right', asc}, -- bbox4 + top_side_bearing
       {'down', offset},
       {'special', 'pdf: q 0 1 -1 0 0 0 cm'},
       {'push'},
@@ -1846,6 +1834,7 @@ local function tounicode_oldhangul (tfmdata)
   local desc = tfmdata.shared and tfmdata.shared.rawdata and tfmdata.shared.rawdata.descriptions
   local chrs = tfmdata.characters
   if not desc or not chrs then return end
+  if not chrs[0x1100] then return end
   local last = 0
   for _,v in ipairs({{0x1100,0x11FF},{0xA960,0xA97C},{0xD7B0,0xD7FB}}) do
     local cnt  = v[1]
@@ -1864,7 +1853,7 @@ local function tounicode_oldhangul (tfmdata)
       cnt = cnt + 1
     end
   end
-  if stringfind(tfmdata.fontname,"^HCR") then
+  if stringfind(tfmdata.fontname,"^HCR.+LVT") then
     local touni = "1112119E"
     for i = last+1, last+2 do
       local dsc,chr = desc[i],chrs[i]
