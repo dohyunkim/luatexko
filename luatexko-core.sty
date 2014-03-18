@@ -24,8 +24,8 @@
 \newluatexattribute\dotemphattr
 \newluatexattribute\autojosaattr
 \newluatexattribute\luakorubyattr \chardef\luakorubyattrnum\the\allocationnumber
-\newluatexattribute\hangfntattr
-\newluatexattribute\hanjfntattr
+\newluatexattribute\hangulfntattr
+\newluatexattribute\hanjafntattr
 \newluatexattribute\fallbackfntattr
 \newluatexattribute\hangulpunctsattr
 
@@ -227,7 +227,7 @@
   \ifdefined\hangul@font \hangul@font \fi
   \expandafter\expandafter\expandafter
   \endgroup
-  \expandafter\hangfntattr\luatexfontid\font\relax
+  \expandafter\hangulfntattr\luatexfontid\font\relax
 }
 \def\luatexko@hanja@selectfont{%
   \begingroup
@@ -238,7 +238,7 @@
   \ifdefined\hanja@font \hanja@font \fi
   \expandafter\expandafter\expandafter
   \endgroup
-  \expandafter\hanjfntattr\luatexfontid\font\relax
+  \expandafter\hanjafntattr\luatexfontid\font\relax
 }
 \def\luatexko@fallback@selectfont{%
   \begingroup

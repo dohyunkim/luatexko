@@ -66,15 +66,115 @@
 \newhangulfontfeature{Expansion}{expansion}{default}{\aftergroup\pdfadjustspacing\aftergroup\tw@}
 
 %% macros for Korean fonts
-\protected\def\setmainhangulfont{\newfontfamily\serifhangul@font}
-\protected\def\setmainhanjafont {\newfontfamily\serifhanja@font}
-\protected\def\setmainfallbackfont{\newfontfamily\seriffallback@font}
-\protected\def\setsanshangulfont{\newfontfamily\sanshangul@font}
-\protected\def\setsanshanjafont {\newfontfamily\sanshanja@font}
-\protected\def\setsansfallbackfont{\newfontfamily\sansfallback@font}
-\protected\def\setmonohangulfont{\newfontfamily\monohangul@font}
-\protected\def\setmonohanjafont {\newfontfamily\monohanja@font}
-\protected\def\setmonofallbackfont{\newfontfamily\monofallback@font}
+\edef\luatexko@family@default{\familydefault}
+\protected\def\setmainhangulfont#1#{%
+  \def\luatexko@fontspec@temp{#1}\setmainhangulfont@}
+\def\setmainhangulfont@#1{\expandafter\newfontfamily
+  \expandafter\serifhangul@font\luatexko@fontspec@temp{#1}%
+  \ifx\luatexko@family@default\rmdefault
+    \begingroup
+    \serifhangul@font
+    \expandafter\expandafter\expandafter
+    \endgroup
+    \expandafter\hangulfntattr\luatexfontid\font
+  \fi
+}
+\protected\def\setmainhanjafont#1#{%
+  \def\luatexko@fontspec@temp{#1}\setmainhanjafont@}
+\def\setmainhanjafont@#1{\expandafter\newfontfamily
+  \expandafter\serifhanja@font\luatexko@fontspec@temp{#1}%
+  \ifx\luatexko@family@default\rmdefault
+    \begingroup
+    \serifhanja@font
+    \expandafter\expandafter\expandafter
+    \endgroup
+    \expandafter\hanjafntattr\luatexfontid\font
+  \fi
+}
+\protected\def\setmainfallbackfont#1#{%
+  \def\luatexko@fontspec@temp{#1}\setmainfallbackfont@}
+\def\setmainfallbackfont@#1{\expandafter\newfontfamily
+  \expandafter\seriffallback@font\luatexko@fontspec@temp{#1}%
+  \ifx\luatexko@family@default\rmdefault
+    \begingroup
+    \seriffallback@font
+    \expandafter\expandafter\expandafter
+    \endgroup
+    \expandafter\fallbackfntattr\luatexfontid\font
+  \fi
+}
+\protected\def\setsanshangulfont#1#{%
+  \def\luatexko@fontspec@temp{#1}\setsanshangulfont@}
+\def\setsanshangulfont@#1{\expandafter\newfontfamily
+  \expandafter\sanshangul@font\luatexko@fontspec@temp{#1}%
+  \ifx\luatexko@family@default\sfdefault
+    \begingroup
+    \sanshangul@font
+    \expandafter\expandafter\expandafter
+    \endgroup
+    \expandafter\hangulfntattr\luatexfontid\font
+  \fi
+}
+\protected\def\setsanshanjafont#1#{%
+  \def\luatexko@fontspec@temp{#1}\setsanshanjafont@}
+\def\setsanshanjafont@#1{\expandafter\newfontfamily
+  \expandafter\sanshanja@font\luatexko@fontspec@temp{#1}%
+  \ifx\luatexko@family@default\sfdefault
+    \begingroup
+    \sanshanja@font
+    \expandafter\expandafter\expandafter
+    \endgroup
+    \expandafter\hanjafntattr\luatexfontid\font
+  \fi
+}
+\protected\def\setsansfallbackfont#1#{%
+  \def\luatexko@fontspec@temp{#1}\setsansfallbackfont@}
+\def\setsansfallbackfont@#1{\expandafter\newfontfamily
+  \expandafter\sansfallback@font\luatexko@fontspec@temp{#1}%
+  \ifx\luatexko@family@default\sfdefault
+    \begingroup
+    \sansfallback@font
+    \expandafter\expandafter\expandafter
+    \endgroup
+    \expandafter\fallbackfntattr\luatexfontid\font
+  \fi
+}
+\protected\def\setmonohangulfont#1#{%
+  \def\luatexko@fontspec@temp{#1}\setmonohangulfont@}
+\def\setmonohangulfont@#1{\expandafter\newfontfamily
+  \expandafter\monohangul@font\luatexko@fontspec@temp{#1}%
+  \ifx\luatexko@family@default\ttdefault
+    \begingroup
+    \monohangul@font
+    \expandafter\expandafter\expandafter
+    \endgroup
+    \expandafter\hangulfntattr\luatexfontid\font
+  \fi
+}
+\protected\def\setmonohanjafont#1#{%
+  \def\luatexko@fontspec@temp{#1}\setmonohanjafont@}
+\def\setmonohanjafont@#1{\expandafter\newfontfamily
+  \expandafter\monohanja@font\luatexko@fontspec@temp{#1}%
+  \ifx\luatexko@family@default\ttdefault
+    \begingroup
+    \monohanja@font
+    \expandafter\expandafter\expandafter
+    \endgroup
+    \expandafter\hanjafntattr\luatexfontid\font
+  \fi
+}
+\protected\def\setmonofallbackfont#1#{%
+  \def\luatexko@fontspec@temp{#1}\setmonofallbackfont@}
+\def\setmonofallbackfont@#1{\expandafter\newfontfamily
+  \expandafter\monofallback@font\luatexko@fontspec@temp{#1}%
+  \ifx\luatexko@family@default\ttdefault
+    \begingroup
+    \monofallback@font
+    \expandafter\expandafter\expandafter
+    \endgroup
+    \expandafter\hanjafntattr\luatexfontid\font
+  \fi
+}
 
 \protected\def\newhangulfontfamily#1{%
   \protected\def#1{\expandafter\let\expandafter\hangul@font
@@ -244,9 +344,6 @@
 \unless\ifdefined\serifhangul@font\let\serifhangul@font\sanshangul@font\fi
 \unless\ifdefined\sanshangul@font \let\sanshangul@font\serifhangul@font\fi
 \unless\ifdefined\monohangul@font \let\monohangul@font\sanshangul@font \fi
-\luatexko@hangul@selectfont
-\luatexko@hanja@selectfont
-\luatexko@fallback@selectfont
 % for hyperref
 \@ifpackageloaded{hyperref}{\pdfstringdefDisableCommands{%
   \let\dotemph\@firstofone
