@@ -12,8 +12,8 @@
 
 local err,warn,info,log = luatexbase.provides_module({
   name        = 'luatexko',
-  date        = '2014/02/04',
-  version     = 1.4,
+  date        = '2014/03/18',
+  version     = 1.5,
   description = 'Korean linebreaking and font-switching',
   author      = 'Dohyun Kim',
   license     = 'LPPL v1.3+',
@@ -39,6 +39,7 @@ local string_sub    = string.sub
 local mathfloor     = math.floor
 local tex_round     = tex.round
 local tex_sp        = tex.sp
+local texcount      = tex.count
 local fontdefine    = font.define
 local utf8char      = unicode.utf8.char
 
@@ -1501,9 +1502,9 @@ add_to_callback('hpack_filter', function(head)
 end, 'luatexko.hpack_filter_first',1)
 
 add_to_callback('hpack_filter', function(head)
-  get_ruby_side_kern(head)
+  if texcount["luakorubyattrcnt"]>0 then get_ruby_side_kern(head) end
   cjk_spacing_linebreak(head)
-  spread_ruby_base_box(head)
+  if texcount["luakorubyattrcnt"]>0 then spread_ruby_base_box(head) end
   head = compress_fullwidth_punctuations(head)
   -- head = no_ruby_at_margin(head)
   head = reorderTM(head)
@@ -1520,12 +1521,12 @@ add_to_callback('pre_linebreak_filter', function(head)
 end, 'luatexko.pre_linebreak_filter_first',1)
 
 add_to_callback('pre_linebreak_filter', function(head)
-  get_ruby_side_kern(head)
+  if texcount["luakorubyattrcnt"]>0 then get_ruby_side_kern(head) end
   cjk_spacing_linebreak(head)
-  spread_ruby_base_box(head)
+  if texcount["luakorubyattrcnt"]>0 then spread_ruby_base_box(head) end
   head = compress_fullwidth_punctuations(head)
   discourage_char_widow(head, nodeslide(head))
-  head = no_ruby_at_margin(head)
+  if texcount["luakorubyattrcnt"]>0 then head = no_ruby_at_margin(head) end
   head = reorderTM(head)
   return head
 end, 'luatexko.pre_linebreak_filter')
@@ -1657,16 +1658,16 @@ end
 -- add to callback : post-linebreak
 -----------------------------------
 add_to_callback('vpack_filter', function(head)
-  head = after_linebreak_dotemph(head)
-  after_linebreak_ruby(head)
-  head = after_linebreak_underline(head)
+  if texcount["luakodotemphcnt"]>0 then head = after_linebreak_dotemph(head) end
+  if texcount["luakorubyattrcnt"]>0 then after_linebreak_ruby(head) end
+  if texcount["luakoulineboxcnt"]>0 then head = after_linebreak_underline(head) end
   return head
 end, 'luatexko.vpack_filter')
 
 add_to_callback("post_linebreak_filter", function(head)
-  head = after_linebreak_dotemph(head)
-  after_linebreak_ruby(head)
-  head = after_linebreak_underline(head)
+  if texcount["luakodotemphcnt"]>0 then head = after_linebreak_dotemph(head) end
+  if texcount["luakorubyattrcnt"]>0 then after_linebreak_ruby(head) end
+  if texcount["luakoulineboxcnt"]>0 then head = after_linebreak_underline(head) end
   return head
 end, 'luatexko.post_linebreak_filter')
 
@@ -1728,22 +1729,19 @@ local function cjk_vertical_font (vf)
   local ascender = vf.parameters and vf.parameters.ascender or quad*0.8
   local factor = vf.parameters and vf.parameters.factor or 655.36
   local xheight = vf.parameters and vf.parameters.x_height or quad/2
-  local halfxht = xheight/2
+  local goffset = xheight/2 - quad/2
   for i,v in pairs(vf.characters) do
     local dsc = descriptions[i]
     local gl = v.index
     -- from loaded font
     local vw  = tsbtable and tsbtable[gl] and tsbtable[gl].ht
-    local tsb = tsbtable and tsbtable[gl] and tsbtable[gl].tsb
-    tsb = tsb and tsb * factor
     vw = vw and vw * factor or quad
-    local hw = v.width or quad
-    local offset = hw/2 - quad/2 + halfxht
-    local vh = (hw > 0) and hw/2 or nil
+    local tsb = tsbtable and tsbtable[gl] and tsbtable[gl].tsb
     local bb4 = dsc and dsc.boundingbox and dsc.boundingbox[4]
-    bb4 = bb4 and bb4*factor
-    local asc = bb4 and tsb and (bb4 + tsb)
-    asc = asc or ascender
+    local asc = bb4 and tsb and (bb4+tsb)*factor or ascender
+    local hw = v.width or quad
+    local offset = hw/2 + goffset
+    local vh = hw > 0 and hw/2 or nil
     v.commands = {
       {'right', asc}, -- bbox4 + top_side_bearing
       {'down', offset},
@@ -1807,7 +1805,6 @@ otffeatures.register {
     node = activate_vertical_virtual,
   }
 }
---no vwidth in luaotfload v2]]
 
 ------------------------------------
 -- italic correction for fake-slant font

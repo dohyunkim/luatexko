@@ -14,7 +14,7 @@
   \input luaotfload.sty
   \catcode`@ = 11
 \else
-  \ProvidesPackage{luatexko-core}[2014/01/04 v1.4 Typesetting Korean with LuaTeX]
+  \ProvidesPackage{luatexko-core}[2014/03/18 v1.5 Typesetting Korean with LuaTeX]
   \RequirePackage{luaotfload}[2013/05/23]
 \fi
 
@@ -72,13 +72,13 @@
 \def\dotemphraise{0.4em }
 \unless\ifdefined\bfseries\let\bfseries\bf\fi
 \def\dotemphchar{\bfseries ^^^^02d9}
-\newcount\dotemph@cnt \dotemph@cnt\z@
+\newcount\luakodotemphcnt \luakodotemphcnt\z@
 \protected\def\dotemph#1{{%
-  \ifnum\dotemph@cnt > 100 \global\dotemph@cnt\z@ \fi
-  \global\advance\dotemph@cnt\@ne
+  \ifnum\luakodotemphcnt > 65535 \luakodotemphcnt\z@ \fi
+  \global\advance\luakodotemphcnt\@ne
   \setbox\z@\hbox{\raise\dotemphraise\hbox{\dotemphchar}}\ht\z@\z@\dp\z@\z@
-  \directlua{luatexko.dotemphnode[\the\dotemph@cnt] = node.copy_list(tex.box[0])}%
-  \dotemphattr\dotemph@cnt  #1}}
+  \directlua{luatexko.dotemphnode[\the\luakodotemphcnt] = node.copy_list(tex.box[0])}%
+  \dotemphattr\luakodotemphcnt  #1}}
 
 %% ruby : ruby.sty by Lemberg is excellent; but
 %%        it doesn't match well with luatexko, so implemented anew
@@ -90,12 +90,12 @@
 \let\rubyoverlap\ruby@overlaptrue
 \let\rubynooverlap\ruby@overlapfalse
 \rubyoverlap       % ruby may protrude over adjacent chars
-\newcount\luakorubyattr@cnt\luakorubyattr@cnt\z@
+\newcount\luakorubyattrcnt\luakorubyattrcnt\z@
 \protected\def\ruby#1#2{%
-  \ifnum\luakorubyattr@cnt > 1000 \global\luakorubyattr@cnt\z@ \fi
-  \global\advance\luakorubyattr@cnt\@ne
+  \ifnum\luakorubyattrcnt > 65535 \luakorubyattrcnt\z@ \fi
+  \global\advance\luakorubyattrcnt\@ne
   \begingroup
-  \setbox\z@\hbox attr\luakorubyattrnum\luakorubyattr@cnt{% base character
+  \setbox\z@\hbox attr\luakorubyattrnum\luakorubyattrcnt{% base character
     \vrule width\z@ height.88em depth\z@\relax #1}%
   \setbox\tw@\hbox{% ruby
     \ifdefined\rubyfont \rubyfont \fi
@@ -115,7 +115,7 @@
       \fi
     \fi #2}\ht\tw@\z@\dp\tw@\z@
   \directlua{%
-    luatexko.rubynode[\the\luakorubyattr@cnt] = {
+    luatexko.rubynode[\the\luakorubyattrcnt] = {
       node.copy_list(tex.box[2]),
       \number\numexpr\dimexpr\rubysep\relax\relax,
       \ifruby@overlap true\else false\fi}}%
@@ -136,7 +136,7 @@
 \fi
 
 %% vertical typesetting
-%% EXPERIMENTAL code: don't use this
+%% EXPERIMENTAL code
 \def\luatexko@vertical{%
   \ifnum\cjtypesetattr<\@ne
     \cjtypesetattr\z@ % korean-vertical
@@ -185,25 +185,25 @@
 %%  especially linebreak does not occur inside cjk words.
 \def\ulinewidth{0.04em }
 \def\ulinedown {0.25em }
-\newcount\ulinebox@cnt\ulinebox@cnt\z@
+\newcount\luakoulineboxcnt\luakoulineboxcnt\z@
 \protected\def\uline#1{%
-  \ifnum\ulinebox@cnt > 100 \global\ulinebox@cnt\z@ \fi
-  \global\advance\ulinebox@cnt\@ne
+  \ifnum\luakoulineboxcnt > 65535 \luakoulineboxcnt\z@ \fi
+  \global\advance\luakoulineboxcnt\@ne
   \dimen@\dimexpr\ulinedown+\ulinewidth\relax
   \dimen@ii-\dimexpr\ulinedown\relax
   \setbox\z@\hbox{\vrule width\z@ height\dimen@ii depth\dimen@}%
-  \directlua{luatexko.ulinebox[\the\ulinebox@cnt]=node.copy_list(tex.box[0].head)}%
-  \leavevmode\special{luako:ulinebegin=\the\ulinebox@cnt}%
+  \directlua{luatexko.ulinebox[\the\luakoulineboxcnt]=node.copy_list(tex.box[0].head)}%
+  \leavevmode\special{luako:ulinebegin=\the\luakoulineboxcnt}%
   #1\special{luako:ulineend}}
 % strike-out
 \protected\def\sout#1{{\def\ulinedown{-0.5ex-\ulinewidth/2}\uline{#1}}}
 % ulem with arbitray box
 \protected\def\markoverwidth#1#2{%
-  \ifnum\ulinebox@cnt > 100 \global\ulinebox@cnt\z@ \fi
-  \global\advance\ulinebox@cnt\@ne
+  \ifnum\luakoulineboxcnt > 65535 \luakoulineboxcnt\z@ \fi
+  \global\advance\luakoulineboxcnt\@ne
   \setbox\z@\hbox{#1}%
-  \directlua{luatexko.ulinebox[\the\ulinebox@cnt]=node.copy_list(tex.box[0])}%
-  \leavevmode\special{luako:ulinebegin=\the\ulinebox@cnt}%
+  \directlua{luatexko.ulinebox[\the\luakoulineboxcnt]=node.copy_list(tex.box[0])}%
+  \leavevmode\special{luako:ulinebegin=\the\luakoulineboxcnt}%
   #2\special{luako:ulineend}}
 \protected\def\uuline{\dimen@ii-\dimexpr\ulinedown\relax
   \dimen@\dimexpr\ulinedown+\ulinewidth\relax

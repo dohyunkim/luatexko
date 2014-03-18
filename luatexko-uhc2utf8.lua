@@ -12,8 +12,8 @@
 
 luatexbase.provides_module({
   name        = "luatexko-uhc2utf8",
-  version     = 1.2,
-  date        = "2013/06/10",
+  version     = 1.5,
+  date        = "2014/03/18",
   author      = "Dohyun Kim",
   description = "UHC (CP949) input encoding",
   license     = "LPPL v1.3+",
@@ -22,11 +22,12 @@ luatexbase.provides_module({
 luatexkouhc2utf8 = luatexkouhc2utf8 or {}
 local luatexkouhc2utf8 = luatexkouhc2utf8
 
-local find = string.find
+local match = string.match
 local gsub = string.gsub
 local byte = string.byte
 local len = string.len
 local format = string.format
+local utfvalues = string.utfvalues
 local ugsub = unicode.utf8.gsub
 local ubyte = unicode.utf8.byte
 local uchar = unicode.utf8.char
@@ -43,7 +44,7 @@ local function get_uhc_uni_table()
     while true do
       local line = file:read("*line")
       if not line then break end
-      local _,_,ea,eb,uni = find(line,"<(%x+)>%s+<(%x+)>%s+<(%x+)>")
+      local ea,eb,uni = match(line,"<(%x+)>%s+<(%x+)>%s+<(%x+)>")
       if ea and eb and uni then
         ea, eb, uni = tonumber(ea,16),tonumber(eb,16),tonumber(uni,16)
         for i=ea,eb do
@@ -62,16 +63,18 @@ local t_uhc2ucs = t_uhc2ucs or get_uhc_uni_table()
 local uhc_to_utf8 = function(buffer)
   if not buffer then return end
   -- check if buffer is already utf-8; better solution?
-  local t = gsub(buffer,"[\0-\127]","")
-  t = gsub(t,"[\194-\223][\128-\191]","")
-  t = gsub(t,"[\224-\239][\128-\191][\128-\191]","")
-  t = gsub(t,"[\240-\244][\128-\191][\128-\191][\128-\191]","")
-  if len(t) == 0 then return buffer end
+  local isutf = true
+  for v in utfvalues(buffer) do
+    if v == 0xFFFD then -- REPLACEMENT CHARACTER
+      isutf = false
+      break
+    end
+  end
+  if isutf == true then return buffer end
   -- now convert to utf8
   buffer = gsub(buffer, "([\129-\253])([\65-\254])",
   function(a, b)
-    a, b = byte(a), byte(b)
-    local utf = t_uhc2ucs[a * 256 + b]
+    local utf = t_uhc2ucs[byte(a) * 256 + byte(b)]
     if utf then return uchar(utf) end
   end)
   return buffer
@@ -105,8 +108,9 @@ local function utf8_to_uhc (name)
   name = ugsub(name, "[\161-\239\191\166]", -- 00A1..FFE6
   function(u)
     local c = t_ucs2uhc[ubyte(u)]
-    if not c then return u end
-    return format("%c%c", floor(c/256), c%256)
+    if c then
+      return format("%c%c", floor(c/256), c%256)
+    end
   end)
   return name
 end

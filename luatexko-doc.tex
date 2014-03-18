@@ -14,6 +14,7 @@
   Ligatures=TeX,
   Expansion,
   InterLatinCJK=.125em,
+  AutoFakeSlant,
   UprightFont=* Light,
   BoldFont=* Bold,
 ]{KoPubBatang_Pro}
@@ -45,31 +46,34 @@
 \title{\luatexko\ 간단 매뉴얼}
 \author{Dohyun Kim \normalsize |<nomos at ktug org>| \and
   \normalsize |<http://github.com/dohyunkim/luatexko>|}
-\date{Version 1.4\quad\today}
+\date{Version 1.5\quad\today}
 \maketitle
 
 \begin{quote}\small
   For a summary introduction in English, please see |README| file.
 
-  주요 변경 사항:
   \begin{itemize}\itemsep=0pt
+    \item[v1.0] ------
     \item 플레인텍에서도 luatexko.sty을 불러야 한다.
     \item 패키지 옵션 |unfonts|가 선언되지 않으면 은글꼴을 자동으로
       부르지 않는다.
     \item 글꼴 옵션값을 |<dimen>|으로 지시한다.
-    \item 세로쓰기를 더 이상 공식적으로 지원하지 않는다.
     \item \MP\ 코드를 넣으려면 luamplib 패키지를 불러야 한다.
-    \item[1.3] ------
+    \item[v1.3] ------
     \item fallbackfont 계열의 명령이 추가되었다.
     \item |\hangulpunctuations| 선언 및 관련 매크로가 추가되었고, 대신
       |QuoteRaise| 옵션이 없어졌다.
     \item |\josaignoreparens=1|이 선언되면 자동조사 결정시 괄호 부분을
       무시한다.
+    \item[v1.5] ------
+    \item 세로쓰기를 지원하기 위한 실험적 코드가 들어갔다.
+    \item |\actualtext| 명령이 추가되었다.
   \end{itemize}
 \end{quote}
 
 \section{}
 \hemph{\texlive\ 2013 이상}을 사용해야 한다.
+세로쓰기를 위해서는 \texlive\ 2014 이상이 필요하다.
 아직 \luatex은 베타 상태로 개발 중에 있으므로 안정적인 동작을 보장하지 않는다.
 
 \section{}
@@ -146,7 +150,7 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이
   \fboxsep=1em
   \fbox{\vbox{\hsize\dimexpr\linewidth-2.1em\relax
       \fontspec[Script=Hangul,Ligatures=Required]{HCR Dotum LVT}
-      \leftskip3cm
+      \leftskip2.5cm
 뎨 가ᄂᆞᆫ 뎌 각시 본 듯도 ᄒᆞᆫ뎌이고.\\
 天텬上상白ᄇᆡᆨ玉옥京경을 엇디ᄒᆞ야 離니別별ᄒᆞ고\\
 ᄒᆡ 다 져믄 날의 눌을 보라 가시ᄂᆞᆫ고
@@ -234,7 +238,6 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이
 사용한다.  일본어·중국어라도 글꼴 설정은 |\newhangulfontfamily|
 |\newhanjafontfamily| 따위를 이용한다.  그림~\ref{fig:ancientdoc} 참조.
 
-\section{}
 \luatexko가 글자 사이에 삽입하는 미세간격을 사용자가 영(zero)으로
 강제하기 위해선 |\inhibitglue| 명령을 이용한다.
 대체로 일본어·중국어 환경에서만 문제된다.
@@ -250,43 +253,53 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이
   \setmathhangulfont{HCRBatang}
 \end{verbatim}
 현재 한글만 쓸 수 있게 설정되어 있다.
+한자도 수식에 직접 입력하려면 사용자는
+\begin{verbatim}
+  \setmathhangulblock{4E00}{9FC3}
+\end{verbatim}
+명령으로 유니코드 블럭을 추가 지정해야 한다.
 
 \section{}
 
-%\begin{figure}
-%\framebox[\linewidth]{\begin{vertical}{16em}
-%\fontspec[Vertical=RotatedGlyphs,RawFeature=+vhal]{Adobe Myungjo Std}
-%\parindent-1em\leftskip1em \linespread{1.5}\selectfont
-%\noindent 님의 침묵{\small(The Silent Beloved)}
-%\smallbreak
-%\hfil\hfil 한 용 운\hfil
-%\bigbreak
-%님은 갓슴니다 아아 사랑하는나의님은 갓슴니다\par
-%푸른산빗을깨치고 단풍나무숩을향하야난 적은길을 거러서 참어떨치고
-%갓슴니다\par
-%黃金의꽃가티 굿고빗나든 옛盟誓는 차듸찬띠끌이되야서 한숨의 微風에
-%나러갓슴니다\par
-%날카로은 첫〈키쓰〉의追憶은 나의運命의指針을 돌너노코 뒷거름처서 사러젓슴니다\\
-%%…… \par
-%\hellipsis\par
-%아아 님은갓지마는 나는 님을보내지 아니하얏슴니다\par
-%제곡조를못이기는 사랑의노래는 님의沈默을 휩싸고돔니다\par
-%\end{vertical}}
-%\caption{세로쓰기의 예}\label{fig:vertical}
-%\end{figure}
+\begin{figure}
+\framebox[\linewidth]{\begin{vertical}{16em}
+\fontspec[Vertical=RotatedGlyphs,RawFeature=+vhal]{Adobe Myungjo Std}
+\parindent-1em\leftskip1em \linespread{1.5}\selectfont
+\noindent 님의 침묵{\small(The Silent Beloved)}
+\smallbreak
+\hfil\hfil 한 용 운\hfil
+\bigbreak
+님은 갓슴니다 아아 사랑하는나의님은 갓슴니다\par
+푸른산빗을깨치고 단풍나무숩을향하야난 적은길을 거러서 참어떨치고
+갓슴니다\par
+黃金의꽃가티 굿고빗나든 옛盟誓는 차듸찬띠끌이되야서 한숨의 微風에
+나러갓슴니다\par
+날카로은 첫〈키쓰〉의追憶은 나의運命의指針을 돌너노코 뒷거름처서 사러젓슴니다\\
+%…… \par
+\hellipsis\par
+아아 님은갓지마는 나는 님을보내지 아니하얏슴니다\par
+제곡조를못이기는 사랑의노래는 님의沈默을 휩싸고돔니다\par
+\end{vertical}}
+\caption{세로쓰기의 예}\label{fig:vertical}
+\end{figure}
 
-\luatex 에서는 아직 \hemph{세로쓰기를 지원하지 않는다}.%
-\footnote{굳이 세로쓰기를 실험해보고자 한다면 |ttx -t vmtx <폰트>.ttf|
-  명령의 결과물인 |<폰트>.ttx| 파일을 현재 디렉토리에 두어야 한다. 그런 다음
-  |\\begin\{vertical\}\{<dimen>\}...\\end\{vertical\}|
-  환경을 이용하라. ttx에 대해선
-  \url{http://sourceforge.net/projects/fonttools/} 참조.
-  문서 전체에 대해 세로쓰기를 하려면 이 환경을 쓰는 대신
-  |\\verticaltypesetting| 명령을 전처리부에 선언한다.}
+세로쓰기는 폰트의 고급 오픈타입 기능을 이용하므로 폰트가 이를 지원해야
+가능한 일이다. 폰트에 |Vertical=RotatedGlyphs| 옵션{\small(플레인텍이라면
+|vertical| 옵션)}을 준다.
+세로쓰기에는 \luatex\ 0.79 이상, 즉 \texlive\ 2014 이후 버전이 필요하다.
+
+문서의 일부를 세로쓰기하려면 |\begin{vertical}{<dimen>}...\end{vertical}|
+환경을 이용하라. |<dimen>|으로 세로쓰기 박스의 높이를 지시한다.
+그림~\ref{fig:vertical} 참조.
+
+문서 전체를 세로쓰기한다면 이 환경을 쓰는 대신
+|\verticaltypesetting| 명령을 전처리부에 선언한다.
+이때 면주의 폰트에는 세로쓰기 옵션이 없어야 할 것이다.
 
 \section{}
-전처리부에서 |\usepackage{luamplib}|을 선언하면 \MP\ 코드를 문서 중간에 삽입할 수 있다.
-한글이나 수식은 |btex| $\ldots$ |etex| 안에 넣어야 한다. 그림~\ref{fig:mplib} 참조.
+전처리부에서 |\usepackage{luamplib}|을 선언하면 \MP\ 코드를 문서 중간에
+삽입할 수 있다.  한글이나 수식은 |btex| $\ldots$ |etex| 안에 넣어야 한다.
+그림~\ref{fig:mplib} 참조. 상세한 것은 luamplib 패키지 문서를 참조하라.
 
 \begin{figure}
 \setbox0\vbox{%
@@ -393,6 +406,11 @@ ulem 패키지가 \luatexko와 궁합이 잘 맞지 않아{\small (줄바꿈에 
 |\gana| |\ojaso| |\ogana| |\pjaso| |\pgana| |\onum| |\pnum| |\oeng|
 |\peng| |\hnum| |\Hnum| |\hroman| |\hRoman| |\hNum| |\hanjanum| 따위를
 사용한다.
+
+\section{}
+|\actualtext{...}| 명령은 인자를 식자함과 동시에, 입력한 문자 그대로
+PDF에서 텍스트로 추출할 수 있게 해준다. 인자가 두 페이지에 나눠지지 않도록
+유의한다.  모든 PDF 리더가 이를 지원하는 것은 아니다. $\actualtext{\sqrt 2}$
 
 \section{}
 |\luatexhangulnormalize=1|이라 지시하면 첫가끝 자모를 완성형 음절로,

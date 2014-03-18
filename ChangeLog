@@ -1,3 +1,12 @@
+2014-03-18      Dohyun Kim <nomos at ktug org>
+
+	Version 1.5
+
+	* luatexko.lua: implemented experimental support for vertical
+	typesetting
+	* luatexko.lua, luatexko-core.sty: new macro \actualtext inspired by
+	accsupp.sty authored by Heiko Oberdiek.
+
 2014-01-16      Dohyun Kim <nomos at ktug org>
 
 	Version 1.4

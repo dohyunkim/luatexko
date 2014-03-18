@@ -12,8 +12,8 @@
 
 luatexbase.provides_module({
   name        = "luatexko-normalize",
-  version     = 1.2,
-  date        = "2013/06/10",
+  version     = 1.5,
+  date        = "2014/03/18",
   author      = "Dohyun Kim",
   description = "Hangul normalization",
   license     = "LPPL v1.3+",
@@ -22,9 +22,9 @@ luatexbase.provides_module({
 luatexkonormalize = luatexkonormalize or {}
 local luatexkonormalize = luatexkonormalize
 
-local cho   = "[\225\132\128-\225\132\146]"
-local jung  = "[\225\133\161-\225\133\181]"
-local jong  = "[\225\134\168-\225\135\130]"
+local ncho  = "[\225\132\128-\225\132\146]"
+local njung = "[\225\133\161-\225\133\181]"
+local jong  = "[\225\134\168-\225\135\191\237\159\139-\237\159\187]"
 local ojong = "[\225\135\131-\225\135\191\237\159\139-\237\159\187]"
 local compathanja = "[\239\164\128-\239\168\139]"
 local chanjatohanja = {
@@ -401,14 +401,16 @@ local jamotocjamo = {
 local gsub = unicode.utf8.gsub
 local byte = unicode.utf8.byte
 local char = unicode.utf8.char
+local find = unicode.utf8.find
 local add_to_callback = luatexbase.add_to_callback
 local remove_from_callback = luatexbase.remove_from_callback
 
 local jamo2syllable = function(l,v,t)
+  if find(t,ojong) then return end
   l, v = byte(l), byte(v)
   local s = (l - 0x1100) * 21
   s = (s + v - 0x1161) * 28
-  if t then
+  if t ~= "" then
     t = byte(t)
     s = s + t - 0x11a7
   end
@@ -416,8 +418,7 @@ local jamo2syllable = function(l,v,t)
   return char(s)
 end
 
-local hanguldecompose = function(buffer)
-  buffer = gsub(buffer, "[가-힣]", function(s)
+local syllable2jamo = function(s)
     s = byte(s) - 0xac00
     local cho = s / (21 * 28) + 0x1100
     local jung = (s % (21 * 28)) / 28 + 0x1161
@@ -426,8 +427,10 @@ local hanguldecompose = function(buffer)
       return char(cho)..char(jung)..char(jong)
     end
     return char(cho)..char(jung)
-  end)
-  return buffer
+end
+
+local hanguldecompose = function(buffer)
+  return gsub(buffer, "[가-힣]", syllable2jamo)
 end
 
 local function hanjanormalize(c)
@@ -442,21 +445,21 @@ local function jamo2cjamocho(c)
   return jamo
 end
 
-local function jamo2cjamojung(c)
+local function jamo2cjamojung(c,t)
+  if t ~= "" then return end
   local jamo = jamotocjamo.cjung[byte(c)]
   jamo = jamo and char(jamo)
   return jamo
 end
 
 local hangulcompose = function(buffer)
-  buffer = hanguldecompose(buffer)
-  buffer = gsub(buffer, "("..cho..")("..jung..")("..jong..")", jamo2syllable)
-  buffer = gsub(buffer, "("..cho..")("..jung..ojong..")", "%1\1%2")
-  buffer = gsub(buffer, "("..cho..")("..jung..")", jamo2syllable)
-  buffer = gsub(buffer, "([\225\132\128-\225\133\153])\225\133\160", jamo2cjamocho)
-  buffer = gsub(buffer, "\225\133\159([\225\133\161-\225\134\161])", jamo2cjamojung)
-  buffer = gsub(buffer, "\1", "")
-  buffer = gsub(buffer, "("..compathanja..")", hanjanormalize)
+  buffer = gsub(buffer, "[가-힣]"..jong, hanguldecompose)
+  buffer = gsub(buffer, "("..ncho..")("..njung..")("..jong.."?)", jamo2syllable)
+  buffer = gsub(buffer,
+    "([\225\132\128-\225\133\153])\225\133\160", jamo2cjamocho)
+  buffer = gsub(buffer,
+    "\225\133\159([\225\133\161-\225\134\161])("..jong.."?)", jamo2cjamojung)
+  buffer = gsub(buffer, compathanja, hanjanormalize)
   return buffer
 end
 
