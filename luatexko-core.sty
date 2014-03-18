@@ -358,9 +358,9 @@
 
 % Actual Text: beware that #1 should not divided into separate pages
 \protected\def\actualtext#1{%
-  \pdfliteral direct{/Span<</ActualText(\directlua{
-    luatexko.actualtext("\luatexluaescapestring{\detokenize{#1}}")})>>BDC}%
-  #1\pdfliteral direct{EMC}%
+  \pdfliteral page{/Span<</ActualText(\directlua{
+    luatexko.actualtext("\luatexluaescapestring{\detokenize{#1}}")
+  })>>BDC}#1\pdfliteral page{EMC}%
 }
 
 %% 말줄임표
