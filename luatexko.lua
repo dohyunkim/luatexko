@@ -1448,16 +1448,22 @@ end
 -----------------------------
 local function reorderTM (head)
   for curr in traverse_id(glyphnode, head) do
-    if curr.width > 0 then -- old hangul vertical typesetting is broken?
-      local uni = get_unicode_char(curr)
-      if uni and (uni == 0x302E or uni == 0x302F) then
+    local uni = get_unicode_char(curr)
+    if uni and (uni == 0x302E or uni == 0x302F) then
+      local unichar = get_font_char(curr.font, uni)
+      if unichar.width > 0 then
         local p = nodeprev(curr)
         while p do
-          if p.id ~= glyphnode then break end
-          local pc = get_cjk_class(get_unicode_char(p))
-          if pc == 7 or pc == 8 then
-            head = insert_before(head,p,copy_node(curr))
-            head = remove_node(head,curr)
+          if p.id == glyphnode then
+            local pc = get_cjk_class(get_unicode_char(p))
+            if pc == 7 or pc == 8 then
+              head = insert_before(head,p,copy_node(curr))
+              head = remove_node(head,curr)
+              break
+            end
+          elseif unichar.commands and p.id == kernnode then
+            -- kerns in vertical typesetting mode
+          else
             break
           end
           p = nodeprev(p)
@@ -1500,7 +1506,6 @@ add_to_callback('hpack_filter', function(head)
   remove_cj_spaceskip(head)
   font_substitute(head)
   head = hanja_vs_support(head)
-  head = reorderTM(head)
   return head
 end, 'luatexko.hpack_filter_first',1)
 
@@ -1510,6 +1515,7 @@ add_to_callback('hpack_filter', function(head)
   if texcount["luakorubyattrcnt"]>0 then spread_ruby_base_box(head) end
   head = compress_fullwidth_punctuations(head)
   -- head = no_ruby_at_margin(head)
+  head = reorderTM(head)
   return head
 end, 'luatexko.hpack_filter')
 
@@ -1519,7 +1525,6 @@ add_to_callback('pre_linebreak_filter', function(head)
   remove_cj_spaceskip(head)
   font_substitute(head)
   head = hanja_vs_support(head)
-  head = reorderTM(head)
   return head
 end, 'luatexko.pre_linebreak_filter_first',1)
 
@@ -1530,6 +1535,7 @@ add_to_callback('pre_linebreak_filter', function(head)
   head = compress_fullwidth_punctuations(head)
   discourage_char_widow(head, nodeslide(head))
   if texcount["luakorubyattrcnt"]>0 then head = no_ruby_at_margin(head) end
+  head = reorderTM(head)
   return head
 end, 'luatexko.pre_linebreak_filter')
 
