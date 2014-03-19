@@ -1,6 +1,6 @@
 -- luatexko.lua
 --
--- Copyright (c) 2013 Dohyun Kim  <nomos at ktug org>
+-- Copyright (c) 2013-2014 Dohyun Kim  <nomos at ktug org>
 --
 -- This work may be distributed and/or modified under the
 -- conditions of the LaTeX Project Public License, either version 1.3c
@@ -12,7 +12,7 @@
 
 local err,warn,info,log = luatexbase.provides_module({
   name        = 'luatexko',
-  date        = '2014/03/18',
+  date        = '2014/03/19',
   version     = 1.5,
   description = 'Korean linebreaking and font-switching',
   author      = 'Dohyun Kim',
@@ -556,7 +556,6 @@ local function get_cjk_class (ch, cjtype)
     end
     return c
   end
-  return nil
 end
 
 local function get_font_table (fid)
