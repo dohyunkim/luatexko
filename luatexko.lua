@@ -1500,6 +1500,7 @@ add_to_callback('hpack_filter', function(head)
   remove_cj_spaceskip(head)
   font_substitute(head)
   head = hanja_vs_support(head)
+  head = reorderTM(head)
   return head
 end, 'luatexko.hpack_filter_first',1)
 
@@ -1509,7 +1510,6 @@ add_to_callback('hpack_filter', function(head)
   if texcount["luakorubyattrcnt"]>0 then spread_ruby_base_box(head) end
   head = compress_fullwidth_punctuations(head)
   -- head = no_ruby_at_margin(head)
-  head = reorderTM(head)
   return head
 end, 'luatexko.hpack_filter')
 
@@ -1519,6 +1519,7 @@ add_to_callback('pre_linebreak_filter', function(head)
   remove_cj_spaceskip(head)
   font_substitute(head)
   head = hanja_vs_support(head)
+  head = reorderTM(head)
   return head
 end, 'luatexko.pre_linebreak_filter_first',1)
 
@@ -1529,7 +1530,6 @@ add_to_callback('pre_linebreak_filter', function(head)
   head = compress_fullwidth_punctuations(head)
   discourage_char_widow(head, nodeslide(head))
   if texcount["luakorubyattrcnt"]>0 then head = no_ruby_at_margin(head) end
-  head = reorderTM(head)
   return head
 end, 'luatexko.pre_linebreak_filter')
 
