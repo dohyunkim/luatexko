@@ -1382,8 +1382,8 @@ local function font_substitute(head)
       end
       if curr.char and not engfontchar then
         local korid  = false
-        local hangul = has_attribute(curr, hangulfntattr) or curr.font
-        local hanja  = has_attribute(curr, hanjafntattr) or curr.font
+        local hangul = has_attribute(curr, hangulfntattr)
+        local hanja  = has_attribute(curr, hanjafntattr)
         local fallback = has_attribute(curr,fallbackfntattr)
         local ftable = {hangul, hanja, fallback}
         if luatexko.hanjafontforhanja then
@@ -1391,7 +1391,7 @@ local function font_substitute(head)
           uni = uni and get_cjk_class(uni)
           if uni and uni < 7 then ftable = {hanja, hangul, fallback} end
         end
-        for i=1,#ftable do
+        for i = 1,3 do
           local fid = ftable[i]
           local c = get_font_char(fid, curr.char)
           if c then
