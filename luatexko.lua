@@ -1382,8 +1382,8 @@ local function font_substitute(head)
       end
       if curr.char and not engfontchar then
         local korid  = false
-        local hangul = has_attribute(curr, hangulfntattr)
-        local hanja  = has_attribute(curr, hanjafntattr)
+        local hangul = has_attribute(curr, hangulfntattr) or curr.font
+        local hanja  = has_attribute(curr, hanjafntattr) or curr.font
         local fallback = has_attribute(curr,fallbackfntattr)
         local ftable = {hangul, hanja, fallback}
         if luatexko.hanjafontforhanja then
@@ -1393,34 +1393,32 @@ local function font_substitute(head)
         end
         for i=1,#ftable do
           local fid = ftable[i]
-          if fid then
-            local c = get_font_char(fid, curr.char)
-            if c then
-              korid = true
-              curr.font = fid
-              -- adjust next glue by hangul font space
-              local nxt = nodenext(curr)
-              if eng
-                and nxt and nxt.id == gluenode
-                and nxt.subtype and nxt.subtype == 0
-                and nxt.spec and nxt.spec.writable
-                and get_font_char(fid,32) then
-                local sp,st,sh = hangulspaceskip(eng, fid, nxt.spec)
-                if sp and st and sh then
-                  local hg = copy_node(nxt.spec)
-                  hg.width, hg.stretch, hg.shrink = sp, st, sh
-                  nxt.spec = hg
-                end
+          local c = get_font_char(fid, curr.char)
+          if c then
+            korid = true
+            curr.font = fid
+            -- adjust next glue by hangul font space
+            local nxt = nodenext(curr)
+            if eng
+              and nxt and nxt.id == gluenode
+              and nxt.subtype and nxt.subtype == 0
+              and nxt.spec and nxt.spec.writable
+              and get_font_char(fid,32) then
+              local sp,st,sh = hangulspaceskip(eng, fid, nxt.spec)
+              if sp and st and sh then
+                local hg = copy_node(nxt.spec)
+                hg.width, hg.stretch, hg.shrink = sp, st, sh
+                nxt.spec = hg
               end
-              --- charraise option charraise
-              local charraise = get_font_feature(fid, "charraise")
-              if charraise then
-                charraise = tex_sp(charraise)
-                curr.yoffset = curr.yoffset and (curr.yoffset + charraise) or charraise
-              end
-              ---
-              break
             end
+            --- charraise option charraise
+            local charraise = get_font_feature(fid, "charraise")
+            if charraise then
+              charraise = tex_sp(charraise)
+              curr.yoffset = curr.yoffset and (curr.yoffset + charraise) or charraise
+            end
+            ---
+            break
           end
         end
         if not korid and not is_unicode_vs(curr.char) then
@@ -1430,7 +1428,6 @@ local function font_substitute(head)
     end
     curr = nodenext(curr)
   end
-  return head
 end
 
 -----------------------------
@@ -1836,26 +1833,24 @@ end
 -- tounicode for old hangul
 ------------------------------------
 local function tounicode_oldhangul (tfmdata)
+  local script = tfmdata.properties and tfmdata.properties.script
+  if script ~= "hang" then return end
   local desc = tfmdata.shared and tfmdata.shared.rawdata and tfmdata.shared.rawdata.descriptions
   local chrs = tfmdata.characters
   if not desc or not chrs then return end
   if not chrs[0x1100] then return end
   local last = 0
   for _,v in ipairs({{0x1100,0x11FF},{0xA960,0xA97C},{0xD7B0,0xD7FB}}) do
-    local cnt  = v[1]
-    while cnt <= v[2] do
-      local ds = desc[cnt] and desc[cnt].slookups
+    for i = v[1],v[2] do
+      local ds = desc[i] and desc[i].slookups
       if ds then
         for _,s in pairs(ds) do
-          if chrs[s] and not chrs[s].tounicode then
-            if type(s) == "number" then
-              chrs[s].tounicode = stringformat("%04X",cnt)
-              last = s > last and s or last
-            end
+          if type(s) == "number" and s >= 0xF0000 and chrs[s] and not chrs[s].tounicode then
+            chrs[s].tounicode = stringformat("%04X",i)
+            last = s > last and s or last
           end
         end
       end
-      cnt = cnt + 1
     end
   end
   if stringfind(tfmdata.fontname,"^HCR.+LVT") then

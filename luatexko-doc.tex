@@ -219,14 +219,13 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이
 \section{}
 \begin{figure}\linespread{1.388}\selectfont\hfil
 \fbox{\vbox{\hsize=36em \begin{chinese} \setmainfont{STFangsong}
-子曰：「學而時習之，不亦說乎？有朋自遠方來，不亦樂乎？人不知而不慍，不亦君子乎？」
-
-有子曰：「其為人也孝弟，而好犯上者，鮮矣！不好犯上，而好作亂者，未之有也！君子務本，本立而道生；孝弟也者，其為仁之本歟？」
-
-子曰：「巧言令色，鮮矣仁！」
-
-曾子曰：「吾日三省吾身：為人謀，而不忠乎？與朋友交，而不信乎？傳，不習乎？」
-
+子曰：「學而時習之，不亦說乎？有朋自遠方來，不亦樂乎？人不知而不慍，
+不亦君子乎？」\par
+有子曰：「其為人也孝弟，而好犯上者，鮮矣！不好犯上，而好作亂者，未之有也！
+君子務本，本立而道生；孝弟也者，其為仁之本歟？」\par
+子曰：「巧言令色，鮮矣仁！」\par
+曾子曰：「吾日三省吾身：為人謀，而不忠乎？與朋友交，而不信乎？傳，
+不習乎？」\par
 子曰：「道千乘之國，敬事而信，節用而愛人，使民以時。」
 \end{chinese}}}\hfil
 \caption{고문헌 조판 보기}\label{fig:ancientdoc}
@@ -410,7 +409,9 @@ ulem 패키지가 \luatexko와 궁합이 잘 맞지 않아{\small (줄바꿈에 
 \section{}
 |\actualtext{...}| 명령은 인자를 식자함과 동시에, 입력한 문자 그대로
 PDF에서 텍스트로 추출할 수 있게 해준다. 인자가 두 페이지에 나눠지지 않도록
-유의한다.  모든 PDF 리더가 이를 지원하는 것은 아니다. $\actualtext{\sqrt 2}$
+유의한다.  모든 PDF 리더가 이를 지원하는 것은 아니다. 예: $\actualtext{\sqrt 2}$
+{\fontspec[Script=Hangul,Ligatures=Required]{HCR Dotum LVT}
+\actualtext{ᄠᅳ〮들〮}}
 
 \section{}
 |\luatexhangulnormalize=1|이라 지시하면 첫가끝 자모를 완성형 음절로,

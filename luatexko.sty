@@ -68,39 +68,41 @@
 %% macros for Korean fonts
 \edef\luatexko@family@default{\familydefault}
 \def\luatexko@global@setfonts#1#2#3#4{%
-  \expandafter\newfontfamily\expandafter#3\luatexko@fontspec@temp{#4}%
-  \ifx\luatexko@family@default#2%
-    \expandafter\let\csname #1@font\endcsname#3%
-    \csname luatexko@#1@selectfont\endcsname
+  \expandafter\newfontfamily\csname #1#2@font\expandafter\endcsname
+    \luatexko@fontspec@temp{#4}%
+  \ifx\luatexko@family@default#3%
+    \expandafter\let\csname #2@font\expandafter\endcsname
+      \csname #1#2@font\endcsname
+    \csname luatexko@#2@selectfont\endcsname
   \fi\ignorespaces
 }
 \protected\def\setmainhangulfont#1#{%
   \def\luatexko@fontspec@temp{#1}\luatexko@global@setfonts
-  {hangul}\rmdefault\serifhangul@font}
+  {serif}{hangul}\rmdefault}
 \protected\def\setmainhanjafont#1#{%
   \def\luatexko@fontspec@temp{#1}\luatexko@global@setfonts
-  {hanja}\rmdefault\serifhanja@font}
+  {serif}{hanja}\rmdefault}
 \protected\def\setmainfallbackfont#1#{%
   \def\luatexko@fontspec@temp{#1}\luatexko@global@setfonts
-  {fallback}\rmdefault\seriffallback@font}
+  {serif}{fallback}\rmdefault}
 \protected\def\setsanshangulfont#1#{%
   \def\luatexko@fontspec@temp{#1}\luatexko@global@setfonts
-  {hangul}\sfdefault\sanshangul@font}
+  {sans}{hangul}\sfdefault}
 \protected\def\setsanshanjafont#1#{%
   \def\luatexko@fontspec@temp{#1}\luatexko@global@setfonts
-  {hanja}\sfdefault\sanshanja@font}
+  {sans}{hanja}\sfdefault}
 \protected\def\setsansfallbackfont#1#{%
   \def\luatexko@fontspec@temp{#1}\luatexko@global@setfonts
-  {fallback}\sfdefault\sansfallback@font}
+  {sans}{fallback}\sfdefault}
 \protected\def\setmonohangulfont#1#{%
   \def\luatexko@fontspec@temp{#1}\luatexko@global@setfonts
-  {hangul}\ttdefault\monohangul@font}
+  {mono}{hangul}\ttdefault}
 \protected\def\setmonohanjafont#1#{%
   \def\luatexko@fontspec@temp{#1}\luatexko@global@setfonts
-  {hanja}\ttdefault\monohanja@font}
+  {mono}{hanja}\ttdefault}
 \protected\def\setmonofallbackfont#1#{%
   \def\luatexko@fontspec@temp{#1}\luatexko@global@setfonts
-  {fallback}\ttdefault\monofallback@font}
+  {mono}{fallback}\ttdefault}
 
 \protected\def\newhangulfontfamily#1{%
   \protected\def#1{\expandafter\let\expandafter\hangul@font
@@ -153,10 +155,10 @@
 \def\luatexko@@add@fontfeature#1#2{%
   \begingroup
   \ifcsname #1@font\endcsname\csname #1@font\endcsname\fi
-  \addfontfeature{#2}\global\let\luatexko@fontspec@temp\f@family
-  \endgroup
-  \expandafter\edef\csname #1@font\endcsname
-    {\noexpand\fontfamily{\luatexko@fontspec@temp}\noexpand\selectfont}%
+  \addfontfeature{#2}%
+  \edef\x{\endgroup
+    \noexpand\expandafter\def\noexpand\csname #1@font\endcsname
+    {\noexpand\fontfamily{\f@family}\noexpand\selectfont}}\x
   \csname luatexko@#1@selectfont\endcsname\ignorespaces
 }
 \protected\def\addhangulfontfeature{\luatexko@@add@fontfeature{hangul}}

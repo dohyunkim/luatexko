@@ -112,6 +112,9 @@
         \ifdefined\hanja@font
           \luatexko@resize@font\hanjafont{}\hanja@font\rubysize
         \fi
+        \ifdefined\fallback@font
+          \luatexko@resize@font\fallbackfont{}\fallback@font\rubysize
+        \fi
       \fi
     \fi #2}\ht\tw@\z@\dp\tw@\z@
   \directlua{%
@@ -123,16 +126,14 @@
   \endgroup}
 
 \ifcsname selectfont\endcsname\else
-  % font resize under plain tex
-  \def\luatexko@resize@font#1#2#3#4{%
-    \expandafter\dimen@\pdffontsize#3\relax
-    \edef\luatexko@tmp@fontname{%
-      \directlua{
-        local f = [===[\fontname#3]===]
-        f = string.gsub(f," at .+","")
-        tex.sprint(f) }}%
-    #1#2=\luatexko@tmp@fontname\space at #4\dimen@
-    #2}
+% font resize under plain tex
+\begingroup\edef\x{\endgroup
+  \def\noexpand\rem@vesizepart##1\detokenize{ at}##2\noexpand\end{##1}}\x
+\def\luatexko@resize@font#1#2#3#4{%
+  \begingroup
+  \edef\x@{\noexpand\rem@vesizepart\fontname#3\detokenize{ at}\noexpand\end}%
+  \edef\y@{\endgroup#1\noexpand#2 \x@\space at#4\dimexpr\pdffontsize#3\relax}%
+  \y@#2}
 \fi
 
 %% vertical typesetting
