@@ -1682,40 +1682,14 @@ end, 'luatexko.post_linebreak_filter')
 local tsbtable = {}
 local lfsattributes = lfs.attributes
 local lfstouch      = lfs.touch
-local lfsisdir      = lfs.isdir
-local mytime, currenttime, cachedir
 
-local function prepare_vertical_cache_env()
-  mytime = kpse.find_file("luatexko.lua")
-  mytime = mytime and lfsattributes(mytime,"modification")
-  currenttime = os.time()
-  cachedir = kpse.expand_var("$TEXMFCACHE")
-  if cachedir ~= "$TEXMFCACHE" then
-    cachedir = cachedir.."/luatex-cache/luatexko"
-    if lfsisdir(cachedir) then return end
-    if lfstouch then lfs.mkdirs(cachedir) end
-    if lfsisdir(cachedir) then return end
-  end
-  cachedir = kpse.expand_var("$TEXMFVAR")
-  if cachedir ~= "$TEXMFVAR" then
-    cachedir = cachedir.."/luatex-cache/luatexko"
-    if lfsisdir(cachedir) then return end
-    if lfstouch then lfs.mkdirs(cachedir) end
-    if lfsisdir(cachedir) then return end
-  end
-  for _,v in ipairs(arg) do
-    local t = stringmatch(v,"%-output%-directory=(.+)")
-    if t then
-      cachedir = t
-      return
-    end
-  end
-  cachedir = "."
-end
+local  mytime = kpse.find_file("luatexko.lua")
+mytime = mytime and lfsattributes(mytime,"modification")
+local  currenttime = os.time()
+local cachedir = caches.getwritablepath("luatexko")
 
 local function get_vwidth_tsb_table (filename,fontname)
   if tsbtable[fontname] then return tsbtable[fontname] end
-  if not cachedir then prepare_vertical_cache_env() end
   local cachefile = stringformat("%s/luatexko_vertical_info_%s.lua",
                                 cachedir,stringgsub(fontname,"%W","_"))
   local cattr = lfs.isfile(cachefile) and lfsattributes(cachefile)
@@ -1743,7 +1717,9 @@ local function get_vwidth_tsb_table (filename,fontname)
     end
     if lfstouch then
       table.tofile(cachefile,glyph_t,"return")
-      lfstouch(cachefile,currenttime,fonttime)
+      if not lfstouch(cachefile,currenttime,fonttime) then
+        warn("Writing cache file '%s' failed!",cachefile)
+      end
     end
     tsbtable[fontname] = glyph_t
     return glyph_t
