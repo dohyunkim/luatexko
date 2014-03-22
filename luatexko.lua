@@ -12,7 +12,7 @@
 
 local err,warn,info,log = luatexbase.provides_module({
   name        = 'luatexko',
-  date        = '2014/03/19',
+  date        = '2014/03/22',
   version     = 1.5,
   description = 'Korean linebreaking and font-switching',
   author      = 'Dohyun Kim',
@@ -1393,8 +1393,7 @@ local function font_substitute(head)
         end
         for i = 1,3 do
           local fid = ftable[i]
-          local c = get_font_char(fid, curr.char)
-          if c then
+          if get_font_char(fid, curr.char) then
             korid = true
             curr.font = fid
             -- adjust next glue by hangul font space
@@ -1415,7 +1414,7 @@ local function font_substitute(head)
             local charraise = get_font_feature(fid, "charraise")
             if charraise then
               charraise = tex_sp(charraise)
-              curr.yoffset = curr.yoffset and (curr.yoffset + charraise) or charraise
+              curr.yoffset = charraise + (curr.yoffset or 0)
             end
             ---
             break
@@ -1681,13 +1680,52 @@ end, 'luatexko.post_linebreak_filter')
 -- vertical typesetting: EXPERIMENTAL
 ------------------------------------
 local tsbtable = {}
+local lfsattributes = lfs.attributes
+local lfstouch      = lfs.touch
+local lfsisdir      = lfs.isdir
+local mytime, currenttime, cachedir
 
-local function get_vwidth_tsb_table (filename)
-  if tsbtable[filename] then
-    return tsbtable[filename]
+local function prepare_vertical_cache_env()
+  mytime = kpse.find_file("luatexko.lua")
+  mytime = mytime and lfsattributes(mytime,"modification")
+  currenttime = os.time()
+  cachedir = kpse.expand_var("$TEXMFCACHE")
+  if cachedir ~= "$TEXMFCACHE" then
+    cachedir = cachedir.."/luatex-cache/luatexko"
+    if lfsisdir(cachedir) then return end
+    if lfstouch then lfs.mkdirs(cachedir) end
+    if lfsisdir(cachedir) then return end
+  end
+  cachedir = kpse.expand_var("$TEXMFVAR")
+  if cachedir ~= "$TEXMFVAR" then
+    cachedir = cachedir.."/luatex-cache/luatexko"
+    if lfsisdir(cachedir) then return end
+    if lfstouch then lfs.mkdirs(cachedir) end
+    if lfsisdir(cachedir) then return end
+  end
+  for _,v in ipairs(arg) do
+    local t = stringmatch(v,"%-output%-directory=(.+)")
+    if t then
+      cachedir = t
+      return
+    end
+  end
+  cachedir = "."
+end
+
+local function get_vwidth_tsb_table (filename,fontname)
+  if tsbtable[fontname] then return tsbtable[fontname] end
+  if not cachedir then prepare_vertical_cache_env() end
+  local cachefile = stringformat("%s/luatexko_vertical_info_%s.lua",
+                                cachedir,stringgsub(fontname,"%W","_"))
+  local cattr = lfs.isfile(cachefile) and lfsattributes(cachefile)
+  local fonttime = lfsattributes(filename,"modification")
+  if cattr and cattr.access > mytime and cattr.modification == fonttime then
+    tsbtable[fontname] = dofile(cachefile)
+    return tsbtable[fontname]
   end
   local metrics = nil
-  local font = fontloader.open(filename)
+  local font = fontloader.open(filename,fontname)
   if font then
     metrics = fontloader.to_table(font)
     fontloader.close(font)
@@ -1703,7 +1741,11 @@ local function get_vwidth_tsb_table (filename)
         glyph_t[i] = { ht = v.vwidth, tsb = v.tsidebearing }
       end
     end
-    tsbtable[filename] = glyph_t
+    if lfstouch then
+      table.tofile(cachefile,glyph_t,"return")
+      lfstouch(cachefile,currenttime,fonttime)
+    end
+    tsbtable[fontname] = glyph_t
     return glyph_t
   end
 end
@@ -1715,18 +1757,12 @@ local function cjk_vertical_font (vf)
   if vf.type == "virtual" then return end
 
   -- load font (again)
-  local filename = vf.filename
-  local tsbtable = get_vwidth_tsb_table(filename)
+  local tsbtable = get_vwidth_tsb_table(vf.filename,vf.fontname)
   if not tsbtable then return end
 
   local tmp = table.copy(vf) -- fastcopy takes time too long.
   local id = fontdefine(tmp)
 
-  local hash = vf.properties and vf.properties.hash and vf.properties.hash..' @ vertical'
-  hash = hash or (vf.name and vf.size and vf.name..' @ '..vf.size..' @ vertical')
-
-  vf.properties = vf.properties or {}
-  vf.properties.hash = hash
   vf.type = 'virtual'
   vf.fonts = {{ id = id }}
   local quad = vf.parameters and vf.parameters.quad or 655360
