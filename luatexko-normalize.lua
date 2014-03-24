@@ -13,7 +13,7 @@
 luatexbase.provides_module({
   name        = "luatexko-normalize",
   version     = 1.5,
-  date        = "2014/03/19",
+  date        = "2014/03/24",
   author      = "Dohyun Kim",
   description = "Hangul normalization",
   license     = "LPPL v1.3+",
@@ -398,6 +398,7 @@ local jamotocjamo = {
   }
 }
 
+require "unicode"
 local gsub = unicode.utf8.gsub
 local byte = unicode.utf8.byte
 local char = unicode.utf8.char

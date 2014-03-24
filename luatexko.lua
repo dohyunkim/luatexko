@@ -12,7 +12,7 @@
 
 local err,warn,info,log = luatexbase.provides_module({
   name        = 'luatexko',
-  date        = '2014/03/22',
+  date        = '2014/03/24',
   version     = 1.5,
   description = 'Korean linebreaking and font-switching',
   author      = 'Dohyun Kim',
@@ -41,6 +41,7 @@ local tex_round     = tex.round
 local tex_sp        = tex.sp
 local texcount      = tex.count
 local fontdefine    = font.define
+require "unicode"
 local utf8char      = unicode.utf8.char
 
 local fontdata = fonts.hashes.identifiers
@@ -1679,18 +1680,11 @@ end, 'luatexko.post_linebreak_filter')
 ------------------------------------
 -- vertical typesetting: EXPERIMENTAL
 ------------------------------------
-local tsbtable = {}
-local lfsattributes = lfs.attributes
-local lfstouch      = lfs.touch
-
-local  mytime = kpse.find_file("luatexko.lua")
-mytime = mytime and lfsattributes(mytime,"modification")
-local  currenttime = os.time()
-local cachedir = caches.getwritablepath("luatexko")
+local tsbtable, mytime, currtime, cachedir, lfsattributes, lfstouch
 
 local function get_vwidth_tsb_table (filename,fontname)
   if tsbtable[fontname] then return tsbtable[fontname] end
-  local cachefile = stringformat("%s/luatexko_vertical_info_%s.lua",
+  local cachefile = stringformat("%s/luatexko_vertical_metrics_%s.lua",
                                 cachedir,stringgsub(fontname,"%W","_"))
   local cattr = lfs.isfile(cachefile) and lfsattributes(cachefile)
   local fonttime = lfsattributes(filename,"modification")
@@ -1717,7 +1711,7 @@ local function get_vwidth_tsb_table (filename,fontname)
     end
     if lfstouch then
       table.tofile(cachefile,glyph_t,"return")
-      if not lfstouch(cachefile,currenttime,fonttime) then
+      if not lfstouch(cachefile,currtime,fonttime) then
         warn("Writing cache file '%s' failed!",cachefile)
       end
     end
@@ -1808,6 +1802,14 @@ local function activate_vertical_virtual (tfmdata,value)
   local loaded = luatexbase.priority_in_callback("luaotfload.patch_font",
   "luatexko.vertical_virtual_font")
   if value and not loaded then
+    require "lfs"
+    lfstouch      = lfs.touch
+    lfsattributes = lfs.attributes
+    tsbtable  = {}
+    currtime  = os.time()
+    mytime    = kpse.find_file("luatexko.lua")
+    mytime    = mytime and lfsattributes(mytime,"modification")
+    cachedir  = caches.getwritablepath("..","luatexko")
     add_to_callback("luaotfload.patch_font",
     cjk_vertical_font,
     "luatexko.vertical_virtual_font")

@@ -28,6 +28,7 @@ local byte = string.byte
 local len = string.len
 local format = string.format
 local utfvalues = string.utfvalues
+require "unicode"
 local ugsub = unicode.utf8.gsub
 local ubyte = unicode.utf8.byte
 local uchar = unicode.utf8.char
