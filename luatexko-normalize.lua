@@ -403,8 +403,10 @@ local gsub = unicode.utf8.gsub
 local byte = unicode.utf8.byte
 local char = unicode.utf8.char
 local find = unicode.utf8.find
+local concat = table.concat
 local add_to_callback = luatexbase.add_to_callback
 local remove_from_callback = luatexbase.remove_from_callback
+local priority_in_callback = luatexbase.priority_in_callback
 
 local jamo2syllable = function(l,v,t)
   if find(t,ojong) then return end
@@ -412,22 +414,19 @@ local jamo2syllable = function(l,v,t)
   local s = (l - 0x1100) * 21
   s = (s + v - 0x1161) * 28
   if t ~= "" then
-    t = byte(t)
-    s = s + t - 0x11a7
+    s = s + byte(t) - 0x11a7
   end
-  s = s + 0xac00
-  return char(s)
+  return char(s + 0xac00)
 end
 
 local syllable2jamo = function(s)
     s = byte(s) - 0xac00
-    local cho = s / (21 * 28) + 0x1100
-    local jung = (s % (21 * 28)) / 28 + 0x1161
-    local jong = s % 28 + 0x11a7
-    if jong > 0x11a7 then
-      return char(cho)..char(jung)..char(jong)
-    end
-    return char(cho)..char(jung)
+    local t = {}
+    t[1] = char(s / 588 + 0x1100)
+    t[2] = char(s % 588 / 28 + 0x1161)
+    local jong = s % 28
+    t[3] = jong > 0 and char(jong + 0x11a7) or nil
+    return concat(t)
 end
 
 local hanguldecompose = function(buffer)
@@ -464,30 +463,21 @@ local hangulcompose = function(buffer)
   return buffer
 end
 
-local loaded = false
-
-local function compose()
-  if loaded then
+local function unload()
+  if priority_in_callback('process_input_buffer', 'luatexko-hangul-normalize') then
     remove_from_callback('process_input_buffer', 'luatexko-hangul-normalize')
   end
-  loaded = true
+end
+luatexkonormalize.unload = unload
+
+local function compose()
+  unload()
   add_to_callback('process_input_buffer', hangulcompose, 'luatexko-hangul-normalize')
 end
 luatexkonormalize.compose = compose
 
 local function decompose()
-  if loaded then
-    remove_from_callback('process_input_buffer', 'luatexko-hangul-normalize')
-  end
-  loaded = true
+  unload()
   add_to_callback('process_input_buffer', hanguldecompose, 'luatexko-hangul-normalize')
 end
 luatexkonormalize.decompose = decompose
-
-local function unload()
-  if loaded then
-    remove_from_callback('process_input_buffer', 'luatexko-hangul-normalize')
-  end
-  loaded = false
-end
-luatexkonormalize.unload = unload

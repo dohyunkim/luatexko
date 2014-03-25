@@ -13,7 +13,7 @@
 luatexbase.provides_module({
   name        = "luatexko-uhc2utf8",
   version     = 1.5,
-  date        = "2014/03/19",
+  date        = "2014/03/24",
   author      = "Dohyun Kim",
   description = "UHC (CP949) input encoding",
   license     = "LPPL v1.3+",
@@ -25,7 +25,6 @@ local luatexkouhc2utf8 = luatexkouhc2utf8
 local match = string.match
 local gsub = string.gsub
 local byte = string.byte
-local len = string.len
 local format = string.format
 local utfvalues = string.utfvalues
 require "unicode"
@@ -120,8 +119,7 @@ local function uhc_find_file (file, ...)
   local f = kpse_find_file(file, ...)
   if f then return f end
   f = utf8_to_uhc(file)
-  f = f and kpse_find_file(f, ...)
-  return f
+  return f and kpse_find_file(f, ...)
 end
 
 local function start_uhc_filename ()

@@ -26,14 +26,12 @@ local dotemphnode,rubynode,ulinebox = {},{},{}
 luatexko.dotemphnode        = dotemphnode
 luatexko.rubynode           = rubynode
 luatexko.ulinebox           = ulinebox
-luatexko.hanjafontforhanja  = luatexko.hanjafontforhanja or false
 
 local stringbyte    = string.byte
 local stringgsub    = string.gsub
 local stringchar    = string.char
 local stringfind    = string.find
 local stringmatch   = string.match
-local stringgmatch  = string.gmatch
 local stringformat  = string.format
 local string_sub    = string.sub
 local mathfloor     = math.floor
@@ -41,8 +39,8 @@ local tex_round     = tex.round
 local tex_sp        = tex.sp
 local texcount      = tex.count
 local fontdefine    = font.define
-require "unicode"
-local utf8char      = unicode.utf8.char
+
+local kpse_find_file = kpse.find_file
 
 local fontdata = fonts.hashes.identifiers
 
@@ -1241,7 +1239,7 @@ end
 
 local function get_hanja_hangul_table (table,file,init)
   local i = 0
-  local file = kpse.find_file(file)
+  local file = kpse_find_file(file)
   if not file then return table end
   file = io.open(file, "r")
   if not file then return table end
@@ -1422,7 +1420,7 @@ local function font_substitute(head)
           end
         end
         if not korid and not is_unicode_vs(curr.char) then
-          warn("!Missing character: %s U+%04X", utf8char(curr.char),curr.char)
+          warn("!Missing character: U+%04X", curr.char)
         end
       end
     end
@@ -1802,12 +1800,13 @@ local function activate_vertical_virtual (tfmdata,value)
   local loaded = luatexbase.priority_in_callback("luaotfload.patch_font",
   "luatexko.vertical_virtual_font")
   if value and not loaded then
+    require "fontloader"
     require "lfs"
     lfstouch      = lfs.touch
     lfsattributes = lfs.attributes
     tsbtable  = {}
     currtime  = os.time()
-    mytime    = kpse.find_file("luatexko.lua")
+    mytime    = kpse_find_file("luatexko.lua")
     mytime    = mytime and lfsattributes(mytime,"modification")
     cachedir  = caches.getwritablepath("..","luatexko")
     add_to_callback("luaotfload.patch_font",
