@@ -66,9 +66,8 @@
 \newhangulfontfeature{Expansion}{expansion}{default}{\aftergroup\pdfadjustspacing\aftergroup\tw@}
 
 %% macros for Korean fonts
-\edef\luatexko@family@default{\familydefault}
 \def\luatexko@global@setfonts#1#2#3{%
-  \ifx\luatexko@family@default#3%
+  \expandafter\ifx\familydefault#3%
     \expandafter\let\csname #2@font\expandafter\endcsname
       \csname #1#2@font\endcsname
     \csname luatexko@#2@selectfont\endcsname
@@ -225,10 +224,10 @@
   \unsetluatexattribute\finemathattr}}
 
 % don't forget to redefine \normalfont
-\ifx\luatexko@family@default\rmdefault
+\expandafter\ifx\familydefault\rmdefault
   \protected\edef\normalfont{%
     \unexpanded{\luatexko@serif@fonts}\unexpanded\expandafter{\normalfont}}
-\else\ifx\luatexko@family@default\sfdefault
+\else\expandafter\ifx\familydefault\sfdefault
   \protected\edef\normalfont{%
     \unexpanded{\luatexko@sans@fonts}\unexpanded\expandafter{\normalfont}}
 \else
