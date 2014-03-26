@@ -12,7 +12,7 @@
 
 local err,warn,info,log = luatexbase.provides_module({
   name        = 'luatexko',
-  date        = '2014/03/24',
+  date        = '2014/03/26',
   version     = 1.5,
   description = 'Korean linebreaking and font-switching',
   author      = 'Dohyun Kim',
@@ -1380,7 +1380,6 @@ local function font_substitute(head)
         engfontchar = get_font_char(curr.font, curr.char)
       end
       if curr.char and not engfontchar then
-        local korid  = false
         local hangul = has_attribute(curr, hangulfntattr)
         local hanja  = has_attribute(curr, hanjafntattr)
         local fallback = has_attribute(curr,fallbackfntattr)
@@ -1393,7 +1392,6 @@ local function font_substitute(head)
         for i = 1,3 do
           local fid = ftable[i]
           if get_font_char(fid, curr.char) then
-            korid = true
             curr.font = fid
             -- adjust next glue by hangul font space
             local nxt = nodenext(curr)
@@ -1418,9 +1416,6 @@ local function font_substitute(head)
             ---
             break
           end
-        end
-        if not korid and not is_unicode_vs(curr.char) then
-          warn("!Missing character: U+%04X", curr.char)
         end
       end
     end

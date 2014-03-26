@@ -22,7 +22,7 @@
   \expandafter\endinput
 \fi
 
-\ProvidesPackage{luatexko}[2014/03/19 v1.5 Typesetting Korean with LuaLaTeX]
+\ProvidesPackage{luatexko}[2014/03/26 v1.5 Typesetting Korean with LuaLaTeX]
 \RequirePackage{fontspec}
 \RequirePackage{luatexko-core}
 
@@ -278,6 +278,11 @@
 \unless\ifdefined\serifhangul@font\let\serifhangul@font\sanshangul@font\fi
 \unless\ifdefined\sanshangul@font \let\sanshangul@font\serifhangul@font\fi
 \unless\ifdefined\monohangul@font \let\monohangul@font\sanshangul@font \fi
+%%% everysel package is initialized at begindocument
+%%% && fontspec touches \f@size. sigh
+\luatexko@hangul@selectfont
+\luatexko@hanja@selectfont
+\luatexko@fallback@selectfont
 % for hyperref
 \@ifpackageloaded{hyperref}{\pdfstringdefDisableCommands{%
   \let\dotemph\@firstofone

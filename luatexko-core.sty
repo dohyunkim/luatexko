@@ -14,7 +14,7 @@
   \input luaotfload.sty
   \catcode`@ = 11
 \else
-  \ProvidesPackage{luatexko-core}[2014/03/19 v1.5 Typesetting Korean with LuaTeX]
+  \ProvidesPackage{luatexko-core}[2014/03/26 v1.5 Typesetting Korean with LuaTeX]
   \RequirePackage{luaotfload}[2013/05/23]
 \fi
 
@@ -220,34 +220,40 @@
 
 %% hangul font -- core
 \def\luatexko@hangul@selectfont{%
+  \ifdefined\hangul@font
   \begingroup
   \let\luatexko@hangul@selectfont\relax
   \let\luatexko@hanja@selectfont\relax
   \let\luatexko@fallback@selectfont\relax
-  \ifdefined\hangul@font \hangul@font \fi
+  \hangul@font
   \expandafter\expandafter\expandafter
   \endgroup
   \expandafter\hangulfntattr\luatexfontid\font\relax
+  \fi
 }
 \def\luatexko@hanja@selectfont{%
+  \ifdefined\hanja@font
   \begingroup
   \let\luatexko@hangul@selectfont\relax
   \let\luatexko@hanja@selectfont\relax
   \let\luatexko@fallback@selectfont\relax
-  \ifdefined\hanja@font \hanja@font \fi
+  \hanja@font
   \expandafter\expandafter\expandafter
   \endgroup
   \expandafter\hanjafntattr\luatexfontid\font\relax
+  \fi
 }
 \def\luatexko@fallback@selectfont{%
+  \ifdefined\fallback@font
   \begingroup
   \let\luatexko@hangul@selectfont\relax
   \let\luatexko@hanja@selectfont\relax
   \let\luatexko@fallback@selectfont\relax
-  \ifdefined\fallback@font \fallback@font \fi
+  \fallback@font
   \expandafter\expandafter\expandafter
   \endgroup
   \expandafter\fallbackfntattr\luatexfontid\font\relax
+  \fi
 }
 
 % user interface for plain tex
