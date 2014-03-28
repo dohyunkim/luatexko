@@ -23,7 +23,10 @@
 \fi
 
 \ProvidesPackage{luatexko}[2014/03/26 v1.5 Typesetting Korean with LuaLaTeX]
+%% euenc redefines \f@size by \DeclareErrorFont. sigh
+\let\luatexko@f@size\f@size
 \RequirePackage{fontspec}
+\let\f@size\luatexko@f@size
 \RequirePackage{luatexko-core}
 
 %% fontspec Korean options
@@ -278,11 +281,6 @@
 \unless\ifdefined\serifhangul@font\let\serifhangul@font\sanshangul@font\fi
 \unless\ifdefined\sanshangul@font \let\sanshangul@font\serifhangul@font\fi
 \unless\ifdefined\monohangul@font \let\monohangul@font\sanshangul@font \fi
-%%% everysel package is initialized at begindocument
-%%% && fontspec touches \f@size. sigh
-\luatexko@hangul@selectfont
-\luatexko@hanja@selectfont
-\luatexko@fallback@selectfont
 % for hyperref
 \@ifpackageloaded{hyperref}{\pdfstringdefDisableCommands{%
   \let\dotemph\@firstofone
@@ -294,6 +292,8 @@
   \let\uwave\@firstofone
   \let\dashuline\@firstofone
   \let\dotuline\@firstofone
+  \let\actualtext\@firstofone
+  \let\inhibitglue\empty
   \def\는{는}%
   \def\은{은}%
   \def\을{을}%
