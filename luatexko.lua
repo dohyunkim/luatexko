@@ -12,7 +12,7 @@
 
 local err,warn,info,log = luatexbase.provides_module({
   name        = 'luatexko',
-  date        = '2014/03/26',
+  date        = '2014/03/30',
   version     = 1.5,
   description = 'Korean linebreaking and font-switching',
   author      = 'Dohyun Kim',
@@ -711,8 +711,7 @@ local function cjk_insert_nodes(head,curr,currchar,currfont,prevchar,prevfont)
           raise = raise and tex_sp(raise)
         end
         if raise then
-          nn.yoffset = nn.yoffset or 0
-          nn.yoffset = nn.yoffset + raise
+          nn.yoffset = (nn.yoffset or 0) + raise
         end
         nn = nodenext(nn)
       elseif nn.id == kernnode then
@@ -819,6 +818,7 @@ local function cjk_spacing_linebreak (head)
         if curr.subtype == 0 then
           cjk_insert_nodes(head,curr,currchar,nil,prevchar,prevfont)
           curr = end_of_math(curr)
+          if not curr then break end
           prevchar,prevfont = currchar,nil
         end
         unset_attribute(curr,finemathattr)
@@ -1391,20 +1391,29 @@ local function font_substitute(head)
         end
         for i = 1,3 do
           local fid = ftable[i]
-          if get_font_char(fid, curr.char) then
+          local kch = get_font_char(fid, curr.char)
+          if kch then
             curr.font = fid
-            -- adjust next glue by hangul font space
             local nxt = nodenext(curr)
-            if eng
-              and nxt and nxt.id == gluenode
-              and nxt.subtype and nxt.subtype == 0
-              and nxt.spec and nxt.spec.writable
-              and get_font_char(fid,32) then
-              local sp,st,sh = hangulspaceskip(eng, fid, nxt.spec)
-              if sp and st and sh then
-                local hg = copy_node(nxt.spec)
-                hg.width, hg.stretch, hg.shrink = sp, st, sh
-                nxt.spec = hg
+            if eng and nxt then
+              -- adjust next glue by hangul font space
+              if nxt.id == gluenode
+                and nxt.subtype and nxt.subtype == 0
+                and nxt.spec and nxt.spec.writable
+                and get_font_char(fid,32) then
+                local sp,st,sh = hangulspaceskip(eng, fid, nxt.spec)
+                if sp and st and sh then
+                  local hg = copy_node(nxt.spec)
+                  hg.width, hg.stretch, hg.shrink = sp, st, sh
+                  nxt.spec = hg
+                end
+              -- adjust next italic correction kern
+              elseif nxt.id == kernnode
+                and nxt.subtype == 1 and nxt.kern == 0 then
+                local ksl = get_font_table(fid).parameters.slant
+                if ksl and ksl > 0 then
+                  nxt.kern = kch.italic or 0
+                end
               end
             end
             --- charraise option charraise
