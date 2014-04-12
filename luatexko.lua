@@ -12,7 +12,7 @@
 
 local err,warn,info,log = luatexbase.provides_module({
   name        = 'luatexko',
-  date        = '2014/03/30',
+  date        = '2014/04/09',
   version     = 1.5,
   description = 'Korean linebreaking and font-switching',
   author      = 'Dohyun Kim',
@@ -599,8 +599,8 @@ end
 
 local function get_unicode_char(curr)
   local uni = curr.char
-  if (uni > 0 and uni < 0xE000) or (uni > 0xF8FF and uni < 0xF0000) then
-    return uni -- no pua
+  if (uni > 0xFF and uni < 0xE000) or (uni > 0xF8FF and uni < 0xF0000) then
+    return uni -- no pua. no nanumgtm??
   end
   -- tounicode is now reliable. backend is fixed
   uni = get_font_char(curr.font, curr.char)
@@ -1363,6 +1363,26 @@ local function hangulspaceskip (engfont, hfontid, spec)
   return tex_round(hsp), tex_round(hst), tex_round(hsh)
 end
 
+local type1fonts = {} -- just for too verbose log
+local function nanumtype1font(curr)
+  if curr.char > 0xFFFF then return end
+  local subfnt = stringformat("nanumgtm%02x", curr.char/256)
+  local fsize = get_font_table(curr.font).size or 655360
+  local fspec = subfnt..fsize
+  local newfnt = type1fonts[fspec]
+  local newchr = curr.char % 256
+  if newfnt then
+    if get_font_char(newfnt,newchr) then
+      curr.font, curr.char = newfnt, newchr
+    end
+  else
+    local ft,id = fonts.constructors.readanddefine(subfnt,fsize)
+    if ft and id and ft.characters[newchr] then
+      type1fonts[fspec], curr.font, curr.char = id, id, newchr
+    end
+  end
+end
+
 local function font_substitute(head)
   local curr = head
   while curr do
@@ -1370,16 +1390,16 @@ local function font_substitute(head)
         curr = end_of_math(curr)
     elseif curr.id == glyphnode then
       local eng = get_font_table(curr.font)
-      local engfontchar = nil
+      local myfontchar = nil
       if eng and eng.encodingbytes and eng.encodingbytes == 2 -- exclude type1
         and hangulpunctuations[curr.char]
         and has_attribute(curr, hangulpunctsattr)
         and has_attribute(curr, finemathattr) == 1
         and not get_font_char(curr.font, 0xAC00) then -- exclude hangul font
       else
-        engfontchar = get_font_char(curr.font, curr.char)
+        myfontchar = get_font_char(curr.font, curr.char)
       end
-      if curr.char and not engfontchar then
+      if curr.char and not myfontchar then
         local hangul = has_attribute(curr, hangulfntattr)
         local hanja  = has_attribute(curr, hanjafntattr)
         local fallback = has_attribute(curr,fallbackfntattr)
@@ -1391,8 +1411,8 @@ local function font_substitute(head)
         end
         for i = 1,3 do
           local fid = ftable[i]
-          local kch = get_font_char(fid, curr.char)
-          if kch then
+          myfontchar = get_font_char(fid, curr.char)
+          if myfontchar then
             curr.font = fid
             local nxt = nodenext(curr)
             if eng and nxt then
@@ -1412,7 +1432,7 @@ local function font_substitute(head)
                 and nxt.subtype == 1 and nxt.kern == 0 then
                 local ksl = get_font_table(fid).parameters.slant
                 if ksl and ksl > 0 then
-                  nxt.kern = kch.italic or 0
+                  nxt.kern = myfontchar.italic or 0
                 end
               end
             end
@@ -1425,6 +1445,9 @@ local function font_substitute(head)
             ---
             break
           end
+        end
+        if not myfontchar then
+          nanumtype1font(curr)
         end
       end
     end

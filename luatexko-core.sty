@@ -12,9 +12,10 @@
 
 \ifx\ProvidesPackage\undefined
   \input luaotfload.sty
+  \input ifpdf.sty
   \catcode`@ = 11
 \else
-  \ProvidesPackage{luatexko-core}[2014/03/26 v1.5 Typesetting Korean with LuaTeX]
+  \ProvidesPackage{luatexko-core}[2014/04/09 v1.5 Typesetting Korean with LuaTeX]
   \RequirePackage{luaotfload}[2013/05/23]
 \fi
 
@@ -161,7 +162,7 @@
   \vbox to\dimen@\bgroup\hbox to\dimen@ii\bgroup\hfil\else
   \hbox to\dimen@ii\bgroup\vbox to\dimen@\bgroup\fi
     \wd#1\z@ \ht#1\z@ \dp#1\z@
-    \pdfliteral{ q 0 -1 1 0 0 0 cm}\box#1\pdfliteral{ Q}%
+    \ifpdf\pdfliteral{ q 0 -1 1 0 0 0 cm}\fi\box#1\ifpdf\pdfliteral{ Q}\fi
     \ifnum\count@=\@ne\egroup\vfil\else\vfil\egroup\hfil\fi\egroup}
 
 % do not veticalize headline/footline
@@ -360,9 +361,9 @@
 
 % Actual Text: beware that #1 should not divided into separate pages
 \protected\def\actualtext#1{%
-  \pdfliteral page{/Span<</ActualText(\directlua{
+  \ifpdf\pdfliteral page{/Span<</ActualText(\directlua{
     luatexko.actualtext("\luatexluaescapestring{\detokenize{#1}}")
-  })>>BDC}#1\pdfliteral page{EMC}%
+  })>>BDC}\fi#1\ifpdf\pdfliteral page{EMC}\fi
 }
 
 %% 말줄임표
