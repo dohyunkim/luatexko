@@ -15,7 +15,7 @@
   \input ifpdf.sty
   \catcode`@ = 11
 \else
-  \ProvidesPackage{luatexko-core}[2014/04/09 v1.5 Typesetting Korean with LuaTeX]
+  \ProvidesPackage{luatexko-core}[2014/04/14 v1.5 Typesetting Korean with LuaTeX]
   \RequirePackage{luaotfload}[2013/05/23]
 \fi
 
@@ -359,11 +359,33 @@
   \fi\fi
 }
 
-% Actual Text: beware that #1 should not divided into separate pages
-\protected\def\actualtext#1{%
-  \ifpdf\pdfliteral page{/Span<</ActualText(\directlua{
-    luatexko.actualtext("\luatexluaescapestring{\detokenize{#1}}")
-  })>>BDC}\fi#1\ifpdf\pdfliteral page{EMC}\fi
+% Actual Text: beware that #2 should not be divided into separate pages.
+% \actualtext* variant inserts space char from phvr8r. see accsupp manual
+\protected\def\actualtext#1#{%
+  \ifx\empty#1\empty
+    \expandafter\actualtext@\expandafter!%
+  \else
+    \expandafter\actualtext@\expandafter*%
+  \fi
+}
+\def\actualtext@#1#2{%
+  \ifpdf
+    \pdfliteral page{/Span<</ActualText(\directlua{
+      luatexko.actualtext("\luatexluaescapestring{\detokenize{#2}}")
+    })>>BDC}%
+  \fi
+  #2%
+  \ifx*#1%
+    \begingroup
+    \ifdefined\actualtext@spacefont\else
+      \global\font\actualtext@spacefont=phvr8r\relax
+    \fi
+    \setbox\z@\hbox{\actualtext@spacefont\char32}%
+    \wd\z@\z@\ht\z@\z@\dp\z@\z@
+    \leavevmode\copy\z@
+    \endgroup
+  \fi
+  \ifpdf\pdfliteral page{EMC}\fi
 }
 
 %% 말줄임표

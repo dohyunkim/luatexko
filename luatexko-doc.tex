@@ -318,7 +318,7 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이
 그림~\ref{fig:mplib} 참조. 상세한 것은 luamplib 패키지 문서를 참조하라.
 
 \begin{figure}
-\setbox0\vbox{%
+\setbox0\vbox{\kern10pt
 \begin{verbatim}
   \usepackage{luamplib}
   ...
@@ -326,21 +326,19 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이
     beginfig(1);
       draw fullcircle scaled 2cm;
       dotlabel.bot(btex \TeX etex, origin);
-      dotlabel.rt(btex 루아 etex, dir 45*1cm);
+      dotlabel.rt(btex 루아 etex, dir45*1cm);
     endfig;
   \end{mplibcode}
-\end{verbatim}
-\vskip-5\baselineskip
+\end{verbatim}}
 \begin{mplibcode}
-verbatimtex \moveright95mm etex;
 beginfig(1);
-    draw fullcircle scaled 2cm;
-    dotlabel.bot(btex\TeX etex, origin);
-    dotlabel.rt(btex 루아 etex, dir 45*1cm);
+  draw btex \copy0 etex shifted (-\mpdim{\textwidth-3cm},-\mpdim{.5\ht0});
+  draw fullcircle scaled 2cm;
+  dotlabel.bot(btex\TeX etex, origin);
+  dotlabel.rt(btex 루아 etex, dir 45*1cm);
+  bboxmargin:=0; draw bbox currentpicture;
 endfig;
 \end{mplibcode}
-\vskip\baselineskip}
-\framebox[\linewidth]{\box0 }
 \caption{mplib 용례}\label{fig:mplib}
 \end{figure}
 
@@ -426,9 +424,11 @@ ulem 패키지가 \luatexko와 궁합이 잘 맞지 않아{\small (줄바꿈에 
 \section{}\label{sec:actualtext}
 |\actualtext{...}| 명령은 인자를 식자함과 동시에, 입력한 문자 그대로
 PDF에서 텍스트로 추출할 수 있게 해준다. 인자가 두 페이지에 나눠지지 않도록
-유의한다.  모든 PDF 리더가 이를 지원하는 것은 아니다. 예: $\actualtext{\sqrt 2}$
+유의한다.  모든 PDF 리더가 이를 지원하는 것은 아니다. 예:
+$\actualtext{\sqrt 2}$,
 {\fontspec[Script=Hangul,Ligatures=Required]{HCR Dotum LVT}
-\actualtext{ᄠᅳ〮들〮}}
+\actualtext{ᄆᆞᄎᆞᆷ〮내〯}}.
+인자가 글자 없이 그림으로만 돼있다면 |\actualtext*{...}| 방식을 이용한다.
 
 \section{}
 |\luatexhangulnormalize=1|이라 지시하면 첫가끝 자모를 완성형 음절로,
