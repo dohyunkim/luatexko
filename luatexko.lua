@@ -1919,13 +1919,12 @@ local function actualtext (str)
   local t = {}
   for uni in string.utfvalues(str) do
     if uni < 0x10000 then
-      t[#t+1] = stringformat("\\%03o\\%03o",uni/256,uni%256)
+      t[#t+1] = stringformat("%04X",uni)
     else -- surrogate
       uni = uni - 0x10000
-      local a, b = uni/0x400 + 0xD800, uni%0x400 + 0xDC00
-      t[#t+1] = stringformat("\\%03o\\%03o\\%03o\\%03o",a/256,a%256,b/256,b%256)
+      t[#t+1] = stringformat("%04X%04X", uni/0x400+0xD800, uni%0x400+0xDC00)
     end
   end
-  tex.sprint(stringformat("\\detokenize{\\376\\377%s}",table.concat(t)))
+  tex.sprint(stringformat("<FEFF%s>", table.concat(t)))
 end
 luatexko.actualtext = actualtext

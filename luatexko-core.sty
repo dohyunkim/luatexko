@@ -370,22 +370,24 @@
 }
 \def\actualtext@#1#2{%
   \ifpdf
-    \pdfliteral page{/Span<</ActualText(\directlua{
+    \pdfliteral page{/Span<</ActualText\directlua{
       luatexko.actualtext("\luatexluaescapestring{\detokenize{#2}}")
-    })>>BDC}%
+    }>>BDC}%
   \fi
   #2%
-  \ifx*#1%
-    \begingroup
-    \ifdefined\actualtext@spacefont\else
-      \global\font\actualtext@spacefont=phvr8r\relax
+  \ifpdf
+    \ifx*#1%
+      \begingroup
+      \ifdefined\actualtext@spacefont\else
+        \global\font\actualtext@spacefont=phvr8r\relax
+      \fi
+      \setbox\z@\hbox{\actualtext@spacefont\char32}%
+      \wd\z@\z@\ht\z@\z@\dp\z@\z@
+      \leavevmode\copy\z@
+      \endgroup
     \fi
-    \setbox\z@\hbox{\actualtext@spacefont\char32}%
-    \wd\z@\z@\ht\z@\z@\dp\z@\z@
-    \leavevmode\copy\z@
-    \endgroup
+    \pdfliteral page{EMC}%
   \fi
-  \ifpdf\pdfliteral page{EMC}\fi
 }
 
 %% 말줄임표
