@@ -162,8 +162,13 @@
   \vbox to\dimen@\bgroup\hbox to\dimen@ii\bgroup\hfil\else
   \hbox to\dimen@ii\bgroup\vbox to\dimen@\bgroup\fi
     \wd#1\z@ \ht#1\z@ \dp#1\z@
-    \ifpdf\pdfliteral{ q 0 -1 1 0 0 0 cm}\fi\box#1\ifpdf\pdfliteral{ Q}\fi
+    \luatexko@rotate@clockwise{\box#1}%
     \ifnum\count@=\@ne\egroup\vfil\else\vfil\egroup\hfil\fi\egroup}
+\def\luatexko@rotate@clockwise#1{%
+  \ifpdf\pdfliteral{q 0 -1 1 0 0 0 cm}#1\pdfliteral{Q}%
+  \else\special{pdf:btrans rotate -90}#1\special{pdf:etrans}%
+  \fi
+}
 
 % do not veticalize headline/footline
 \ifdefined\ProvidesPackage % for latex
@@ -369,24 +374,25 @@
   \fi
 }
 \def\actualtext@#1#2{%
-  \ifpdf
-    \pdfliteral page{/Span<</ActualText\directlua{
-      luatexko.actualtext("\luatexluaescapestring{\detokenize{#2}}")
-    }>>BDC}%
-  \fi
+  \luatexko@pdfspecial{/Span<</ActualText\directlua{
+    luatexko.actualtext("\luatexluaescapestring{\detokenize{#2}}")
+  }>>BDC}%
   #2%
-  \ifpdf
-    \ifx*#1%
-      \begingroup
-      \ifdefined\actualtext@spacefont\else
-        \global\font\actualtext@spacefont=phvr8r\relax
-      \fi
-      \setbox\z@\hbox{\actualtext@spacefont\char32}%
-      \wd\z@\z@\ht\z@\z@\dp\z@\z@
-      \leavevmode\copy\z@
-      \endgroup
+  \ifx*#1%
+    \begingroup
+    \ifdefined\actualtext@spacefont\else
+      \global\font\actualtext@spacefont=phvr8r\relax
     \fi
-    \pdfliteral page{EMC}%
+    \setbox\z@\hbox{\actualtext@spacefont\char32}%
+    \wd\z@\z@\ht\z@\z@\dp\z@\z@
+    \leavevmode\copy\z@
+    \endgroup
+  \fi
+  \luatexko@pdfspecial{EMC}%
+}
+\def\luatexko@pdfspecial#1{%
+  \ifpdf\pdfliteral page{#1}%
+  \else\special{pdf:content #1}%
   \fi
 }
 
