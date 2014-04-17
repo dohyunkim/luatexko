@@ -1,13 +1,14 @@
-2014-04-09      Dohyun Kim <nomos at ktug org>
+2014-04-17      Dohyun Kim <nomos at ktug org>
 
 	Version 1.5
 
+	* luatexko.lua, luatexko.sty: use nanum type1 fonts as final fallback
+	fonts
 	* luatexko.lua: implemented experimental support for vertical
 	typesetting. LuaTeX version 0.79 or later is required.
 	* luatexko.lua, luatexko-core.sty: new macro \actualtext inspired by
 	accsupp.sty authored by Heiko Oberdiek.
 	* luatexko.lua: italic correction for replacing cjk fonts as well
-	* luatexko.lua: use nanum gothic type1 fonts as final fallback fonts
 
 2014-01-16      Dohyun Kim <nomos at ktug org>
 

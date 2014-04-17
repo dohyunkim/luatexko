@@ -15,12 +15,12 @@
   \input ifpdf.sty
   \catcode`@ = 11
 \else
-  \ProvidesPackage{luatexko-core}[2014/04/14 v1.5 Typesetting Korean with LuaTeX]
+  \ProvidesPackage{luatexko-core}[2014/04/17 v1.5 Typesetting Korean with LuaTeX]
   \RequirePackage{luaotfload}[2013/05/23]
 \fi
 
 %% attributes
-\newluatexattribute\finemathattr \finemathattr\@ne % finemath on by default
+\newluatexattribute\finemathattr \finemathattr\tw@ % finemath on by default
 \newluatexattribute\cjtypesetattr
 \newluatexattribute\dotemphattr
 \newluatexattribute\autojosaattr

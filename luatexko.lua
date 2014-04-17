@@ -12,7 +12,7 @@
 
 local err,warn,info,log = luatexbase.provides_module({
   name        = 'luatexko',
-  date        = '2014/04/09',
+  date        = '2014/04/17',
   version     = 1.5,
   description = 'Korean linebreaking and font-switching',
   author      = 'Dohyun Kim',
@@ -681,7 +681,7 @@ end
 
 local function koreanlatinskip (head,curr,currfont,prevfont,was_penalty)
   local width = 0 -- default: 0em
-  if has_attribute(curr,finemathattr) == 1 then -- not ttfamily
+  if (has_attribute(curr,finemathattr) or 0) > 0 then -- not ttfamily
     local latincjk = get_font_feature(currfont, "interlatincjk")
     if not latincjk then
       latincjk = get_font_feature(prevfont, "interlatincjk")
@@ -702,7 +702,7 @@ local function cjk_insert_nodes(head,curr,currchar,currfont,prevchar,prevfont)
   local p = get_cjk_class(prevchar, currentcjtype)
   local c = get_cjk_class(currchar, currentcjtype)
   ---[[raise latin puncts
-  if curr.id == glyphnode and has_attribute(curr,finemathattr) == 1 and c < 10 then -- not ttfamily
+  if curr.id == glyphnode and (has_attribute(curr,finemathattr) or 0) > 0 and c < 10 then -- not ttfamily
     local nn, raise = nodenext(curr), nil
     while nn do
       if nn.id == glyphnode and latin_fullstop[nn.char] then
@@ -1363,11 +1363,15 @@ local function hangulspaceskip (engfont, hfontid, spec)
   return tex_round(hsp), tex_round(hst), tex_round(hsh)
 end
 
-local type1fonts = {} -- just for too verbose log
+local type1fonts = {} -- due to too verbose log
 local function nanumtype1font(curr)
   if curr.char > 0xFFFF then return end
-  local subfnt = stringformat("nanumgtm%02x", curr.char/256)
-  local fsize = get_font_table(curr.font).size or 655360
+  local fnt_t = get_font_table(curr.font)
+  local weight = fnt_t.shared and fnt_t.shared.rawdata.metadata.pfminfo.weight
+  weight =  weight and weight > 500 and "b" or "m"
+  local family = (has_attribute(curr,finemathattr) or 0) > 1 and "nanummj" or "nanumgt"
+  local subfnt = stringformat("%s%s%02x", family, weight, curr.char/256)
+  local fsize = fnt_t.size or 655360
   local fspec = subfnt..fsize
   local newfnt = type1fonts[fspec]
   local newchr = curr.char % 256
@@ -1394,7 +1398,7 @@ local function font_substitute(head)
       if eng and eng.encodingbytes and eng.encodingbytes == 2 -- exclude type1
         and hangulpunctuations[curr.char]
         and has_attribute(curr, hangulpunctsattr)
-        and has_attribute(curr, finemathattr) == 1
+        and (has_attribute(curr, finemathattr) or 0) > 0 -- not ttfamily
         and not get_font_char(curr.font, 0xAC00) then -- exclude hangul font
       else
         myfontchar = get_font_char(curr.font, curr.char)

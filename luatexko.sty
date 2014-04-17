@@ -22,7 +22,7 @@
   \expandafter\endinput
 \fi
 
-\ProvidesPackage{luatexko}[2014/03/26 v1.5 Typesetting Korean with LuaLaTeX]
+\ProvidesPackage{luatexko}[2014/04/17 v1.5 Typesetting Korean with LuaLaTeX]
 %% euenc redefines \f@size by \DeclareErrorFont. sigh
 \let\luatexko@f@size\f@size
 \RequirePackage{fontspec}
@@ -197,32 +197,35 @@
   \luatexko@fallback@selectfont
 }
 
+% serif    : finemathattr = 2
+% sans     : finemathattr = 1
+% tt       : finemathattr = 0
+% verbatim : finemathattr = nil
 \def\luatexko@serif@fonts{%
   \let\hangul@font\serifhangul@font
   \let\hanja@font\serifhanja@font
   \let\fallback@font\seriffallback@font
+  \finemathattr\tw@
 }
 \def\luatexko@sans@fonts{%
   \let\hangul@font\sanshangul@font
   \let\hanja@font\sanshanja@font
   \let\fallback@font\sansfallback@font
+  \finemathattr\@ne
 }
 \def\luatexko@mono@fonts{%
   \let\hangul@font\monohangul@font
   \let\hanja@font\monohanja@font
   \let\fallback@font\monofallback@font
+  \finemathattr\z@
 }
 
 \protected\edef\rmfamily{%
   \unexpanded{\luatexko@serif@fonts}\unexpanded\expandafter{\rmfamily}}
 \protected\edef\sffamily{%
   \unexpanded{\luatexko@sans@fonts}\unexpanded\expandafter{\sffamily}}
-% normal   : finemathattr = 1
-% tt       : finemathattr = 0
-% verbatim : finemathattr = off
 \protected\edef\ttfamily{%
-  \unexpanded{\luatexko@mono@fonts}\unexpanded\expandafter{\ttfamily
-  \finemathattr\z@}}
+  \unexpanded{\luatexko@mono@fonts}\unexpanded\expandafter{\ttfamily}}
 \edef\verbatim@font{\unexpanded\expandafter{\verbatim@font
   \unsetluatexattribute\finemathattr}}
 
@@ -230,13 +233,15 @@
 \expandafter\ifx\familydefault\rmdefault
   \protected\edef\normalfont{%
     \unexpanded{\luatexko@serif@fonts}\unexpanded\expandafter{\normalfont}}
+  \finemathattr\tw@
 \else\expandafter\ifx\familydefault\sfdefault
   \protected\edef\normalfont{%
     \unexpanded{\luatexko@sans@fonts}\unexpanded\expandafter{\normalfont}}
+  \finemathattr\@ne
 \else
   \protected\edef\normalfont{%
-    \unexpanded{\luatexko@mono@fonts}\unexpanded\expandafter{\normalfont
-    \finemathattr\z@}}
+    \unexpanded{\luatexko@mono@fonts}\unexpanded\expandafter{\normalfont}}
+  \finemathattr\z@
 \fi\fi
 \let\reset@font\normalfont
 
@@ -281,6 +286,9 @@
 \unless\ifdefined\serifhangul@font\let\serifhangul@font\sanshangul@font\fi
 \unless\ifdefined\sanshangul@font \let\sanshangul@font\serifhangul@font\fi
 \unless\ifdefined\monohangul@font \let\monohangul@font\sanshangul@font \fi
+\unless\ifdefined\serifhangul@font\unless\ifdefined\sanshangul@font
+  \hangulpunctuations=0 % nanumtype1
+\fi\fi
 % for hyperref
 \@ifpackageloaded{hyperref}{\pdfstringdefDisableCommands{%
   \let\dotemph\@firstofone
