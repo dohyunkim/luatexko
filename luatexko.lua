@@ -1366,23 +1366,35 @@ end
 local type1fonts = {} -- due to too verbose log
 local function nanumtype1font(curr)
   if curr.char > 0xFFFF then return end
-  local fnt_t = get_font_table(curr.font)
-  local weight = fnt_t.shared and fnt_t.shared.rawdata.metadata.pfminfo.weight
-  weight =  weight and weight > 500 and "b" or "m"
-  local family = (has_attribute(curr,finemathattr) or 0) > 1 and "nanummj" or "nanumgt"
-  local subfnt = stringformat("%s%s%02x", family, weight, curr.char/256)
-  local fsize = fnt_t.size or 655360
-  local fspec = subfnt..fsize
+  local fnt_t  = get_font_table(curr.font)
+  local family = (has_attribute(curr,finemathattr) or 0) > 1 and not is_hanja(curr.char) and "nanummj" or "nanumgt"
+  local series = fnt_t.shared and fnt_t.shared.rawdata.metadata.pfminfo.weight
+  series = series and series > 500 and "b" or "m"
+  local shape  = fnt_t.parameters.slant > 0 and "o" or ""
+  local subfnt = stringformat("%s%s%s%02x",family,series,shape,curr.char/256)
+  local fsize  = fnt_t.size or 655360
+  local fspec  = subfnt..fsize
   local newfnt = type1fonts[fspec]
   local newchr = curr.char % 256
+  local function ital_corr (curr,chr_t)
+    if shape ~= "o" then return end
+    local nxt = nodenext(curr)
+    if nxt and nxt.id == kernnode and nxt.subtype == 1 and nxt.kern == 0 then
+      nxt.kern = chr_t.italic or 0
+    end
+  end
   if newfnt then
-    if get_font_char(newfnt,newchr) then
+    local fntchr = get_font_char(newfnt,newchr)
+    if fntchr then
       curr.font, curr.char = newfnt, newchr
+      ital_corr(curr,fntchr)
     end
   else
-    local ft,id = fonts.constructors.readanddefine(subfnt,fsize)
-    if ft and id and ft.characters[newchr] then
+    local ft, id = fonts.constructors.readanddefine(subfnt,fsize)
+    local fntchr = ft.characters[newchr]
+    if ft and id and fntchr then
       type1fonts[fspec], curr.font, curr.char = id, id, newchr
+      ital_corr(curr,fntchr)
     end
   end
 end
