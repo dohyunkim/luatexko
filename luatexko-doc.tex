@@ -256,23 +256,6 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이
 강제하기 위해선 |\inhibitglue| 명령을 이용한다.
 대체로 일본어·중국어 환경에서만 문제된다.
 
-\section{}
-\begin{quote}
-  |$가^{나^다}$|\quad$\Rightarrow\quad가^{나^다}$
-\end{quote}
-수식 모드에서도 한글을 {\small(hbox로 감싸지 않고)} 직접 입력할 수
-있다.  문서의 기본 한글 글꼴이 자동으로 수식 한글에도 적용되므로 따로
-설정할 것이 없지만 굳이 한다면 다음처럼 지시한다.
-\begin{verbatim}
-  \setmathhangulfont{HCRBatang}
-\end{verbatim}
-현재 한글만 쓸 수 있게 설정되어 있다.
-한자도 수식에 직접 입력하려면 사용자는
-\begin{verbatim}
-  \setmathhangulblock{4E00}{9FC3}
-\end{verbatim}
-명령으로 유니코드 블럭을 추가 지정해야 한다.
-
 \section{}\label{sec:verttype}
 
 \begin{figure}
@@ -344,6 +327,23 @@ endfig;
 \end{mplibcode}
 \caption{mplib 용례}\label{fig:mplib}
 \end{figure}
+
+\section{}
+\begin{quote}
+  |$가^{나^다}$|\quad$\Rightarrow\quad가^{나^다}$
+\end{quote}
+수식 모드에서도 한글을 {\small(hbox로 감싸지 않고)} 직접 입력할 수
+있다.  문서의 기본 한글 글꼴이 자동으로 수식 한글에도 적용되므로 따로
+설정할 것이 없지만 굳이 한다면 다음처럼 지시한다.
+\begin{verbatim}
+  \setmathhangulfont{HCRBatang}
+\end{verbatim}
+현재 한글만 쓸 수 있게 설정되어 있다.
+한자도 수식에 직접 입력하려면 사용자는
+\begin{verbatim}
+  \setmathhangulblock{4E00}{9FC3}
+\end{verbatim}
+명령으로 유니코드 블럭을 추가 지정해야 한다.
 
 \section{}
 |\dotemph| 명령으로 \dotemph{드러냄표}%

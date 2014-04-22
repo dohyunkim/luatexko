@@ -1369,11 +1369,15 @@ local function nanumtype1font(curr)
   local fnt_t  = get_font_table(curr.font)
   local family = (has_attribute(curr,finemathattr) or 0) > 1 and not is_hanja(curr.char) and "nanummj" or "nanumgt"
   local series = fnt_t.shared and fnt_t.shared.rawdata.metadata.pfminfo.weight
-  series = series and series > 500 and "b" or "m"
+  if series then
+    series = series > 500 and "b" or "m"
+  else
+    series = stringfind(fnt_t.name,"^cmb") and "b" or "m"
+  end
   local shape  = fnt_t.parameters.slant > 0 and "o" or ""
   local subfnt = stringformat("%s%s%s%02x",family,series,shape,curr.char/256)
   local fsize  = fnt_t.size or 655360
-  local fspec  = subfnt..fsize
+  local fspec  = stringformat("%s@%d",subfnt,fsize)
   local newfnt = type1fonts[fspec]
   local newchr = curr.char % 256
   local function ital_corr (curr,chr_t)

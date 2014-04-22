@@ -113,6 +113,9 @@ In like manner, these commands are available as well:
     \hanjafontspec    \newhanjafontfamily    \addhanjafontfeature
     \fallbackfontspec \newfallbackfontfamily \addfallbackfontfeature
 
+If any of these CJK fonts are not specified, Nanum Type1 fonts from
+nanumtype1 package will be used for typesetting CJK characters.
+
 
 Hangul Font Options
 -------------------

@@ -12,7 +12,7 @@
 
 \ifx\ProvidesPackage\undefined
   \input luaotfload.sty
-  \input ifpdf.sty
+  \ifcsname ifpdf\endcsname\else \input ifpdf.sty \fi
   \catcode`@ = 11
 \else
   \ProvidesPackage{luatexko-core}[2014/04/17 v1.5 Typesetting Korean with LuaTeX]
