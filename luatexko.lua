@@ -915,7 +915,7 @@ local function compress_fullwidth_punctuations (head)
         local ensize = emsize/2
         local oneoften = emsize/10
         local bbox = get_char_boundingbox(curr.font, curr.char)
-        if not bbox then return head end --
+        bbox = bbox or {ensize-oneoften, ensize-oneoften, ensize+oneoften, ensize+oneoften}
         if class == 2 or class == 4 then
           local wd
           if get_font_feature(curr.font,'vertical') then
