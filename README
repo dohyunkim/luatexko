@@ -1,15 +1,15 @@
-LuaTeX-ko Package version 1.5 (2014/04/17)
+LuaTeX-ko Package version 1.5 (2014/05/11)
 ==========================================
 
 This is a Lua(La)TeX macro package that supports typesetting Korean
 documents including Old Hangul texts. As LuaTeX has opened up access to
 almost all the hidden routines of TeX engine, users can obtain more
 beautiful outcome using this package rather than other Hangul macros
-operating on other engines. 
+operating on other engines.
 
 Due to the backward-incompatible update of LuaTeX in early 2013, LuaTeX
 version 0.76+ and luaotfload package version 2.2+ are required for this
-package to run. 
+package to run.
 
 This package also requires both cjk-ko and xetexko packages for its full
 functionality.
@@ -66,7 +66,7 @@ Notice that kotex.sty is a file provided by cjk-ko package.
 
 Under plain TeX:
 
-    \input luatexko.sty 
+    \input luatexko.sty
 
 
 Package Options
@@ -79,9 +79,9 @@ interline spacing. Declares \hangulpunctuations=1 as well.
     [hanja]
 Load Hanja captions. Also apply other settings as [hangul] option does.
 
-    [unfonts]
-Load font setting predefined for Un TrueType fonts available at
-[this link](http://kldp.net/projects/unfonts/).
+    [nofontspec]
+Prevents loading of fontspec package. Entire document will be typeset
+with Type1 fonts.
 
 
 Hangul Font Commands

@@ -15,7 +15,7 @@
   \ifcsname ifpdf\endcsname\else \input ifpdf.sty \fi
   \catcode`@ = 11
 \else
-  \ProvidesPackage{luatexko-core}[2014/04/17 v1.5 Typesetting Korean with LuaTeX]
+  \ProvidesPackage{luatexko-core}[2014/05/11 v1.5 Typesetting Korean with LuaTeX]
   \RequirePackage{luaotfload}[2013/05/23]
 \fi
 
@@ -278,12 +278,10 @@
     \ifnum\count@<"#2
       \advance\count@\@ne
   \repeat}
-\def\setmathhangulfont#1#{\setmathhangul@font@}
-\ifdefined\ProvidesPackage
-  \let\setmathhangul@font@\@gobble
-\else
+\ifdefined\ProvidesPackage\else
   % for plain; see luatexko.sty for latex
   \newfam\symmathhangul
+  \def\setmathhangulfont#1#{\setmathhangul@font@}
   \def\setmathhangul@font@#1{%
     \font\tenhangul   = "#1" at 10pt
     \font\sevenhangul = "#1" at 7pt

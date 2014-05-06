@@ -1,4 +1,4 @@
-2014-04-17      Dohyun Kim <nomos at ktug org>
+2014-05-11      Dohyun Kim <nomos at ktug org>
 
 	Version 1.5
 
@@ -9,6 +9,8 @@
 	* luatexko.lua, luatexko-core.sty: new macro \actualtext inspired by
 	accsupp.sty authored by Heiko Oberdiek.
 	* luatexko.lua: italic correction for replacing cjk fonts as well
+	* luatexko.sty: Font option YetHangul=Off has gone now; only YetHangul
+	is still there.
 
 2014-01-16      Dohyun Kim <nomos at ktug org>
 

@@ -1395,8 +1395,8 @@ local function nanumtype1font(curr)
     end
   else
     local ft, id = fonts.constructors.readanddefine(subfnt,fsize)
-    local fntchr = ft.characters[newchr]
-    if ft and id and fntchr then
+    local fntchr = ft and ft.characters[newchr]
+    if id and fntchr then
       type1fonts[fspec], curr.font, curr.char = id, id, newchr
       ital_corr(curr,fntchr)
     end

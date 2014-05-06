@@ -12,24 +12,24 @@
 \usepackage{luamplib}
 \setmainhangulfont[
   Ligatures=TeX,
-  Expansion,
-  InterLatinCJK=.125em,
   AutoFakeSlant,
   UprightFont=* Light,
   BoldFont=* Bold,
+  InterLatinCJK=.125em,
+  Expansion, Protrusion,
 ]{KoPubBatang_Pro}
 \setsanshangulfont[
   Ligatures=TeX,
-  InterLatinCJK=.125em,
   UprightFont=* Light,
   BoldFont=* Bold,
+  InterLatinCJK=.125em,
 ]{KoPubDotum_Pro}
 \usepackage[svgnames]{xcolor}
 \usepackage{hologo}
 \def\luatex{\hologo{LuaTeX}}
 \def\MP{\hologo{METAPOST}}
 \def\XeTeX{\hologo{XeTeX}}
-\usepackage[unicode,bookmarksnumbered]{hyperref}
+\usepackage[pdfencoding=auto,bookmarksnumbered,hidelinks]{hyperref}
 
 \edef\verbatim{\unexpanded\expandafter{\verbatim
   \linespread{1.1}\selectfont\color{MidnightBlue}}}
@@ -43,6 +43,7 @@
 \def\hemph#1{\textsf{\bfseries #1}}
 \def\cs#1{\texttt{\color{MidnightBlue}\textbackslash\detokenize{#1}}}
 \def\ldots{$\dots$}
+\widowpenalty10000 \clubpenalty10000
 
 \begin{document}
 \title{\luatexko\ 간단 매뉴얼}
@@ -101,7 +102,9 @@ CP949 인코딩에 관해서는 제\ref{sec:uhcencoding}절 참조.
 이전 버전과 달리 은글꼴이 기본으로 로드되지 않음에 유의할 것.
 
 |[nofontspec]| 옵션을 주면 fontspec을 부르지 않는다.
-따라서 아래 \ref{sec:fontcmds}의 한국어 글꼴 설정 명령들도 사용할 수 없다.
+따라서 아래 \ref{sec:fontcmds}, \ref{sec:fontswitch}, \ref{sec:fontoption},
+\ref{sec:verttype}, \ref{sec:mathhangul}절의 유니코드 한국어 글꼴 설정
+명령들도 사용할 수 없다.
 
 \section{}\label{sec:fontcmds}
 \luatexko를 로드하면 fontspec 패키지를 자동으로 불러온다.  글꼴 설정에
@@ -184,7 +187,8 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이
 \end{figure}
 
 \begin{description}
-\item[InterHangul] 한글 글자 사이의 자간.  아래는 $-0.04$em 만큼 한글
+  \item[InterHangul] {\addhangulfontfeature{InterHangul=.5ex}한글 글자
+    사이의 자간}.  아래는 $-0.04$em 만큼 한글
   자간을 지시한다. 플레인텍에서는 |interhangul|.
 \begin{verbatim}
   [InterHangul=-0.04em]
@@ -328,7 +332,7 @@ endfig;
 \caption{mplib 용례}\label{fig:mplib}
 \end{figure}
 
-\section{}
+\section{}\label{sec:mathhangul}
 \begin{quote}
   |$가^{나^다}$|\quad$\Rightarrow\quad가^{나^다}$
 \end{quote}
@@ -409,8 +413,7 @@ ulem 패키지가 \luatexko와 궁합이 잘 맞지 않아{\small (줄바꿈에 
 \begin{quote}
   \cs{josaignoreparens=1} \josaignoreparens=1 \\
   |홍길동(1992)\는|\quad$\Rightarrow$\quad 홍길동(1992)\는\\
-  |홍길동(2001)\로|\quad$\Rightarrow$\quad 홍길동(2001)\로
-  \medbreak
+  |홍길동(2001)\로|\quad$\Rightarrow$\quad 홍길동(2001)\로\par
   \cs{josaignoreparens=0} \josaignoreparens=0 \\
   |홍길동(1992)\는|\quad$\Rightarrow$\quad 홍길동(1992)\는\\
   |홍길동(2001)\로|\quad$\Rightarrow$\quad 홍길동(2001)\로
