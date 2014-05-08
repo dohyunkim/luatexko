@@ -163,7 +163,7 @@
     {
       \exp_after:wN \newfontfamily
         \cs:w luatexkofont@ \token_to_str:N #1 \cs_end: [#2] {#3}
-      \tl_set:Nn #1
+      \DeclareRobustCommand #1
         {
           \cs_set_eq:Nc \hangul@font { luatexkofont@ \token_to_str:N #1 }
           \luatexko@hangul@selectfont
@@ -173,7 +173,7 @@
     {
       \exp_after:wN \newfontfamily
         \cs:w luatexkofont@ \token_to_str:N #1 \cs_end: [#2] {#3}
-      \tl_set:Nn #1
+      \DeclareRobustCommand #1
         {
           \cs_set_eq:Nc \hanja@font { luatexkofont@ \token_to_str:N #1 }
           \luatexko@hanja@selectfont
@@ -183,7 +183,7 @@
     {
       \exp_after:wN \newfontfamily
         \cs:w luatexkofont@ \token_to_str:N #1 \cs_end: [#2] {#3}
-      \tl_set:Nn #1
+      \DeclareRobustCommand #1
         {
           \cs_set_eq:Nc \fallback@font { luatexkofont@ \token_to_str:N #1 }
           \luatexko@fallback@selectfont
@@ -193,7 +193,7 @@
     {
       \exp_after:wN \newfontface
         \cs:w luatexkofont@ \token_to_str:N #1 \cs_end: [#2] {#3}
-      \tl_set:Nn #1
+      \DeclareRobustCommand #1
         {
           \cs_set_eq:Nc \hangul@font { luatexkofont@ \token_to_str:N #1 }
           \luatexko@hangul@selectfont
@@ -203,7 +203,7 @@
     {
       \exp_after:wN \newfontface
         \cs:w luatexkofont@ \token_to_str:N #1 \cs_end: [#2] {#3}
-      \tl_set:Nn #1
+      \DeclareRobustCommand #1
         {
           \cs_set_eq:Nc \hanja@font { luatexkofont@ \token_to_str:N #1 }
           \luatexko@hanja@selectfont
@@ -213,7 +213,7 @@
     {
       \exp_after:wN \newfontface
         \cs:w luatexkofont@ \token_to_str:N #1 \cs_end: [#2] {#3}
-      \tl_set:Nn #1
+      \DeclareRobustCommand #1
         {
           \cs_set_eq:Nc \fallback@font { luatexkofont@ \token_to_str:N #1 }
           \luatexko@fallback@selectfont

@@ -2,15 +2,17 @@
 
 	Version 1.5
 
-	* luatexko.lua, luatexko.sty: use nanum type1 fonts as final fallback
+	* luatexko.sty: new package option [nofontspec] which prevents loading
+	of fontspec.sty
+	* luatexko.lua, luatexko.sty: use Nanum Type1 fonts as final fallback
 	fonts
+	* luatexko.sty: font option YetHangul=Off has gone now, only YetHangul
+	is still there.
 	* luatexko.lua: implemented experimental support for vertical
 	typesetting. LuaTeX version 0.79 or later is required.
 	* luatexko.lua, luatexko-core.sty: new macro \actualtext inspired by
 	accsupp.sty authored by Heiko Oberdiek.
 	* luatexko.lua: italic correction for replacing cjk fonts as well
-	* luatexko.sty: Font option YetHangul=Off has gone now; only YetHangul
-	is still there.
 
 2014-01-16      Dohyun Kim <nomos at ktug org>
 
