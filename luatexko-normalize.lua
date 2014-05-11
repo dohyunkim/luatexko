@@ -13,7 +13,7 @@
 luatexbase.provides_module({
   name        = "luatexko-normalize",
   version     = 1.5,
-  date        = "2014/04/17",
+  date        = "2014/05/11",
   author      = "Dohyun Kim",
   description = "Hangul normalization",
   license     = "LPPL v1.3+",
