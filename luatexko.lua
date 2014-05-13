@@ -1123,7 +1123,7 @@ local function inject_char_widow_penalty (head,curr,uni,cjattr)
       end
       if np and np.id == penaltynode then
         curr = np
-        if curr.penalty < pv then
+        if curr.penalty < pv and curr.penalty > 0 then -- bypass \\ case
           curr.penalty = pv
         end
       elseif curr and curr.id == gluenode then
