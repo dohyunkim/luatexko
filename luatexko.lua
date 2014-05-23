@@ -1872,6 +1872,24 @@ otffeatures.register {
 }
 
 ------------------------------------
+-- no embedding
+------------------------------------
+local function dontembedthisfont (tfmdata, value)
+  if value == "no" then
+    fonts.constructors.dontembed[tfmdata.properties.filename] = 1
+  end
+end
+
+otffeatures.register {
+  name        = "embedding",
+  description = "dont embed this font",
+  initializers = {
+    base = dontembedthisfont,
+    node = dontembedthisfont,
+  }
+}
+
+------------------------------------
 -- italic correction for fake-slant font
 ------------------------------------
 local function fakeslant_itlc (tfmdata)
