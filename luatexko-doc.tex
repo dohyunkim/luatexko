@@ -7,7 +7,7 @@
 %% public domain
 
 \documentclass[a4paper]{article}
-\usepackage[hmargin=3.9cm]{geometry}
+\usepackage[hmargin=3.8cm]{geometry}
 \usepackage[hangul]{luatexko}
 \usepackage{luamplib}
 \setmainhangulfont[
@@ -49,13 +49,13 @@
 \title{\luatexko\ 간단 매뉴얼}
 \author{Dohyun Kim \normalsize |<nomos at ktug org>| \and
   \normalsize \url{<http://github.com/dohyunkim/luatexko>}}
-\date{Version 1.5\quad 2014/05/11}
+\date{Version 1.6\quad 2014/05/31}
 \maketitle
 
 \begin{quote}\small
   For a summary introduction in English, please see |README| file.
 
-  \begin{itemize}\itemsep=0pt
+\begin{itemize}\linespread{1.1}\selectfont
     \item[v1.0] ------
     \item \hyperref[sec:loading]{플레인텍에서도 luatexko.sty을 불러야 한다.}
     \item \hyperref[sec:packageopt]{패키지 옵션 |unfonts|가 선언되지 않으면
@@ -66,7 +66,7 @@
     \item[v1.3] ------
     \item \hyperref[sec:fontcmds]{fallbackfont 계열의 명령이 추가되었다.}
     \item \hyperref[sec:fontswitch]{\cs{hangulpunctuations} 선언이 추가되고,
-      |QuoteRaise| 옵션이 없어졌다.}
+      |[QuoteRaise]| 옵션이 없어졌다.}
     \item \hyperref[sec:autojosa]{\cs{josaignoreparens=1}이 선언되면
       자동조사 결정시 괄호 부분을 무시한다.}
     \item[v1.5] ------
@@ -76,8 +76,12 @@
     \item \hyperref[sec:fontswitch]{한글·한자 글꼴의 지정이 없으면
       나눔 Type1을 이용한다.}
     \item \hyperref[sec:packageopt]{패키지 옵션 |[nofontspec]|이 추가되었다.}
+    \item[v1.6] ------
+    \item \hyperref[sec:fontoption]{글꼴 옵션 |[NoEmbed]|가 추가되었다.}
   \end{itemize}
 \end{quote}
+
+\smallskip
 
 \section{}
 \hemph{\texlive\ 2013 이상}을 사용해야 한다.
@@ -163,7 +167,7 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이
 
 \begin{figure}
   \fboxsep=1em
-  \fbox{\vbox{\hsize\dimexpr\linewidth-2.1em\relax
+  \fbox{\parbox{\dimexpr\linewidth-2.1em\relax}{%
       \fontspec[Script=Hangul,Ligatures=Required]{HCR Dotum LVT}
       \leftskip2.5cm
 뎨 가ᄂᆞᆫ 뎌 각시 본 듯도 ᄒᆞᆫ뎌이고.\\
@@ -216,6 +220,14 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이
   [PunctRaise=-0.125em]
 \end{verbatim}
 
+\item[NoEmbed] 폰트를 내장하지 않으므로 결과물의 크기가 대폭 줄어든다.
+  하지만 대외적 배포에 적합하지 않음에 유의할 것.\footnote{%
+    Adobe Reader에 내장된 폰트를 쓴다면 대외적 배포도 대체로 무난하다.}
+  플레인텍에서는 |embedding=no|.
+\begin{verbatim}
+  [NoEmbed]
+\end{verbatim}
+
 \item[Protrusion] 특정 글자가 행 끌에 왔을 때 판면 바깥으로 끌어내는
   기능이다.  Lua\LaTeX의 기본값은 구두점들만 완전히 글자내밀기 한다. 즉
   hanging punctuation이 작동한다.  플레인텍에서는 |protrusion|.
@@ -235,8 +247,17 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이
 \end{description}
 
 \section{}
-\begin{figure}\linespread{1.388}\selectfont\hfil
-\fbox{\vbox{\hsize=36em \begin{chinese} \setmainfont{STFangsong}
+고문헌·일본어·중국어 조판을 위해 japanese, Schinese, Tchinese 환경을
+제공한다.  chinese는 Schinese의 다른 이름이다.  korean 환경도
+마련했는데 이들 환경 안에서 잠깐 한국어를 조판하는 데
+사용한다.  일본어·중국어라도 글꼴 설정은 \cs{newhangulfontfamily}
+\cs{newhanjafontfamily} 따위를 이용한다.  그림~\ref{fig:ancientdoc} 참조.
+플레인텍에서는 {\small(문서 전체에 적용하지 않는다면 그룹을 열고)}
+\cs{chinese} \cs{japanese} 따위를 사용한다.
+
+\begin{figure}
+  \centering
+  \fbox{\parbox{37em}{\begin{chinese}\setmainfont{STFangsong}
 子曰：「學而時習之，不亦說乎？有朋自遠方來，不亦樂乎？人不知而不慍，
 不亦君子乎？」\par
 有子曰：「其為人也孝弟，而好犯上者，鮮矣！不好犯上，而好作亂者，未之有也！
@@ -246,17 +267,9 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이
 不習乎？」\par
 子曰：「道千乘之國，敬事而信，節用而愛人，使民以時。」\par
 子曰：「弟子入則孝，出則弟；謹而信，汎愛衆；而親仁，行有餘力，則以學文。」
-\end{chinese}}}\hfil
+  \end{chinese}}}
 \caption{고문헌 조판 보기}\label{fig:ancientdoc}
 \end{figure}
-
-고문헌·일본어·중국어 조판을 위해 japanese, Schinese, Tchinese 환경을
-제공한다.  chinese는 Schinese의 다른 이름이다.  korean 환경도
-마련했는데 이들 환경 안에서 잠깐 한국어를 조판하는 데
-사용한다.  일본어·중국어라도 글꼴 설정은 \cs{newhangulfontfamily}
-\cs{newhanjafontfamily} 따위를 이용한다.  그림~\ref{fig:ancientdoc} 참조.
-플레인텍에서는 {\small(문서 전체에 적용하지 않는다면 그룹을 열고)}
-\cs{chinese} \cs{japanese} 따위를 사용한다.
 
 \luatexko가 글자 사이에 삽입하는 미세간격을 사용자가 영(zero)으로
 강제하기 위해선 \cs{inhibitglue} 명령을 이용한다.
@@ -442,9 +455,10 @@ $\actualtext{\sqrt 2}$,
 \XeTeX의 그것에 비해 기능이 한참 모자란다.
 
 \section{}\label{sec:uhcencoding}
-권장하지 않지만 불가피하게 입력 인코딩이 UHC {\small(CP949라고도 하며
-EUC-KR을 포함한다)}인 파일을 처리할 때는 \cs{luatexuhcinputencoding=1}을
-선언한다. |0|을 할당하면 다시 UTF-8 입력으로 간주한다.
+권장하지 않지만 불가피하게 입력 인코딩이 UHC (Unified Hangul Code)\footnote{%
+  CP949라고도 하며 EUC-KR을 포함한다}로 되어 있는 파일을 처리할 때는
+\cs{luatexuhcinputencoding=1}을 선언한다.
+|0|을 할당하면 다시 UTF-8 입력으로 간주한다.
 \XeTeX의 \cs{XeTeXinputencoding} 명령과 유사하나 오직 한국어 문자만 처리할 수
 있어 \XeTeX의 그것에 비해 기능이 한참 모자란다.
 

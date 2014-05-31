@@ -15,7 +15,7 @@
   \ifcsname ifpdf\endcsname\else \input ifpdf.sty \fi
   \catcode`@ = 11
 \else
-  \ProvidesPackage{luatexko-core}[2014/05/11 v1.5 Typesetting Korean with LuaTeX]
+  \ProvidesPackage{luatexko-core}[2014/05/31 v1.6 Typesetting Korean with LuaTeX]
   \RequirePackage{luaotfload}[2013/05/23]
 \fi
 
@@ -205,7 +205,7 @@
 % strike-out
 \protected\def\sout#1{{\def\ulinedown{-0.5ex-\ulinewidth/2}\uline{#1}}}
 % ulem with arbitray box
-\protected\def\markoverwidth#1#2{%
+\protected\def\markoverwith#1#2{%
   \ifnum\luakoulineboxcnt > 65535 \luakoulineboxcnt\z@ \fi
   \global\advance\luakoulineboxcnt\@ne
   \setbox\z@\hbox{#1}%
@@ -214,15 +214,15 @@
   #2\special{luako:ulineend}}
 \protected\def\uuline{\dimen@ii-\dimexpr\ulinedown\relax
   \dimen@\dimexpr\ulinedown+\ulinewidth\relax
-  \markoverwidth{\vtop{\hrule width.2em height\dimen@ii depth\dimen@
+  \markoverwith{\vtop{\hrule width.2em height\dimen@ii depth\dimen@
   \kern.1em\hrule height\dimen@ii depth\dimen@}}}
 \protected\def\uwave {\ifx\ltxko@sixly\undefined \font\ltxko@sixly=lasy6 \fi
-  \markoverwidth{\lower4\p@\hbox{\ltxko@sixly\char58}}}
-\protected\def\xout  {\markoverwidth{\hbox to.35em{/\hss}}}
-\protected\def\dashuline{\markoverwidth{\kern.125em\vtop{\kern\ulinedown
+  \markoverwith{\lower4\p@\hbox{\ltxko@sixly\char58}}}
+\protected\def\xout  {\markoverwith{\hbox to.35em{/\hss}}}
+\protected\def\dashuline{\markoverwith{\kern.125em\vtop{\kern\ulinedown
   \hrule width.3em height\z@ depth\ulinewidth}\kern.125em}}
 \protected\def\dotuline{\dimen@\dimexpr\ulinedown+0.1ex\relax
-  \markoverwidth{\lower\dimen@\hbox{\kern.1em .\kern.04em}}}
+  \markoverwith{\lower\dimen@\hbox{\kern.1em .\kern.04em}}}
 
 %% hangul font -- core
 \def\luatexko@hangul@selectfont{%

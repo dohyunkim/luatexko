@@ -12,8 +12,8 @@
 
 luatexbase.provides_module({
   name        = "luatexko-uhc2utf8",
-  version     = 1.5,
-  date        = "2014/05/11",
+  version     = 1.6,
+  date        = "2014/05/31",
   author      = "Dohyun Kim",
   description = "UHC (CP949) input encoding",
   license     = "LPPL v1.3+",
@@ -63,14 +63,16 @@ local t_uhc2ucs = t_uhc2ucs or get_uhc_uni_table()
 local uhc_to_utf8 = function(buffer)
   if not buffer then return end
   -- check if buffer is already utf-8; better solution?
-  local isutf = true
-  for v in utfvalues(buffer) do
-    if v == 0xFFFD then -- REPLACEMENT CHARACTER
-      isutf = false
-      break
-    end
-  end
-  if isutf == true then return buffer end
+  local ubuffer = buffer
+  ubuffer = gsub(ubuffer,"[\000-\127]","")
+  ubuffer = gsub(ubuffer,"[\194-\223][\128-\191]","")
+  ubuffer = gsub(ubuffer,"\224[\160-\191][\128-\191]","")
+  ubuffer = gsub(ubuffer,"[\225-\236\238\239][\128-\191][\128-\191]","")
+  ubuffer = gsub(ubuffer,"\237[\128-\159][\128-\191]","")
+  ubuffer = gsub(ubuffer,"\240[\144-\191][\128-\191][\128-\191]","")
+  ubuffer = gsub(ubuffer,"[\241-\243][\128-\191][\128-\191][\128-\191]","")
+  ubuffer = gsub(ubuffer,"\244[\128-\143][\128-\191][\128-\191]","")
+  if ubuffer == "" then return buffer end
   -- now convert to utf8
   buffer = gsub(buffer, "([\129-\253])([\65-\254])",
   function(a, b)

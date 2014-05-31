@@ -12,8 +12,8 @@
 
 local err,warn,info,log = luatexbase.provides_module({
   name        = 'luatexko',
-  date        = '2014/05/11',
-  version     = 1.5,
+  date        = '2014/05/31',
+  version     = 1.6,
   description = 'Korean linebreaking and font-switching',
   author      = 'Dohyun Kim',
   license     = 'LPPL v1.3+',
@@ -1663,8 +1663,8 @@ local function draw_underline(head,curr,width,ulinenum,ulstart)
     local glue   = get_gluenode(width)
     glue.subtype = 101 -- cleaders
     glue.leader  = copy_node(ulinebox[ulinenum])
-    insert_before(head, curr, get_kernnode(-width))
-    insert_before(head, curr, glue)
+    head = insert_before(head, ulstart, glue)
+    head = insert_before(head, ulstart, get_kernnode(-width))
   end
   for _,nd in ipairs({ulstart,curr}) do
     if nd.id == whatsitnode
