@@ -10,20 +10,20 @@
 \usepackage[hmargin=3.8cm]{geometry}
 \usepackage[hangul]{luatexko}
 \usepackage{luamplib}
-\setmainhangulfont[
+\setmainhangulfont{KoPubBatang_Pro}[
   Ligatures=TeX,
   AutoFakeSlant,
   UprightFont=* Light,
   BoldFont=* Bold,
   InterLatinCJK=.125em,
   Expansion, Protrusion,
-]{KoPubBatang_Pro}
-\setsanshangulfont[
+]
+\setsanshangulfont{KoPubDotum_Pro}[
   Ligatures=TeX,
   UprightFont=* Light,
   BoldFont=* Bold,
   InterLatinCJK=.125em,
-]{KoPubDotum_Pro}
+]
 \usepackage[svgnames]{xcolor}
 \usepackage{hologo}
 \def\luatex{\hologo{LuaTeX}}
@@ -49,7 +49,7 @@
 \title{\luatexko\ 간단 매뉴얼}
 \author{Dohyun Kim \normalsize |<nomos at ktug org>| \and
   \normalsize \url{<http://github.com/dohyunkim/luatexko>}}
-\date{Version 1.6\quad 2014/05/31}
+\date{Version 1.6\quad 2014/06/02}
 \maketitle
 
 \begin{quote}\small
@@ -77,7 +77,7 @@
       나눔 Type1을 이용한다.}
     \item \hyperref[sec:packageopt]{패키지 옵션 |[nofontspec]|이 추가되었다.}
     \item[v1.6] ------
-    \item \hyperref[sec:fontoption]{글꼴 옵션 |[NoEmbed]|가 추가되었다.}
+    \item \hyperref[sec:fontoption]{글꼴 옵션 |[NoEmbedding]|이 추가되었다.}
   \end{itemize}
 \end{quote}
 
@@ -165,10 +165,14 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이
 있다.\footnote{ 옛한글 식자를 위해서는
   |[Script=Hangul]| 옵션을 사용하는 것으로 충분하다.}
 
+그러나 \cs{defaulthangulfontfeatures} 따위 명령은 따로 구현돼 있지 않으며,
+설혹 사용하더라도 fontspec의 \cs{defaultfontfeatures}와 같은 효과를 가진다.
+다시 말해 한글 폰트 옵션과 라틴 폰트 옵션에 차이는 없다.
+
 \begin{figure}
   \fboxsep=1em
   \fbox{\parbox{\dimexpr\linewidth-2.1em\relax}{%
-      \fontspec[Script=Hangul,Ligatures=Required]{HCR Dotum LVT}
+      \fontspec{HCR Dotum LVT}[Script=Hangul,Ligatures=Required]
       \leftskip2.5cm
 뎨 가ᄂᆞᆫ 뎌 각시 본 듯도 ᄒᆞᆫ뎌이고.\\
 天텬上상白ᄇᆡᆨ玉옥京경을 엇디ᄒᆞ야 離니別별ᄒᆞ고\\
@@ -220,12 +224,13 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이
   [PunctRaise=-0.125em]
 \end{verbatim}
 
-\item[NoEmbed] 폰트를 내장하지 않으므로 결과물의 크기가 대폭 줄어든다.
-  하지만 대외적 배포에 적합하지 않음에 유의할 것.\footnote{%
-    Adobe Reader에 내장된 폰트를 쓴다면 대외적 배포도 대체로 무난하다.}
+\item[NoEmbedding] |NoEmbed|와 동의어.
+  폰트를 내장하지 않으므로 결과물의 크기가 대폭 줄어든다.
+  하지만 대외적 배포에 적합하지 않음에 유의.\footnote{%
+    Adobe Reader에 번들된 폰트를 쓴다면 대외적 배포도 대체로 무난하다.}
   플레인텍에서는 |embedding=no|.
 \begin{verbatim}
-  [NoEmbed]
+  [NoEmbedding]
 \end{verbatim}
 
 \item[Protrusion] 특정 글자가 행 끌에 왔을 때 판면 바깥으로 끌어내는
@@ -289,13 +294,9 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이
 그림~\ref{fig:vertical} 참조.
 플레인텍에서는 \cs{vertical{<dimen>}} \ldots\ \cs{endvertical}.
 
-문서 전체를 세로쓰기한다면 이 환경을 쓰는 대신
-\cs{verticaltypesetting} 명령을 전처리부에 선언한다.
-이때 면주의 폰트에는 세로쓰기 옵션이 없어야 할 것이다.
-
 \begin{figure}
 \framebox[\linewidth]{\begin{vertical}{17em}
-\fontspec[Vertical=RotatedGlyphs,RawFeature=+vhal]{Adobe Myungjo Std}
+\fontspec{Adobe Myungjo Std}[Vertical=RotatedGlyphs,RawFeature=+vhal]
 \parindent-1em\leftskip1em \linespread{1.5}\selectfont
 \noindent 님의 침묵(The Silent Beloved)
 \smallbreak
@@ -314,6 +315,10 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이
 \end{vertical}}
 \caption{세로쓰기의 예}\label{fig:vertical}
 \end{figure}
+
+문서 전체를 세로쓰기한다면 이 환경을 쓰는 대신
+\cs{verticaltypesetting} 명령을 전처리부에 선언한다.
+이때 면주의 폰트에는 세로쓰기 옵션이 없어야 할 것이다.
 
 \section{}\label{sec:metapost}
 전처리부에서 \cs{usepackage{luamplib}}을 선언하면 \MP\ 코드를 문서 중간에
@@ -443,7 +448,7 @@ ulem 패키지가 \luatexko와 궁합이 잘 맞지 않아{\small (줄바꿈에 
 PDF에서 텍스트로 추출할 수 있게 해준다. 인자가 두 페이지에 나눠지지 않도록
 유의한다.  모든 PDF 리더가 이를 지원하는 것은 아니다. 예:
 $\actualtext{\sqrt 2}$,
-{\fontspec[Script=Hangul,Ligatures=Required]{HCR Dotum LVT}
+{\fontspec{HCR Dotum LVT}[Script=Hangul,Ligatures=Required]
 \actualtext{ᄆᆞᄎᆞᆷ〮내〯}}.
 인자가 글자 없이 그림으로만 돼있다면 \cs{actualtext*{...}} 방식을 이용한다.
 

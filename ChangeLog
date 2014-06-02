@@ -1,3 +1,14 @@
+2014-06-02      Dohyun Kim <nomos at ktug org>
+
+	Version 1.6
+
+	* luatexko.sty, luatexko.lua: new font option [NoEmbedding], which
+	prevents font embedding into PDF file.
+	* luatexko-uhc2utf8.sty: fix a bug in utf8 detection routine
+	* luatexko.lua: put uline node before text, so that text is not
+	overprinted by a highlight box
+	* luatexko.sty: minor changes following new fontspec package v2.4
+
 2014-05-11      Dohyun Kim <nomos at ktug org>
 
 	Version 1.5
