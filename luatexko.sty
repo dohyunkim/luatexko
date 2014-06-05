@@ -53,6 +53,8 @@
   \newfontfeature{CharRaise}{charraise=#1}
   \newfontfeature{NoEmbed}{embedding=no}
   \aliasfontfeature{NoEmbed}{NoEmbedding}
+  \newfontfeature{protrusion}{protrusion=#1}
+  \newfontfeature{expansion}{expansion=#1}
   \ExplSyntaxOn
   \DeclareDocumentCommand \newhangulfontfeature {mmmm}
     {
@@ -60,8 +62,7 @@
         {
           #1 .code:n =
             {
-              \__fontspec_update_featstr:n {#2=##1}
-              #4
+              \keys_set:nn { fontspec } { #2 = {##1} } #4
             },
           #1 .default:n = {#3}
         }

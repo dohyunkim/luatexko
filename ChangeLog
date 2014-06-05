@@ -4,7 +4,7 @@
 
 	* luatexko.sty, luatexko.lua: new font option [NoEmbedding], which
 	prevents font embedding into PDF file.
-	* luatexko-uhc2utf8.sty: fix a bug in utf8 detection routine
+	* luatexko-uhc2utf8.lua: fix a bug in utf8 detection routine
 	* luatexko.lua: put uline node before text, so that text is not
 	overprinted by a color box
 	* luatexko.sty: Ligatures=TeX is now default option for main/sans

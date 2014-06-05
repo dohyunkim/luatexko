@@ -1955,6 +1955,7 @@ add_to_callback("luaotfload.patch_font",
 ------------------------------------
 local function actualtext (str)
   local t = {}
+  str = stringgsub(str,"##","#")
   for uni in string.utfvalues(str) do
     if uni < 0x10000 then
       t[#t+1] = stringformat("%04X",uni)
