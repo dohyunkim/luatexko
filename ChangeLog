@@ -1,13 +1,14 @@
-2014-06-02      Dohyun Kim <nomos at ktug org>
+2014-06-17      Dohyun Kim <nomos at ktug org>
 
 	Version 1.6
 
-	* luatexko.sty, luatexko.lua: new font option [NoEmbedding], which
-	prevents font embedding into PDF file.
-	* luatexko-uhc2utf8.lua: fix a bug in utf8 detection routine
-	* luatexko.lua: put uline node before text, so that text is not
-	overprinted by a color box
-	* luatexko.sty: Ligatures=TeX is now default option for main/sans
+	* luatexko.sty, luatexko.lua: new font option [NoEmbedding] prevents
+	inclusion of fonts into PDF file.
+	* luatexko-uhc2utf8.lua: fix a bug in utf-8 detection routine,
+	reported by Karnes Kim
+	* luatexko.lua: put underline leader node before text, so that text
+	should not be overprinted by a color box. Requested by Karnes Kim
+	* luatexko.sty: [Ligatures=TeX] is now default option for main/sans
 	hangul/hanja/fallback fonts. Requires fontspec v2.4
 
 2014-05-11      Dohyun Kim <nomos at ktug org>

@@ -12,7 +12,7 @@
 
 local err,warn,info,log = luatexbase.provides_module({
   name        = 'luatexko',
-  date        = '2014/05/31',
+  date        = '2014/06/17',
   version     = 1.6,
   description = 'Korean linebreaking and font-switching',
   author      = 'Dohyun Kim',
