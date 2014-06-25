@@ -12,8 +12,8 @@
 
 \ifx\luatexkocatcodeofatchar\undefined\else
   \expandafter\endinput\fi % no multiple loading
-\ifx\ProvidesPackage\relax \let\ProvidesPackage\undefined \fi
-\ifx\ProvidesPackage\undefined % plain tex
+\begingroup\expandafter\expandafter\expandafter\endgroup
+\expandafter\ifx\csname selectfont\endcsname\relax % plain tex
   \edef\luatexkocatcodeofatchar{\catcode`@=\the\catcode`@}
   \input luatexko-core.sty
   %\hangulfont{name:NanumGothic:interlatincjk=0.125em} at 10pt

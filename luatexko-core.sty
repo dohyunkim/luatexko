@@ -10,7 +10,8 @@
 % and version 1.3c or later is part of all distributions of LaTeX
 % version 2006/05/20 or later.
 
-\ifx\ProvidesPackage\undefined
+\begingroup\expandafter\expandafter\expandafter\endgroup
+\expandafter\ifx\csname selectfont\endcsname\relax
   \input luaotfload.sty
   \ifcsname ifpdf\endcsname\else \input ifpdf.sty \fi
   \catcode`@ = 11
@@ -171,7 +172,7 @@
 }
 
 % do not veticalize headline/footline
-\ifdefined\ProvidesPackage % for latex
+\ifdefined\selectfont % for latex
   \def\verticaltypesetting{%
     \maxdepth\z@ \luatexko@vertical
     \dimen@\textwidth \textwidth\textheight \textheight\dimen@
@@ -278,7 +279,7 @@
     \ifnum\count@<"#2
       \advance\count@\@ne
   \repeat}
-\ifdefined\ProvidesPackage\else
+\ifdefined\selectfont\else
   % for plain; see luatexko.sty for latex
   \newfam\symmathhangul
   \def\setmathhangulfont#1#{\setmathhangul@font@}
