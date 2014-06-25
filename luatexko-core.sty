@@ -101,11 +101,8 @@
     \vrule width\z@ height.88em depth\z@\relax #1}%
   \setbox\tw@\hbox{% ruby
     \ifdefined\rubyfont \rubyfont \fi
-    \ifcsname selectfont\endcsname
-      \expandafter\dimen@\pdffontsize\font
-      \dimen@\rubysize\dimen@
-      \fontsize\dimen@\dimen@\selectfont
-    \else
+    \begingroup\expandafter\expandafter\expandafter\endgroup
+    \expandafter\ifx\csname selectfont\endcsname\relax % plain
       \ifdefined\rubyfont \else
         \luatexko@resize@font\font\resized@font\font\rubysize
         \ifdefined\hangul@font
@@ -118,6 +115,10 @@
           \luatexko@resize@font\fallbackfont{}\fallback@font\rubysize
         \fi
       \fi
+    \else % latex
+      \expandafter\dimen@\pdffontsize\font
+      \dimen@\rubysize\dimen@
+      \fontsize\dimen@\dimen@\selectfont
     \fi #2}\ht\tw@\z@\dp\tw@\z@
   \directlua{%
     luatexko.rubynode[\the\luakorubyattrcnt] = {
@@ -127,7 +128,8 @@
   \leavevmode\box\z@
   \endgroup}
 
-\ifcsname selectfont\endcsname\else
+\begingroup\expandafter\expandafter\expandafter\endgroup
+\expandafter\ifx\csname selectfont\endcsname\relax
 % font resize under plain tex
 \begingroup\edef\x{\endgroup
   \def\noexpand\rem@vesizepart##1\detokenize{ at}##2\noexpand\end{##1}}\x
@@ -172,13 +174,8 @@
 }
 
 % do not veticalize headline/footline
-\ifdefined\selectfont % for latex
-  \def\verticaltypesetting{%
-    \maxdepth\z@ \luatexko@vertical
-    \dimen@\textwidth \textwidth\textheight \textheight\dimen@
-    \edef\@outputpage{\unexpanded{\luatexkorotatebox\@outputbox
-    \textwidth\textheight}\unexpanded\expandafter{\@outputpage}}}
-\else % for plain
+\begingroup\expandafter\expandafter\expandafter\endgroup
+\expandafter\ifx\csname selectfont\endcsname\relax % plain
   \def\verticaltypesetting{%
     \dimen@\hsize\hsize\vsize\vsize\dimen@
     \edef\plainoutput{\unexpanded{\dimen@\hsize\hsize\vsize\vsize\dimen@}%
@@ -186,6 +183,12 @@
     \def\pagebody{\setbox\z@\vbox to\hsize{\boxmaxdepth=\maxdepth
       \pagecontents}\luatexkorotatebox\z@\box\z@}%
     \maxdepth\z@ \luatexko@vertical}
+\else % latex
+  \def\verticaltypesetting{%
+    \maxdepth\z@ \luatexko@vertical
+    \dimen@\textwidth \textwidth\textheight \textheight\dimen@
+    \edef\@outputpage{\unexpanded{\luatexkorotatebox\@outputbox
+    \textwidth\textheight}\unexpanded\expandafter{\@outputpage}}}
 \fi
 
 %% underline using post_linebreak_filter
@@ -279,7 +282,8 @@
     \ifnum\count@<"#2
       \advance\count@\@ne
   \repeat}
-\ifdefined\selectfont\else
+\begingroup\expandafter\expandafter\expandafter\endgroup
+\expandafter\ifx\csname selectfont\endcsname\relax
   % for plain; see luatexko.sty for latex
   \newfam\symmathhangul
   \def\setmathhangulfont#1#{\setmathhangul@font@}

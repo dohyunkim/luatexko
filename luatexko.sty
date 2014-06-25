@@ -10,8 +10,8 @@
 % and version 1.3c or later is part of all distributions of LaTeX
 % version 2006/05/20 or later.
 
-\ifx\luatexkocatcodeofatchar\undefined\else
-  \expandafter\endinput\fi % no multiple loading
+\ifx\luatexkocatcodeofatchar\undefined\else\endinput\fi % no multiple loading
+
 \begingroup\expandafter\expandafter\expandafter\endgroup
 \expandafter\ifx\csname selectfont\endcsname\relax % plain tex
   \edef\luatexkocatcodeofatchar{\catcode`@=\the\catcode`@}
