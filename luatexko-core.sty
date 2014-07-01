@@ -376,11 +376,18 @@
     \expandafter\actualtext@\expandafter*%
   \fi
 }
-\def\actualtext@#1#2{%
+\def\actualtext@{%
+  \begingroup
+  \catcode`\\=12 \catcode`\$=12 \catcode`\&=12 \catcode`\#=12
+  \catcode`\^=12 \catcode`\_=12 \catcode`\~=12 \catcode`\%=12
+  \actualtext@@
+}
+\def\actualtext@@#1#2{%
+  \endgroup
   \luatexko@pdfspecial{/Span<</ActualText\directlua{
     luatexko.actualtext("\luatexluaescapestring{\detokenize{#2}}")
   }>>BDC}%
-  #2%
+  \luatexscantextokens{#2}%
   \ifx*#1%
     \begingroup
     \ifdefined\actualtext@spacefont\else
