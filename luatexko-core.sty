@@ -101,7 +101,6 @@
     \vrule width\z@ height.88em depth\z@\relax #1}%
   \setbox\tw@\hbox{% ruby
     \ifdefined\rubyfont \rubyfont \fi
-    \begingroup\expandafter\expandafter\expandafter\endgroup
     \expandafter\ifx\csname selectfont\endcsname\relax % plain
       \ifdefined\rubyfont \else
         \luatexko@resize@font\font\resized@font\font\rubysize
