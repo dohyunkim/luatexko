@@ -17,8 +17,10 @@
   InterLatinCJK=.125em,
   Expansion, Protrusion,
 ]
-\setsanshangulfont{KoPubDotum_Pro}[
-  UprightFont=* Light,
+\setsanshangulfont{Source Han Sans}[
+  Script=Hangul,
+  Language=Korean,
+  UprightFont=* Normal,
   BoldFont=* Bold,
   InterLatinCJK=.125em,
 ]
@@ -90,7 +92,8 @@
 
 \section{}\label{sec:loading}
 \luatexko\ 로드하기: \cs{usepackage{luatexko}} 혹은 \cs{usepackage{kotex}}.
-플레인텍에서는 \cs{input luatexko.sty}.  입력은 원칙적으로 UTF-8으로 한다.
+플레인텍에서는 \cs{input luatexko.sty} 혹은 \cs{input kotexplain}.
+입력은 원칙적으로 UTF-8으로 한다.
 BOM (Byte Order Mark)은 있어도 좋고 없어도 좋다.
 CP949 인코딩에 관해서는 제\ref{sec:uhcencoding}절 참조.
 
@@ -160,12 +163,14 @@ CP949 인코딩에 관해서는 제\ref{sec:uhcencoding}절 참조.
   \registerpunctuations{45, "2D, `-}
   \unregisterpunctuations{"2D, "2015}
 \end{verbatim}
+이들 두 명령은 항상 전역적 효과를 가진다.
 
 
 \section{}\label{sec:fontoption}
 fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이
 있다.\footnote{ 옛한글 식자를 위해서는
-  |[Script=Hangul]| 옵션을 사용하는 것으로 충분하다.}
+  |[Script=Hangul]| 옵션을 사용하는 것으로 충분하다.
+  플레인텍이라면 |script=hang|.}
 
 그러나 \cs{defaulthangulfontfeatures} 따위 명령은 따로 구현돼 있지 않으며,
 설혹 사용하더라도 fontspec의 \cs{defaultfontfeatures}와 같은 효과를 가진다.
@@ -174,8 +179,7 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이
 \begin{figure}
   \fboxsep=1em
   \fbox{\parbox{\dimexpr\linewidth-2.1em\relax}{%
-      \fontspec{HCR Dotum LVT}[Script=Hangul,Ligatures=Required]
-      \leftskip2.5cm
+      \sffamily \leftskip2.5cm
 뎨 가ᄂᆞᆫ 뎌 각시 본 듯도 ᄒᆞᆫ뎌이고.\\
 天텬上상白ᄇᆡᆨ玉옥京경을 엇디ᄒᆞ야 離니別별ᄒᆞ고\\
 ᄒᆡ 다 져믄 날의 눌을 보라 가시ᄂᆞᆫ고
@@ -266,7 +270,7 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이
 
 \begin{figure}
   \centering
-  \fbox{\parbox{37em}{\begin{chinese}\setmainfont{STFangsong}
+  \fbox{\parbox{37em}{\begin{chinese}\sffamily
 子曰：「學而時習之，不亦說乎？有朋自遠方來，不亦樂乎？人不知而不慍，
 不亦君子乎？」\par
 有子曰：「其爲人也孝弟，而好犯上者，鮮矣！不好犯上，而好作亂者，未之有也！
@@ -300,10 +304,13 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이
 
 \begin{figure}
 \framebox[\linewidth]{\begin{vertical}{17em}
-\fontspec{Adobe Myungjo Std}[Vertical=RotatedGlyphs,RawFeature=+vhal]
+    \sffamily
+    \addhangulfontfeature{Vertical=RotatedGlyphs}
+    \unregisterpunctuations{`(, `)}
 \parindent-1em\leftskip1em \linespread{1.5}\selectfont
 \noindent 님의 침묵(The Silent Beloved)
 \smallbreak
+    \registerpunctuations{`(, `)}
 \hfil\hfil 한 용 운\hfil
 \bigbreak
 님은 갓슴니다 아아 사랑하는나의님은 갓슴니다\par
@@ -312,7 +319,6 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이
 黃金의꽃가티 굿고빗나든 옛盟誓는 차듸찬띠끌이되야서 한숨의 微風에
 나러갓슴니다\par
 날카로은 첫〈키쓰〉의追憶은 나의運命의指針을 돌너노코 뒷거름처서 사러젓슴니다\par
-%…… \par
 \hellipsis\par
 아아 님은갓지마는 나는 님을보내지 아니하얏슴니다\par
 제곡조를못이기는 사랑의노래는 님의沈默을 휩싸고돔니다\par
