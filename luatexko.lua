@@ -1816,6 +1816,11 @@ local function cjk_vertical_font (vf)
   if res.verticalgposhack then
     return vf -- avoid multiple running
   end
+  local fea = vf.shared and vf.shared.features or {}
+  fea.itlc = nil  -- for horizontal typesetting
+  fea.kern = nil  -- ..
+  fea.vert = true -- should be activated by default
+  fea.vkrn = true -- ..
   local vposkeys = {}
   local seq = res.sequences or {}
   for _,v in ipairs(seq) do
