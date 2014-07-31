@@ -722,6 +722,9 @@ local function cjk_insert_nodes(head,curr,currchar,currfont,prevchar,prevfont)
     end
   end
   --raise latin puncts]]
+  if c == 5 and p == 5 then -- skip ------ ......
+    return currchar,currfont
+  end
   if prebreakpenalty[currchar] then
     was_penalty = true
     insert_before(head,curr,get_penaltynode(prebreakpenalty[currchar]))
