@@ -1810,6 +1810,7 @@ local function cjk_vertical_font (vf)
     v.width = vw
     v.height = vh
     v.depth = vh
+    v.italic = nil
   end
   --- vertical gpos
   local res = vf.resources or {}
@@ -1817,8 +1818,7 @@ local function cjk_vertical_font (vf)
     return vf -- avoid multiple running
   end
   local fea = vf.shared and vf.shared.features or {}
-  fea.itlc = nil  -- for horizontal typesetting
-  fea.kern = nil  -- ..
+  fea.kern = nil  -- only for horizontal typesetting
   fea.vert = true -- should be activated by default
   fea.vkrn = true -- ..
   local vposkeys = {}
