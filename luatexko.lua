@@ -1799,7 +1799,7 @@ local function cjk_vertical_font (vf)
     local bb4 = dsc and dsc.boundingbox and dsc.boundingbox[4]
     local asc = bb4 and tsb and (bb4+tsb)*factor or ascender
     local hw = v.width or quad
-    local offset = hw/2 + goffset
+    local offset = hw/2 + goffset -- this not needed when ft fixed
     local vh = hw > 0 and hw/2 or nil
     v.commands = {
       {'right', asc}, -- bbox4 + top_side_bearing
@@ -1823,13 +1823,12 @@ local function cjk_vertical_font (vf)
   local fea = vf.shared and vf.shared.features or {}
   fea.kern = nil  -- only for horizontal typesetting
   fea.vert = true -- should be activated by default
-  fea.vkrn = true -- ..
   local vposkeys = {}
   local seq = res.sequences or {}
   for _,v in ipairs(seq) do
     if v.type == "gpos_single" and v.subtables then -- todo: gpos_pair...
       local feature = v.features or {}
-      if feature.vhal or feature.vkrn or feature.valt or feature.vpal then
+      if feature.vhal or feature.vkrn or feature.valt or feature.vpal or feature.vert then
         for _,vv in ipairs(v.subtables) do
           vposkeys[#vposkeys+1] = vv
         end
