@@ -18,6 +18,7 @@
   Expansion, Protrusion,
 ]
 \setsanshangulfont{Source Han Sans}[
+  CharRaise=-0.1ex,
   Script=Hangul,
   Language=Korean,
   UprightFont=* Normal,
@@ -307,8 +308,8 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이
 \begin{figure}
 \framebox[\linewidth]{\begin{vertical}{17em}
     \sffamily
-    \addhangulfontfeature{Vertical=RotatedGlyphs}
-    \unregisterpunctuations{`(, `)}
+    \addhangulfontfeature{Vertical=RotatedGlyphs,
+      CharacterWidth=Full, CharRaise=0.1ex, }
 \parindent-1em\leftskip1em \linespread{1.5}\selectfont
 \noindent 님의 침묵(The Silent Beloved)
 \smallbreak
