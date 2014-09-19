@@ -600,13 +600,14 @@ end
 local function get_unicode_char(curr)
   local uni = curr.char
   if (uni > 0xFF and uni < 0xE000) or (uni > 0xF8FF and uni < 0xF0000) then
-    return uni -- no pua. no nanumgtm??
+    return uni -- no pua. no nanumgtm
   end
-  -- tounicode is now reliable. backend is fixed
-  uni = get_font_char(curr.font, curr.char)
-  uni = uni and uni.tounicode
-  uni = uni and string_sub(uni,1,4) -- seems ok for old hangul
-  if uni then return tonumber(uni,16) end
+  if uni < 0xE000 or (uni > 0xF8FF and uni < 0xF0000) then -- no pua
+    uni = get_font_char(curr.font, curr.char)
+    uni = uni and uni.tounicode
+    uni = uni and string_sub(uni,1,4) -- seems ok for old hangul
+    if uni then return tonumber(uni,16) end
+  end
   uni = has_attribute(curr, luakounicodeattr)
   if uni then return uni end
   return curr.char
@@ -1799,7 +1800,7 @@ local function cjk_vertical_font (vf)
     local bb4 = dsc and dsc.boundingbox and dsc.boundingbox[4]
     local asc = bb4 and tsb and (bb4+tsb)*factor or ascender
     local hw = v.width or quad
-    local offset = hw/2 + goffset -- this not needed when ft fixed
+    local offset = hw/2 + goffset
     local vh = hw > 0 and hw/2 or nil
     v.commands = {
       {'right', asc}, -- bbox4 + top_side_bearing
