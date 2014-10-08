@@ -266,12 +266,12 @@ local prebreakpenalty = {
   [0x0022] = 10000,
   [0x0027] = 10000,
   [0x0029] = 10000,
-  -- [0x002A] = 500, -- *
-  -- [0x002B] = 500, -- +
+  [0x002A] = 5000, -- 500, -- *
+  [0x002B] = 5000, -- 500, -- +
   [0x002C] = 10000,
   [0x002D] = 10000,
   [0x002E] = 10000,
-  -- [0x002F] = 500, -- /
+  [0x002F] = 5000, -- 500, -- /
   [0x003A] = 10000,
   [0x003B] = 10000,
   [0x003E] = 10000, -- >
@@ -284,11 +284,11 @@ local prebreakpenalty = {
   [0x2015] = 10000,
   [0x2019] = 10000,
   [0x201D] = 10000,
-  [0x2025] = 250,
-  [0xFE30] = 250,
-  [0x2026] = 250,
-  [0xFE19] = 250,
-  [0x2212] = 200,
+  [0x2025] = 5000, -- 250, -- ‥
+  [0xFE30] = 5000, -- 250, -- ︰
+  [0x2026] = 5000, -- 250, -- …
+  [0xFE19] = 5000, -- 250, -- ︙
+  [0x2212] = 5000, -- 200, -- −  minus sign
   [0x3001] = 10000,
   [0xFE11] = 10000,
   [0x3002] = 10000,
@@ -335,7 +335,7 @@ local prebreakpenalty = {
   [0xFF01] = 10000,
   [0xFF09] = 10000,
   [0xFE36] = 10000,
-  [0xFF0B] = 200,
+  [0xFF0B] = 5000, -- 200, -- ＋
   [0xFF0C] = 10000,
   [0xFE10] = 10000,
   [0xFF0E] = 10000,
@@ -343,7 +343,7 @@ local prebreakpenalty = {
   [0xFE13] = 10000,
   [0xFF1B] = 10000,
   [0xFE14] = 10000,
-  [0xFF1D] = 200,
+  [0xFF1D] = 5000, -- 200, -- ＝
   [0xFF1F] = 10000,
   [0xFF3D] = 10000,
   [0xFE48] = 10000,
@@ -726,10 +726,10 @@ local function cjk_insert_nodes(head,curr,currchar,currfont,prevchar,prevfont)
   if c == 5 and p == 5 then -- skip ------ ......
     return currchar,currfont
   end
-  if prebreakpenalty[currchar] then
+  if p and p < 10 and prebreakpenalty[currchar] then
     was_penalty = true
     insert_before(head,curr,get_penaltynode(prebreakpenalty[currchar]))
-  elseif postbreakpenalty[prevchar] then
+  elseif c and c < 10 and postbreakpenalty[prevchar] then
     was_penalty = true
     insert_before(head,curr,get_penaltynode(postbreakpenalty[prevchar]))
   end
