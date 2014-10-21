@@ -345,22 +345,6 @@
 \edef\verbatim@font{\unexpanded\expandafter{\verbatim@font
   \unsetluatexattribute\finemathattr}}
 
-% don't forget to redefine \normalfont
-\expandafter\ifx\familydefault\rmdefault
-  \protected\edef\normalfont{%
-    \unexpanded{\luatexko@serif@fonts}\unexpanded\expandafter{\normalfont}}
-  \finemathattr\tw@
-\else\expandafter\ifx\familydefault\sfdefault
-  \protected\edef\normalfont{%
-    \unexpanded{\luatexko@sans@fonts}\unexpanded\expandafter{\normalfont}}
-  \finemathattr\@ne
-\else
-  \protected\edef\normalfont{%
-    \unexpanded{\luatexko@mono@fonts}\unexpanded\expandafter{\normalfont}}
-  \finemathattr\z@
-\fi\fi
-\let\reset@font\normalfont
-
 \if@unfonts\if@luatexko@loadfontspec
   \setmainhangulfont[
     InterHangul=-0.04em,
@@ -396,6 +380,24 @@
 \unless\ifdefined\serifhangul@font\unless\ifdefined\sanshangul@font
   \hangulpunctuations=0 % nanumtype1
 \fi\fi
+% don't forget to redefine \normalfont
+\expandafter\ifx\familydefault\rmdefault
+  \protected\edef\normalfont{%
+    \unexpanded{\luatexko@serif@fonts}\unexpanded\expandafter{\normalfont}}
+  % and current hangul font
+  \luatexko@serif@fonts
+\else\expandafter\ifx\familydefault\sfdefault
+  \protected\edef\normalfont{%
+    \unexpanded{\luatexko@sans@fonts}\unexpanded\expandafter{\normalfont}}
+  \luatexko@sans@fonts
+\else
+  \protected\edef\normalfont{%
+    \unexpanded{\luatexko@mono@fonts}\unexpanded\expandafter{\normalfont}}
+  \luatexko@mono@fonts
+\fi\fi
+\let\reset@font\normalfont
+% reset hangul font
+\selectfont
 % for hyperref
 \@ifpackageloaded{hyperref}{\pdfstringdefDisableCommands{%
   \let\dotemph\@firstofone
