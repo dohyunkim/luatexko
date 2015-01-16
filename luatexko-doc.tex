@@ -50,7 +50,7 @@
 \title{\luatexko\ 간단 매뉴얼}
 \author{Dohyun Kim \normalsize |<nomos at ktug org>| \and
   \normalsize \url{<http://github.com/dohyunkim/luatexko>}}
-\date{Version 1.6\quad 2014/06/17}
+\date{Version 1.7\quad 2015/01/16}
 \maketitle
 
 \begin{quote}\small
@@ -59,8 +59,6 @@
 \begin{itemize}\linespread{1.1}\selectfont
     \item[v1.0] ------
     \item \hyperref[sec:loading]{플레인텍에서도 luatexko.sty을 불러야 한다.}
-    \item \hyperref[sec:packageopt]{패키지 옵션 |unfonts|가 선언되지 않으면
-      은글꼴을 자동으로 부르지 않는다.}
     \item \hyperref[sec:fontoption]{글꼴 옵션값을 |<dimen>|으로 지시한다.}
     \item \hyperref[sec:metapost]{\MP\ 코드를 넣으려면 luamplib 패키지를
       불러야 한다.}
@@ -81,6 +79,9 @@
     \item \hyperref[sec:fontoption]{글꼴 옵션 |[NoEmbedding]|이 추가되었다.}
     \item \hyperref[sec:fontcmds]{main/sans hangul/hanja/fallback 폰트의
       디폴트 옵션으로 |[Ligatures=TeX]|이 주어진다.}
+    \item[v1.7] ------
+    \item 패키지 옵션 |[unfonts]|를 더는 지원하지 않는다. 이 옵션을 사용한
+      기존 문서는 기본 글꼴인 나눔 Type1으로 식자될 것이다.
   \end{itemize}
 \end{quote}
 
@@ -103,11 +104,6 @@ CP949 인코딩에 관해서는 제\ref{sec:uhcencoding}절 참조.
 장 제목이나 표·그림 캡션 따위가 한글 또는 한자 방식으로 표시된다.  다만
 장(chapter) 제목과 편(part) 제목에만 ``제(第)''가 붙어 ``제~1 편''
 ``제~3 장''과 같은 방식으로 표시되며 절 제목 이하에는 붙지 않는다.
-
-|[unfonts]|는 은글꼴 트루타입을 불러오는 패키지 옵션이다.\footnote{%
-  |nofontspec| 옵션과 함께 사용할 수 없다. 또한 이 옵션은
-  deprecated 상태로서 2015년에는 사라질 예정이다.}
-이전 버전과 달리 은글꼴이 기본으로 로드되지 않음에 유의할 것.
 
 |[nofontspec]| 옵션을 주면 fontspec을 부르지 않는다.
 따라서 아래 \ref{sec:fontcmds}, \ref{sec:fontswitch}, \ref{sec:fontoption},

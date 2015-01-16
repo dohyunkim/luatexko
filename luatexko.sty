@@ -1,6 +1,6 @@
 % luatexko.sty
 %
-% Copyright (c) 2013-2014 Dohyun Kim  <nomos at ktug org>
+% Copyright (c) 2013-2015 Dohyun Kim  <nomos at ktug org>
 %
 % This work may be distributed and/or modified under the
 % conditions of the LaTeX Project Public License, either version 1.3c
@@ -22,16 +22,15 @@
   \expandafter\endinput
 \fi
 
-\ProvidesPackage{luatexko}[2014/06/17 v1.6 Typesetting Korean with LuaLaTeX]
+\ProvidesPackage{luatexko}[2015/01/16 v1.7 Typesetting Korean with LuaLaTeX]
 
 %% package options
 \newif\if@hangul
 \newif\if@hanja
-\newif\if@unfonts
 \newif\if@luatexko@loadfontspec\@luatexko@loadfontspectrue
 \DeclareOption{hangul}{\@hangultrue}
 \DeclareOption{hanja}{\@hangultrue\@hanjatrue}
-\DeclareOption{unfonts}{\@unfontstrue}
+\DeclareOption{unfonts}{}
 \DeclareOption{nofontspec}{\@luatexko@loadfontspecfalse}
 \ProcessOptions\relax
 
@@ -344,34 +343,6 @@
   \unexpanded{\luatexko@mono@fonts}\unexpanded\expandafter{\ttfamily}}
 \edef\verbatim@font{\unexpanded\expandafter{\verbatim@font
   \unsetluatexattribute\finemathattr}}
-
-\if@unfonts\if@luatexko@loadfontspec
-  \setmainhangulfont[
-    InterHangul=-0.04em,
-    InterLatinCJK=0.125em,
-    PunctRaise=-0.125em,
-    Ligatures=TeX,
-    SlantedFont=*, SlantedFeatures={FakeSlant=0.2},
-    ItalicFont=*,  ItalicFeatures={FakeSlant=0.2},
-    BoldSlantedFont=*Bold, BoldSlantedFeatures={FakeSlant=0.2},
-    BoldItalicFont=*Bold,  BoldItalicFeatures={FakeSlant=0.2},
-  ]{UnBatang}
-  \setsanshangulfont[
-    InterLatinCJK=0.125em,
-    PunctRaise=-0.125em,
-    Ligatures=TeX,
-    SlantedFont=*, SlantedFeatures={FakeSlant=0.2},
-    ItalicFont=*,  ItalicFeatures={FakeSlant=0.2},
-    BoldSlantedFont=*Bold, BoldSlantedFeatures={FakeSlant=0.2},
-    BoldItalicFont=*Bold,  BoldItalicFeatures={FakeSlant=0.2},
-  ]{UnDotum}
-  \setmonohangulfont[
-    SlantedFont=*, SlantedFeatures={FakeSlant=0.2},
-    ItalicFont=*,  ItalicFeatures={FakeSlant=0.2},
-    BoldSlantedFont=*Bold, BoldSlantedFeatures={FakeSlant=0.2},
-    BoldItalicFont=*Bold,  BoldItalicFeatures={FakeSlant=0.2},
-  ]{UnDotum}
-\fi\fi
 
 \AtBeginDocument{
 \unless\ifdefined\serifhangul@font\let\serifhangul@font\sanshangul@font\fi

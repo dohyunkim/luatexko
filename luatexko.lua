@@ -1,6 +1,6 @@
 -- luatexko.lua
 --
--- Copyright (c) 2013-2014 Dohyun Kim  <nomos at ktug org>
+-- Copyright (c) 2013-2015 Dohyun Kim  <nomos at ktug org>
 --
 -- This work may be distributed and/or modified under the
 -- conditions of the LaTeX Project Public License, either version 1.3c
@@ -12,8 +12,8 @@
 
 local err,warn,info,log = luatexbase.provides_module({
   name        = 'luatexko',
-  date        = '2014/06/17',
-  version     = 1.6,
+  date        = '2015/01/16',
+  version     = 1.7,
   description = 'Korean linebreaking and font-switching',
   author      = 'Dohyun Kim',
   license     = 'LPPL v1.3+',
@@ -1925,7 +1925,6 @@ local function tounicode_oldhangul (tfmdata)
   local chrs = tfmdata.characters
   if not desc or not chrs then return end
   if not chrs[0x1100] then return end
-  local last = 0
   for _,v in ipairs({{0x1100,0x11FF},{0xA960,0xA97C},{0xD7B0,0xD7FB}}) do
     for i = v[1],v[2] do
       local ds = desc[i] and desc[i].slookups
@@ -1933,20 +1932,9 @@ local function tounicode_oldhangul (tfmdata)
         for _,s in pairs(ds) do
           if type(s) == "number" and s >= 0xF0000 and chrs[s] and not chrs[s].tounicode then
             chrs[s].tounicode = stringformat("%04X",i)
-            last = s > last and s or last
           end
         end
       end
-    end
-  end
-  if stringfind(tfmdata.fontname,"^HCR.+LVT") then
-    local touni = "1112119E"
-    for i = last+1, last+2 do
-      local dsc,chr = desc[i],chrs[i]
-      if dsc and chr and dsc.class == "ligature" and not chr.tounicode then
-        chr.tounicode = touni
-      end
-      touni = touni.."11AB"
     end
   end
 end

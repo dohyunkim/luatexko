@@ -1,3 +1,10 @@
+2015-01-16      Dohyun Kim <nomos at ktug org>
+
+	Version 1.7
+
+	* luatexko.sty: package option [unfonts] is removed
+	* *.lua, *.sty: minor fixes and updated copyright year
+
 2014-06-17      Dohyun Kim <nomos at ktug org>
 
 	Version 1.6
