@@ -1383,6 +1383,7 @@ local function nanumtype1font(curr)
   local fsize  = fnt_t.size or 655360
   local fspec  = stringformat("%s@%d",subfnt,fsize)
   local newfnt = type1fonts[fspec]
+  if newfnt == false then return end
   local newchr = curr.char % 256
   local function ital_corr (curr,chr_t)
     if shape ~= "o" then return end
@@ -1397,13 +1398,15 @@ local function nanumtype1font(curr)
       curr.font, curr.char = newfnt, newchr
       ital_corr(curr,fntchr)
     end
-  else
+  elseif kpse_find_file(subfnt,"tfm") then
     local ft, id = fonts.constructors.readanddefine(subfnt,fsize)
     local fntchr = ft and ft.characters[newchr]
     if id and fntchr then
       type1fonts[fspec], curr.font, curr.char = id, id, newchr
       ital_corr(curr,fntchr)
     end
+  else
+    type1fonts[fspec] = false
   end
 end
 
