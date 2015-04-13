@@ -88,7 +88,7 @@ local uhc_to_utf8 = function(buffer)
       break
     end
   end
-  if i == buflen then return buffer end
+  if i == buflen then return nil end
   -- now convert to utf8
   buffer = buffer:gsub("([\129-\253])([\65-\254])",
   function(a, b)
