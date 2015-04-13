@@ -12,8 +12,8 @@
 
 luatexbase.provides_module({
   name        = "luatexko-uhc2utf8",
-  version     = 1.7,
-  date        = "2015/01/16",
+  version     = 1.8,
+  date        = "2015/04/13",
   author      = "Dohyun Kim",
   description = "UHC (CP949) input encoding",
   license     = "LPPL v1.3+",
@@ -22,15 +22,12 @@ luatexbase.provides_module({
 luatexkouhc2utf8 = luatexkouhc2utf8 or {}
 local luatexkouhc2utf8 = luatexkouhc2utf8
 
-local match = string.match
-local gsub = string.gsub
-local byte = string.byte
 local format = string.format
-local utfvalues = string.utfvalues
 require "unicode"
-local ugsub = unicode.utf8.gsub
-local ubyte = unicode.utf8.byte
-local uchar = unicode.utf8.char
+local unicodeutf8 = unicode.utf8
+local ugsub = unicodeutf8.gsub
+local ubyte = unicodeutf8.byte
+local uchar = unicodeutf8.char
 local floor = math.floor
 local kpse_find_file = kpse.find_file
 local add_to_callback = luatexbase.add_to_callback
@@ -44,7 +41,7 @@ local function get_uhc_uni_table()
     while true do
       local line = file:read("*line")
       if not line then break end
-      local ea,eb,uni = match(line,"<(%x+)>%s+<(%x+)>%s+<(%x+)>")
+      local ea,eb,uni = line:match("<(%x+)>%s+<(%x+)>%s+<(%x+)>")
       if ea and eb and uni then
         ea, eb, uni = tonumber(ea,16),tonumber(eb,16),tonumber(uni,16)
         for i=ea,eb do
@@ -60,23 +57,40 @@ end
 
 local t_uhc2ucs = t_uhc2ucs or get_uhc_uni_table()
 
+local function not_utf8lowbyte(t)
+  for _,v in ipairs(t) do
+    -- rough checking
+    if v < 0x80 or v > 0xBF then return true end
+  end
+  return false
+end
+
 local uhc_to_utf8 = function(buffer)
   if not buffer then return end
   -- check if buffer is already utf-8; better solution?
-  local ubuffer = buffer
-  ubuffer = gsub(ubuffer,"[\000-\127]","")
-  ubuffer = gsub(ubuffer,"[\194-\223][\128-\191]","")
-  ubuffer = gsub(ubuffer,"\224[\160-\191][\128-\191]","")
-  ubuffer = gsub(ubuffer,"[\225-\236\238\239][\128-\191][\128-\191]","")
-  ubuffer = gsub(ubuffer,"\237[\128-\159][\128-\191]","")
-  ubuffer = gsub(ubuffer,"\240[\144-\191][\128-\191][\128-\191]","")
-  ubuffer = gsub(ubuffer,"[\241-\243][\128-\191][\128-\191][\128-\191]","")
-  ubuffer = gsub(ubuffer,"\244[\128-\143][\128-\191][\128-\191]","")
-  if ubuffer == "" then return buffer end
+  local i, buflen = 1, buffer:len()+1
+  while i < buflen do
+    local a = buffer:byte(i)
+    if a < 0x80 then
+      i = i + 1
+    elseif a >= 0xC2 and a < 0xE0 then
+      if not_utf8lowbyte({buffer:byte(i+1)}) then break end
+      i = i + 2
+    elseif a >= 0xE0 and a < 0xF0 then
+      if not_utf8lowbyte({buffer:byte(i+1,i+2)}) then break end
+      i = i + 3
+    elseif a >= 0xF0 and a < 0xF5 then
+      if not_utf8lowbyte({buffer:byte(i+1,i+3)}) then break end
+      i = i + 4
+    else
+      break
+    end
+  end
+  if i == buflen then return buffer end
   -- now convert to utf8
-  buffer = gsub(buffer, "([\129-\253])([\65-\254])",
+  buffer = buffer:gsub("([\129-\253])([\65-\254])",
   function(a, b)
-    local utf = t_uhc2ucs[byte(a) * 256 + byte(b)]
+    local utf = t_uhc2ucs[a:byte() * 256 + b:byte()]
     if utf then return uchar(utf) end
   end)
   return buffer

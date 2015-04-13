@@ -12,8 +12,8 @@
 
 luatexbase.provides_module({
   name        = "luatexko-normalize",
-  version     = 1.7,
-  date        = "2015/01/16",
+  version     = 1.8,
+  date        = "2015/04/13",
   author      = "Dohyun Kim",
   description = "Hangul normalization",
   license     = "LPPL v1.3+",
@@ -399,10 +399,11 @@ local jamotocjamo = {
 }
 
 require "unicode"
-local gsub = unicode.utf8.gsub
-local byte = unicode.utf8.byte
-local char = unicode.utf8.char
-local find = unicode.utf8.find
+local unicodeutf8 = unicode.utf8
+local gsub = unicodeutf8.gsub
+local byte = unicodeutf8.byte
+local char = unicodeutf8.char
+local find = unicodeutf8.find
 local concat = table.concat
 local add_to_callback = luatexbase.add_to_callback
 local remove_from_callback = luatexbase.remove_from_callback
