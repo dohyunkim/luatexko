@@ -73,13 +73,15 @@ local uhc_to_utf8 = function(buffer)
     local a = buffer:byte(i)
     if a < 0x80 then
       i = i + 1
-    elseif a >= 0xC2 and a < 0xE0 then
+    elseif a < 0xC2 then
+      break
+    elseif a < 0xE0 then
       if not_utf8lowbyte({buffer:byte(i+1)}) then break end
       i = i + 2
-    elseif a >= 0xE0 and a < 0xF0 then
+    elseif a < 0xF0 then
       if not_utf8lowbyte({buffer:byte(i+1,i+2)}) then break end
       i = i + 3
-    elseif a >= 0xF0 and a < 0xF5 then
+    elseif a < 0xF5 then
       if not_utf8lowbyte({buffer:byte(i+1,i+3)}) then break end
       i = i + 4
     else
