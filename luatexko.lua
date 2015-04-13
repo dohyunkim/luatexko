@@ -12,7 +12,7 @@
 
 local err,warn,info,log = luatexbase.provides_module({
   name        = 'luatexko',
-  date        = '2015/04/12',
+  date        = '2015/04/13',
   version     = 1.8,
   description = 'Korean linebreaking and font-switching',
   author      = 'Dohyun Kim',
@@ -1800,6 +1800,13 @@ add_to_callback("post_linebreak_filter", function(head)
   if texcount["luakoulineboxcnt"]>0 then head = after_linebreak_underline(head) end
   return d_tonode(head)
 end, 'luatexko.post_linebreak_filter')
+
+--
+-- no longer seems to be assining new font id with expansion
+--
+if config and config.luaotfload and config.luaotfload.run then
+  config.luaotfload.run.color_callback="pre_output_filter"
+end
 
 
 ------------------------------------
