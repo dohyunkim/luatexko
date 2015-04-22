@@ -7,9 +7,8 @@ almost all the hidden routines of TeX engine, users can obtain more
 beautiful outcome using this package rather than other Hangul macros
 operating on other engines.
 
-Due to the backward-incompatible update of LuaTeX in early 2013, LuaTeX
-version 0.76+ and luaotfload package version 2.2+ are required for this
-package to run.
+LuaTeX version 0.79+ and luaotfload package version 2.4+ are required for
+this package to run.
 
 This package also requires both cjk-ko and xetexko packages for its full
 functionality.

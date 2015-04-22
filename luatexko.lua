@@ -1801,13 +1801,6 @@ add_to_callback("post_linebreak_filter", function(head)
   return d_tonode(head)
 end, 'luatexko.post_linebreak_filter')
 
---
--- no longer seems to be assining new font id with expansion
---
-if config and config.luaotfload and config.luaotfload.run then
-  config.luaotfload.run.color_callback="pre_output_filter"
-end
-
 
 ------------------------------------
 -- vertical typesetting: EXPERIMENTAL
