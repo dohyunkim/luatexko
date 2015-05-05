@@ -12,7 +12,7 @@
 
 local err,warn,info,log = luatexbase.provides_module({
   name        = 'luatexko',
-  date        = '2015/04/13',
+  date        = '2015/05/05',
   version     = 1.8,
   description = 'Korean linebreaking and font-switching',
   author      = 'Dohyun Kim',
@@ -1549,7 +1549,7 @@ local function reorderTM (head)
     local uni = d_get_unicode_char(curr)
     if uni and (uni == 0x302E or uni == 0x302F) then
       local unichar = get_font_char(d_getfont(curr), uni)
-      if unichar.width > 0 then
+      if unichar and unichar.width > 0 then
         local p = d_nodeprev(curr)
         while p do
           local pid = d_getid(p)
