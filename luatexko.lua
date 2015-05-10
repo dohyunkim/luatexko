@@ -12,7 +12,7 @@
 
 local err,warn,info,log = luatexbase.provides_module({
   name        = 'luatexko',
-  date        = '2015/05/05',
+  date        = '2015/05/10',
   version     = 1.8,
   description = 'Korean linebreaking and font-switching',
   author      = 'Dohyun Kim',
@@ -716,8 +716,7 @@ local function koreanlatinskip (head,curr,currfont,prevfont,was_penalty)
   d_insert_before(head,curr,d_make_luako_glue(width, emsize*0.04, emsize*0.02))
 end
 
-local function cjk_insert_nodes(head,curr,currchar,currfont,prevchar,prevfont)
-  local was_penalty = false
+local function cjk_insert_nodes(head,curr,currchar,currfont,prevchar,prevfont,was_penalty)
   local currentcjtype = d_has_attribute(curr,cjtypesetattr)
   local p = get_cjk_class(prevchar, currentcjtype)
   local c = get_cjk_class(currchar, currentcjtype)
@@ -821,7 +820,7 @@ local function cjk_insert_nodes(head,curr,currchar,currfont,prevchar,prevfont)
 end
 
 local function cjk_spacing_linebreak (head)
-  local prevchar,prevfont = nil,nil
+  local prevchar,prevfont,was_penalty = nil,nil,nil
   local curr = head
   while curr do
     if d_has_attribute(curr,finemathattr) then
@@ -834,7 +833,7 @@ local function cjk_spacing_linebreak (head)
         emsize = get_font_emsize(currfont)
         local uni = d_get_unicode_char(curr)
         if uni then
-          prevchar,prevfont = cjk_insert_nodes(head,curr,uni,currfont,prevchar,prevfont)
+          prevchar,prevfont = cjk_insert_nodes(head,curr,uni,currfont,prevchar,prevfont,was_penalty)
         end
         d_unset_attribute(curr,finemathattr)
       elseif currid == mathnode then
@@ -844,7 +843,7 @@ local function cjk_spacing_linebreak (head)
           currchar = 0x4E00
         end
         if currsubtype == 0 then
-          cjk_insert_nodes(head,curr,currchar,nil,prevchar,prevfont)
+          cjk_insert_nodes(head,curr,currchar,nil,prevchar,prevfont,was_penalty)
           curr = d_end_of_math(curr)
           if not curr then break end
           prevchar,prevfont = currchar,nil
@@ -853,11 +852,12 @@ local function cjk_spacing_linebreak (head)
       elseif currid == hlistnode or currid == vlistnode then
         local firstchr, firstfid = d_get_hlist_char_first(curr)
         if firstchr then
-          cjk_insert_nodes(head,curr,firstchr,firstfid,prevchar,prevfont)
+          cjk_insert_nodes(head,curr,firstchr,firstfid,prevchar,prevfont,was_penalty)
         end
         prevchar,prevfont = d_get_hlist_char_last(curr,prevchar,prevfont)
         d_unset_attribute(curr,finemathattr)
       end
+      was_penalty = currid == penaltynode
     else
       prevchar,prevfont = 0,nil -- treat \verb as latin character.
     end

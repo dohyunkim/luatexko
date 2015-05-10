@@ -55,7 +55,7 @@
 \title{\luatexko\ 간단 매뉴얼}
 \author{Dohyun Kim \normalsize |<nomos at ktug org>| \and
   \normalsize \url{<http://github.com/dohyunkim/luatexko>}}
-\date{Version 1.8\quad 2015/04/13}
+\date{Version 1.8\quad 2015/05/10}
 \maketitle
 
 \begin{quote}\small
@@ -87,6 +87,8 @@
     \item[v1.7] ------
     \item 패키지 옵션 |[unfonts]|를 더는 지원하지 않는다. 이 옵션을 사용한
       기존 문서는 기본 글꼴인 나눔 Type1으로 식자될 것이다.
+    \item[v1.8] ------
+    \item \hyperref[sec:ruby]{\cs{xxruby} 명령이 추가되었다.}
   \end{itemize}
 \end{quote}
 
@@ -390,7 +392,7 @@ endfig;
 |^^^^02d9|는 유니코드 코드포인트를 뜻하는 16진수이고 소문자로만 써야 한다.
 숫자 대신 직접 문자를 입력해도 된다. 플레인텍에서도 쓸 수 있다.
 
-\section{}
+\section{}\label{sec:ruby}
 루비를 달 수 있다. ruby 패키지가 이미 존재하지만 \luatexko와 궁합이 잘
 맞지 않아 새로 매크로를 제공한다.  플레인텍도 지원한다.
 \begin{quote}
@@ -409,6 +411,10 @@ endfig;
 ④~\cs{rubynooverlap}: 루비의 폭이 본문 글자의 폭보다 클 때 루비가 이웃
 글자들 위로 삐져나가지 못하게 한다. 본문 글자의 흐름을 중시하여
 \cs{rubyoverlap}을 기본값으로 하였으므로 이는 따로 선언할 필요가 없다.
+
+한편, 연속된 본문 글자들에 각각 한 글자씩 루비를 달고자 한다면
+|\xxruby{...}{...}| 명령을 사용하라. 글자들 사이에 줄바꿈이 허용된다.
+다만 두 인자의 글자 수가 동일해야 한다.
 
 \section{}
 ulem 패키지가 \luatexko와 궁합이 잘 맞지 않아{\small (줄바꿈에 문제가 있음)}

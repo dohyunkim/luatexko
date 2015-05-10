@@ -16,7 +16,7 @@
   \ifcsname ifpdf\endcsname\else \input ifpdf.sty \fi
   \catcode`@ = 11
 \else
-  \ProvidesPackage{luatexko-core}[2015/04/16 v1.8 Typesetting Korean with LuaTeX]
+  \ProvidesPackage{luatexko-core}[2015/05/10 v1.8 Typesetting Korean with LuaTeX]
   \RequirePackage{luaotfload}[2013/05/23]
 \fi
 
@@ -149,6 +149,21 @@
   \edef\y@{\endgroup#1\noexpand#2 \x@\space at#4\dimexpr\pdffontsize#3\relax}%
   \y@#2}
 \fi
+
+% xxruby: consecutive ruby annotations
+\protected\def\xxruby#1#2{%
+  \begingroup\def\basestr{#1}\def\rubystr{#2}\luako@xxrubyxx\endgroup
+}
+\def\luako@xxrubyxx{%
+  \ifx\empty\basestr\else
+    \expandafter\luako@ruby@get@base@char\basestr\end
+    \expandafter\luako@ruby@get@ruby@char\rubystr\end
+    \ruby\basechar\rubychar
+    \expandafter\luako@xxrubyxx
+  \fi
+}
+\def\luako@ruby@get@base@char#1#2\end{\def\basechar{#1}\def\basestr{#2}}
+\def\luako@ruby@get@ruby@char#1#2\end{\def\rubychar{#1}\def\rubystr{#2}}
 
 %% vertical typesetting
 %% EXPERIMENTAL code

@@ -1,8 +1,9 @@
-2015-xx-xx      Dohyun Kim <nomos at ktug org>
+2015-05-10      Dohyun Kim <nomos at ktug org>
 
 	Version 1.8
 
-	* luatexko.lua: internal changes -- we use `node.direct'
+	* luatexko.lua: internal changes using `node.direct'
+	* luatexko-core.sty: \xxruby is a convenient variant of \ruby
 
 2015-01-16      Dohyun Kim <nomos at ktug org>
 
