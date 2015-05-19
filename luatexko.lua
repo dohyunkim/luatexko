@@ -820,20 +820,25 @@ local function cjk_insert_nodes(head,curr,currchar,currfont,prevchar,prevfont,wa
 end
 
 local function cjk_spacing_linebreak (head)
-  local prevchar,prevfont,was_penalty = nil,nil,nil
+  local prevchar,prevfont,was_penalty,prevfine = nil,nil,nil,nil
   local curr = head
   while curr do
-    if d_has_attribute(curr,finemathattr) then
+    local currfine = d_has_attribute(curr,finemathattr)
+    if currfine then
       local currid = d_getid(curr)
       if currid == gluenode then
-        prevchar,prevfont = nil,nil
+        prevchar,prevfont,prevfine = nil,nil,nil
         d_unset_attribute(curr,finemathattr)
       elseif currid == glyphnode then
         local currfont = d_getfont(curr)
         emsize = get_font_emsize(currfont)
         local uni = d_get_unicode_char(curr)
         if uni then
+          if prevfine and prevfine > 0 and currfine == 0 then
+            d_set_attribute(curr, finemathattr, 1)
+          end
           prevchar,prevfont = cjk_insert_nodes(head,curr,uni,currfont,prevchar,prevfont,was_penalty)
+          prevfine = currfine
         end
         d_unset_attribute(curr,finemathattr)
       elseif currid == mathnode then
@@ -846,7 +851,7 @@ local function cjk_spacing_linebreak (head)
           cjk_insert_nodes(head,curr,currchar,nil,prevchar,prevfont,was_penalty)
           curr = d_end_of_math(curr)
           if not curr then break end
-          prevchar,prevfont = currchar,nil
+          prevchar,prevfont,prevfine = currchar,nil,nil
         end
         d_unset_attribute(curr,finemathattr)
       elseif currid == hlistnode or currid == vlistnode then
@@ -855,11 +860,17 @@ local function cjk_spacing_linebreak (head)
           cjk_insert_nodes(head,curr,firstchr,firstfid,prevchar,prevfont,was_penalty)
         end
         prevchar,prevfont = d_get_hlist_char_last(curr,prevchar,prevfont)
+        if d_getlist(curr) then prevfine = nil end -- empty box preserves prevfine.
         d_unset_attribute(curr,finemathattr)
       end
       was_penalty = currid == penaltynode
     else
-      prevchar,prevfont = 0,nil -- treat \verb as latin character.
+      if d_getid(curr) == glyphnode and prevfine and prevfine > 0 then -- fitst glyph in verb
+        d_set_attribute(curr, finemathattr, 1)
+        cjk_insert_nodes(head,curr,0,nil,prevchar,prevfont,was_penalty)
+        d_unset_attribute(curr,finemathattr)
+      end
+      prevchar,prevfont,prevfine = 0,nil,nil -- treat \verb as latin character.
     end
     curr = d_nodenext(curr)
   end
