@@ -2002,36 +2002,7 @@ local function fakeslant_itlc (tfmdata)
   end
 end
 
-------------------------------------
--- tounicode for old hangul
-------------------------------------
-local function tounicode_oldhangul (tfmdata)
-  local script = tfmdata.properties and tfmdata.properties.script
-  if script ~= "hang" then return end
-  local desc = tfmdata.shared and tfmdata.shared.rawdata and tfmdata.shared.rawdata.descriptions
-  local chrs = tfmdata.characters
-  if not desc or not chrs then return end
-  if not chrs[0x1100] then return end
-  for _,v in ipairs({{0x1100,0x11FF},{0xA960,0xA97C},{0xD7B0,0xD7FB}}) do
-    for i = v[1],v[2] do
-      local ds = desc[i] and desc[i].slookups
-      if ds then
-        for _,s in pairs(ds) do
-          if type(s) == "number" and s >= 0xF0000 and chrs[s] and not chrs[s].tounicode then
-            chrs[s].tounicode = stringformat("%04X",i)
-          end
-        end
-      end
-    end
-  end
-end
-
-add_to_callback("luaotfload.patch_font",
-  function(tfmdata)
-    fakeslant_itlc(tfmdata)
-    tounicode_oldhangul(tfmdata)
-  end, "luatexko.font_patches")
-
+add_to_callback("luaotfload.patch_font", fakeslant_itlc, "luatexko.fakeslant_itlc")
 
 ------------------------------------
 -- Actual Text
