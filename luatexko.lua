@@ -12,8 +12,8 @@
 
 local err,warn,info,log = luatexbase.provides_module({
   name        = 'luatexko',
-  date        = '2015/05/10',
-  version     = 1.8,
+  date        = '2015/05/20',
+  version     = 1.9,
   description = 'Korean linebreaking and font-switching',
   author      = 'Dohyun Kim',
   license     = 'LPPL v1.3+',
@@ -652,7 +652,7 @@ local function d_get_hlist_char_last (hlist,prevchar,prevfont)
     local currid = d_getid(curr)
     if currid == glyphnode then
       local c,f = d_get_unicode_char(curr), d_getfont(curr)
-      if c then return c,f end
+      if c and not is_unicode_vs(c) then return c,f end -- bypass VS
     elseif currid == hlistnode or currid == vlistnode then
       local c,f = d_get_hlist_char_last(curr)
       if c then return c,f end
@@ -833,7 +833,7 @@ local function cjk_spacing_linebreak (head)
         local currfont = d_getfont(curr)
         emsize = get_font_emsize(currfont)
         local uni = d_get_unicode_char(curr)
-        if uni then
+        if uni and not is_unicode_vs(uni) then -- bypass VS
           if prevfine and prevfine > 0 and currfine == 0 then
             d_set_attribute(curr, finemathattr, 1)
           end
@@ -899,8 +899,9 @@ local function remove_cj_spaceskip (head)
             prv = d_nodeprev(prv)
           end
           if prvid == glyphnode then
-            prevclass = get_cjk_class(d_get_unicode_char(prv), cjattr)
             prevchar, prevfont = d_getchar(prv), d_getfont(prv)
+            if is_unicode_vs(prevchar) then prv = d_nodeprev(prv) end -- bypass VS
+            prevclass = get_cjk_class(d_get_unicode_char(prv), cjattr)
           end
         end
         if nxtid == glyphnode then
@@ -1056,7 +1057,11 @@ local function get_ruby_side_width (basewidth,rubywidth,adjacent)
   local width,margin = (rubywidth-basewidth)/2, 0
   if adjacent then
     if d_getid(adjacent) == glyphnode then
-      if not is_hanja(d_get_unicode_char(adjacent)) then
+      local uni = d_get_unicode_char(adjacent)
+      if is_unicode_vs(uni) then -- bypass VS
+        uni = d_get_unicode_char(d_nodeprev(adjacent))
+      end
+      if not is_hanja(uni) then
         width = (rubywidth-basewidth-emsize)/2
         if width > 0 then
           margin = emsize/2
@@ -1356,6 +1361,7 @@ local function get_josaprevs(curr,josaprev,ignoreparens,halt)
         or inhibitxspcode[chr]
         or prebreakpenalty[chr]
         or postbreakpenalty[chr]
+        or is_unicode_vs(chr) -- bypass VS
         or chr == 0x302E  -- tone mark
         or chr == 0x302F then  -- tone mark
         --skip
@@ -1475,7 +1481,9 @@ local function font_substitute(head)
       local currchar, currfont = d_getchar(curr), d_getfont(curr)
       local eng = get_font_table(currfont)
       local myfontchar = nil
-      if eng and eng.encodingbytes and eng.encodingbytes == 2 -- exclude type1
+      if is_unicode_vs(currchar) then
+        currchar = nil -- bypass VS
+      elseif eng and eng.encodingbytes and eng.encodingbytes == 2 -- exclude type1
         and hangulpunctuations[currchar]
         and d_has_attribute(curr, hangulpunctsattr)
         and (d_has_attribute(curr, finemathattr) or 0) > 0 -- not ttfamily
@@ -1499,8 +1507,14 @@ local function font_substitute(head)
           if myfontchar then
             d_setfield(curr,"font",fid)
             local nxt = d_nodenext(curr)
-            if eng and nxt then
-              local nxtid, nxtsubtype = d_getid(nxt), d_getsubtype(nxt)
+            local nxtid = nxt and d_getid(nxt)
+            if nxtid == glyphnode and is_unicode_vs(d_getchar(nxt)) then
+              d_setfield(nxt,"font",fid)
+              nxt = d_nodenext(nxt)
+              nxtid = nxt and d_getid(nxt)
+            end
+            if eng and nxtid then
+              local nxtsubtype = d_getsubtype(nxt)
               -- adjust next glue by hangul font space
               if nxtid == gluenode and nxtsubtype and nxtsubtype == 0 then
                 local nxtspec = d_getfield(nxt,"spec")
