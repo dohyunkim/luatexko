@@ -1,3 +1,10 @@
+XXXX-XX-XX      Dohyun Kim <nomos at ktug org>
+
+	Version 1.9
+
+	* luatexko.lua: remove support for ideographic variations (fontloader
+	supports them)
+
 2015-05-10      Dohyun Kim <nomos at ktug org>
 
 	Version 1.8

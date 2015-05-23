@@ -12,7 +12,7 @@
 
 local err,warn,info,log = luatexbase.provides_module({
   name        = 'luatexko',
-  date        = '2015/05/20',
+  date        = '2015/05/23',
   version     = 1.9,
   description = 'Korean linebreaking and font-switching',
   author      = 'Dohyun Kim',
@@ -28,12 +28,8 @@ luatexko.rubynode           = rubynode
 luatexko.ulinebox           = ulinebox
 
 local stringbyte    = string.byte
-local stringgsub    = string.gsub
 local stringchar    = string.char
-local stringfind    = string.find
-local stringmatch   = string.match
 local stringformat  = string.format
-local string_sub    = string.sub
 local mathfloor     = math.floor
 local tex_round     = tex.round
 local tex_sp        = tex.sp
@@ -94,7 +90,6 @@ local d_remove_node     = nodedirect.remove
 local d_nodenew         = nodedirect.new
 local d_nodecount       = nodedirect.count
 local d_end_of_math     = nodedirect.end_of_math
-local d_nodeslide       = nodedirect.slide
 local d_nodetail        = nodedirect.tail
 local d_nodedimensions  = nodedirect.dimensions
 
@@ -620,7 +615,7 @@ local function d_get_unicode_char(curr)
   if uni < 0xE000 or (uni > 0xF8FF and uni < 0xF0000) then -- no pua
     local uchr = get_font_char(d_getfont(curr), uni)
     uchr = uchr and uchr.tounicode
-    uchr = uchr and string_sub(uchr,1,4) -- seems ok for old hangul
+    uchr = uchr and uchr:sub(1,4) -- seems ok for old hangul
     if uchr then return tonumber(uchr,16) end
   end
   local uatt = d_has_attribute(curr, luakounicodeattr)
@@ -647,7 +642,7 @@ local function d_get_hlist_char_first (hlist)
 end
 
 local function d_get_hlist_char_last (hlist,prevchar,prevfont)
-  local curr = d_nodeslide(d_getlist(hlist))
+  local curr = d_nodetail(d_getlist(hlist))
   while curr do
     local currid = d_getid(curr)
     if currid == glyphnode then
@@ -1311,10 +1306,13 @@ local function get_hanja_hangul_table (table,file,init)
   return table
 end
 
-local hanja2hangul = { }
-hanja2hangul = get_hanja_hangul_table(hanja2hangul,"hanja_hangul.tab",0x4E00)
-hanja2hangul = get_hanja_hangul_table(hanja2hangul,"hanjaexa_hangul.tab",0x3400)
-hanja2hangul = get_hanja_hangul_table(hanja2hangul,"hanjacom_hangul.tab",0xF900)
+local hanja2hangul
+local function initialize_hanja2hangul ()
+  hanja2hangul = {}
+  hanja2hangul = get_hanja_hangul_table(hanja2hangul,"hanja_hangul.tab",0x4E00)
+  hanja2hangul = get_hanja_hangul_table(hanja2hangul,"hanjaexa_hangul.tab",0x3400)
+  hanja2hangul = get_hanja_hangul_table(hanja2hangul,"hanjacom_hangul.tab",0xF900)
+end
 
 -- 1 : 리을,  2 : 중성,    3 : 종성
 local function get_josacode (prevs)
@@ -1327,6 +1325,7 @@ local function get_josacode (prevs)
   if is_jungjongsong(code) then return jamo2josacode(code) end
   if (code >= 0x3400 and code <= 0x9FA5)
     or (code >= 0xF900 and code <= 0xFA2D) then
+    if not hanja2hangul then initialize_hanja2hangul() end
     local _, _, T = syllable2jamo(hanja2hangul[code])
     return jamo2josacode(T)
   end
@@ -1369,7 +1368,7 @@ local function get_josaprevs(curr,josaprev,ignoreparens,halt)
         josaprev[#josaprev + 1] = chr
       end
     elseif currid == hlistnode or currid == vlistnode then
-      josaprev = get_josaprevs(d_nodeslide(d_getlist(curr)),josaprev,ignoreparens,halt)
+      josaprev = get_josaprevs(d_nodetail(d_getlist(curr)),josaprev,ignoreparens,halt)
     end
     if #josaprev == 3 then break end
     curr = d_nodeprev(curr)
@@ -1434,7 +1433,7 @@ local function nanumtype1font(curr)
   if series then
     series = series > 500 and "b" or "m"
   else
-    series = stringfind(fnt_t.name,"^cmb") and "b" or "m"
+    series = fnt_t.name:find("^cmb") and "b" or "m"
   end
   local shape  = fnt_t.parameters.slant > 0 and "o" or ""
   local subfnt = stringformat("%s%s%s%02x",family,series,shape,currchar/256)
@@ -1476,79 +1475,85 @@ local function font_substitute(head)
   while curr do
     local currid = d_getid(curr)
     if currid == mathnode and d_getsubtype(curr) == 0 then
-        curr = d_end_of_math(curr)
+      curr = d_end_of_math(curr)
     elseif currid == glyphnode then
       local currchar, currfont = d_getchar(curr), d_getfont(curr)
-      local eng = get_font_table(currfont)
-      local myfontchar = nil
-      if is_unicode_vs(currchar) then
-        currchar = nil -- bypass VS
-      elseif eng and eng.encodingbytes and eng.encodingbytes == 2 -- exclude type1
-        and hangulpunctuations[currchar]
-        and d_has_attribute(curr, hangulpunctsattr)
-        and (d_has_attribute(curr, finemathattr) or 0) > 0 -- not ttfamily
-        and not get_font_char(currfont, 0xAC00) then -- exclude hangul font
-      else
-        myfontchar = get_font_char(currfont, currchar)
-      end
-      if currchar and not myfontchar then
-        local hangul    = d_has_attribute(curr, hangulfntattr)
-        local hanja     = d_has_attribute(curr, hanjafntattr)
-        local fallback  = d_has_attribute(curr, fallbackfntattr)
-        local ftable = {hangul, hanja, fallback}
-        if luatexko.hanjafontforhanja then
-          local uni = d_get_unicode_char(curr)
-          uni = uni and get_cjk_class(uni)
-          if uni and uni < 7 then ftable = {hanja, hangul, fallback} end
-        end
-        for i = 1,3 do
-          local fid = ftable[i]
-          myfontchar = get_font_char(fid, currchar)
-          if myfontchar then
-            d_setfield(curr,"font",fid)
-            local nxt = d_nodenext(curr)
-            local nxtid = nxt and d_getid(nxt)
-            if nxtid == glyphnode and is_unicode_vs(d_getchar(nxt)) then
-              d_setfield(nxt,"font",fid)
-              nxt = d_nodenext(nxt)
-              nxtid = nxt and d_getid(nxt)
+      if currchar then
+        if is_unicode_vs(currchar) then -- ideograph variation selectors
+          local prev = d_nodeprev(curr)
+          local prevfont = d_getid(prev) == glyphnode and d_getfont(prev)
+          if prevfont ~= currfont then
+            d_setfield(curr, "font", prevfont) -- sync font
+          end
+        else
+          local myfontchar
+          local eng = currfont and get_font_table(currfont)
+          if eng and eng.encodingbytes and eng.encodingbytes == 2 -- exclude type1
+            and hangulpunctuations[currchar] and d_has_attribute(curr, hangulpunctsattr)
+            and (d_has_attribute(curr, finemathattr) or 0) > 0 -- not ttfamily
+            and not get_font_char(currfont, 0xAC00) then -- exclude hangul font
+          else
+            myfontchar = get_font_char(currfont, currchar)
+          end
+          if not myfontchar then
+            local hangul    = d_has_attribute(curr, hangulfntattr)
+            local hanja     = d_has_attribute(curr, hanjafntattr)
+            local fallback  = d_has_attribute(curr, fallbackfntattr)
+            local ftable    = {hangul, hanja, fallback}
+            if luatexko.hanjafontforhanja then
+              local uni = d_get_unicode_char(curr)
+              uni = uni and get_cjk_class(uni)
+              if uni and uni < 7 then ftable = {hanja, hangul, fallback} end
             end
-            if eng and nxtid then
-              local nxtsubtype = d_getsubtype(nxt)
-              -- adjust next glue by hangul font space
-              if nxtid == gluenode and nxtsubtype and nxtsubtype == 0 then
-                local nxtspec = d_getfield(nxt,"spec")
-                if nxtspec and d_getfield(nxtspec,"writable") and get_font_char(fid,32) then
-                  local sp,st,sh = hangulspaceskip(eng, fid, nxtspec)
-                  if sp and st and sh then
-                    local hg = d_copy_node(nxtspec)
-                    d_setfield(hg,"width",  sp)
-                    d_setfield(hg,"stretch",st)
-                    d_setfield(hg,"shrink", sh)
-                    d_setfield(nxt,"spec",  hg)
+            for i = 1,3 do
+              local fid = ftable[i]
+              myfontchar = fid and get_font_char(fid, currchar)
+              if myfontchar then
+                d_setfield(curr,"font",fid)
+                local nxt = d_nodenext(curr)
+                local nxtid = nxt and d_getid(nxt)
+                if nxtid == glyphnode and is_unicode_vs(d_getchar(nxt)) then
+                  nxt = d_nodenext(nxt)
+                  nxtid = nxt and d_getid(nxt)
+                end
+                if eng and nxtid then
+                  local nxtsubtype = d_getsubtype(nxt)
+                  -- adjust next glue by hangul font space
+                  if nxtid == gluenode and nxtsubtype and nxtsubtype == 0 then
+                    local nxtspec = d_getfield(nxt,"spec")
+                    if nxtspec and d_getfield(nxtspec,"writable") and get_font_char(fid,32) then
+                      local sp,st,sh = hangulspaceskip(eng, fid, nxtspec)
+                      if sp and st and sh then
+                        local hg = d_copy_node(nxtspec)
+                        d_setfield(hg,"width",  sp)
+                        d_setfield(hg,"stretch",st)
+                        d_setfield(hg,"shrink", sh)
+                        d_setfield(nxt,"spec",  hg)
+                      end
+                    end
+                  -- adjust next italic correction kern
+                  elseif nxtid == kernnode and nxtsubtype == 1 and d_getfield(nxt,"kern") == 0 then
+                    local ksl = get_font_table(fid).parameters.slant
+                    if ksl and ksl > 0 then
+                      d_setfield(nxt,"kern", myfontchar.italic or 0)
+                    end
                   end
                 end
-              -- adjust next italic correction kern
-              elseif nxtid == kernnode and nxtsubtype == 1 and d_getfield(nxt,"kern") == 0 then
-                local ksl = get_font_table(fid).parameters.slant
-                if ksl and ksl > 0 then
-                  d_setfield(nxt,"kern", myfontchar.italic or 0)
+                --- charraise option charraise
+                local charraise = get_font_feature(fid, "charraise")
+                if charraise then
+                  charraise = tex_sp(charraise)
+                  local curryoffset = d_getfield(curr,"yoffset") or 0
+                  d_setfield(curr,"yoffset", charraise + curryoffset)
                 end
+                ---
+                break
               end
             end
-            --- charraise option charraise
-            local charraise = get_font_feature(fid, "charraise")
-            if charraise then
-              charraise = tex_sp(charraise)
-              local curryoffset = d_getfield(curr,"yoffset") or 0
-              d_setfield(curr,"yoffset", charraise + curryoffset)
+            if not myfontchar then
+              nanumtype1font(curr)
             end
-            ---
-            break
           end
-        end
-        if not myfontchar then
-          nanumtype1font(curr)
         end
       end
     end
@@ -1563,7 +1568,6 @@ local function assign_unicode_codevalue (head)
   for curr in d_traverse_id(glyphnode, head) do
     d_set_attribute(curr, luakounicodeattr, d_getchar(curr))
   end
-  return head
 end
 
 -----------------------------
@@ -1598,29 +1602,6 @@ local function reorderTM (head)
   return head
 end
 
------------------------------
--- ideographic variation selector
------------------------------
-local function hanja_vs_support (head)
-  for curr in d_traverse_id(glyphnode, head) do
-    local cc = d_getchar(curr)
-    if is_unicode_vs(cc) then
-      local prev = d_nodeprev(curr)
-      if prev and d_getid(prev) == glyphnode then
-        local f = get_font_table(d_getfont(prev))
-        local ivs = f and f.resources and f.resources.variants
-        ivs = ivs and ivs[cc] and ivs[cc][d_getchar(prev)]
-        -- !!! ARRRG! the font table doesn't have variants for non-BMP chars.
-        if ivs then
-          d_setfield(prev,"char",ivs)
-          head = d_remove_node(head,curr)
-        end
-      end
-    end
-  end
-  return head
-end
-
 ----------------------------------
 -- add to callback : pre-linebreak
 ----------------------------------
@@ -1630,7 +1611,6 @@ add_to_callback('hpack_filter', function(head)
   korean_autojosa(head)
   remove_cj_spaceskip(head)
   font_substitute(head)
-  head = hanja_vs_support(head)
   return d_tonode(head)
 end, 'luatexko.hpack_filter_first',1)
 
@@ -1651,7 +1631,6 @@ add_to_callback('pre_linebreak_filter', function(head)
   korean_autojosa(head)
   remove_cj_spaceskip(head)
   font_substitute(head)
-  head = hanja_vs_support(head)
   return d_tonode(head)
 end, 'luatexko.pre_linebreak_filter_first',1)
 
@@ -1661,7 +1640,7 @@ add_to_callback('pre_linebreak_filter', function(head)
   cjk_spacing_linebreak(head)
   if texcount["luakorubyattrcnt"]>0 then spread_ruby_base_box(head) end
   head = compress_fullwidth_punctuations(head)
-  discourage_char_widow(head, d_nodeslide(head))
+  discourage_char_widow(head, d_nodetail(head))
   if texcount["luakorubyattrcnt"]>0 then head = no_ruby_at_margin(head) end
   head = reorderTM(head)
   return d_tonode(head)
@@ -1760,7 +1739,7 @@ local function draw_underline(head,curr,width,ulinenum,ulstart)
   for _,nd in ipairs({ulstart,curr}) do
     if d_getid(nd) == whatsitnode and d_getsubtype(nd) == whatsitspecial then
       local nddata = d_getfield(nd,"data")
-      if nddata and stringfind(nddata,"luako:uline") then
+      if nddata and nddata:find("luako:uline") then
         head = d_remove_node(head,nd)
       end
     end
@@ -1787,11 +1766,11 @@ local function after_linebreak_underline(head,glueorder,glueset,gluesign,ulinenu
     elseif currid == whatsitnode and d_getsubtype(curr) == whatsitspecial then
       local currdata = d_getfield(curr,"data")
       if currdata then
-        if stringfind(currdata,"luako:ulinebegin=") then
-          ulinenum = tonumber(stringmatch(currdata,"(%d+)"))
+        if currdata:find("luako:ulinebegin=") then
+          ulinenum = tonumber(currdata:match("(%d+)"))
           ulstart = curr
         elseif ulstart and ulinenum
-          and stringfind(currdata,'luako:ulineend') then
+          and currdata:find('luako:ulineend') then
           local wd = d_nodedimensions(glueset,gluesign,glueorder,ulstart,curr)
           head = draw_underline(head,curr,wd,ulinenum,ulstart)
           ulinebox[ulinenum] = nil
@@ -1835,17 +1814,16 @@ local tsbtable, mytime, currtime, cachedir, lfsattributes, lfstouch
 local function get_vwidth_tsb_table (filename,fontname)
   if tsbtable[fontname] then return tsbtable[fontname] end
   local cachefile = stringformat("%s/luatexko_vertical_metrics_%s.lua",
-                                cachedir,stringgsub(fontname,"%W","_"))
+                                cachedir,fontname:gsub("%W","_"))
   local cattr = lfs.isfile(cachefile) and lfsattributes(cachefile)
   local fonttime = lfsattributes(filename,"modification")
   if cattr and cattr.access > mytime and cattr.modification == fonttime then
     tsbtable[fontname] = dofile(cachefile)
     return tsbtable[fontname]
   end
-  local metrics = nil
   local font = fontloader.open(filename,fontname)
   if font then
-    metrics = fontloader.to_table(font)
+    local metrics = fontloader.to_table(font)
     fontloader.close(font)
     local glyph_t = {}
     if metrics.subfonts then
@@ -1876,53 +1854,52 @@ local function cjk_vertical_font (vf)
   if not vf.shared.features["vertical"] then return end
   if vf.type == "virtual" then return end
 
-  -- load font (again)
   local tsbtable = get_vwidth_tsb_table(vf.filename,vf.fontname)
   if not tsbtable then return end
 
-  local tmp = table.copy(vf) -- fastcopy takes time too long.
-  local id = fontdefine(tmp)
+  local id = fontdefine(table.copy(vf)) -- fastcopy takes time too long.
 
   vf.type = 'virtual'
   vf.fonts = {{ id = id }}
-  local quad = vf.parameters and vf.parameters.quad or 655360
-  local descriptions = vf.shared and vf.shared.rawdata and vf.shared.rawdata.descriptions
-  local ascender = vf.parameters and vf.parameters.ascender or quad*0.8
-  local factor = vf.parameters and vf.parameters.factor or 655.36
-  local xheight = vf.parameters and vf.parameters.x_height or quad/2
-  local goffset = xheight/2 - quad/2
+  local params    = vf.parameters   or {}
+  local shared    = vf.shared       or {}
+  local quad      = params.quad     or 655360
+  local ascender  = params.ascender or quad*0.8
+  local factor    = params.factor   or 655.36
+  local xheight   = params.x_height or quad/2
+  local goffset   = xheight/2 - quad/2
+  local descriptions = shared.rawdata and shared.rawdata.descriptions
   for i,v in pairs(vf.characters) do
-    local dsc = descriptions[i]
-    local gl = v.index
-    -- from loaded font
-    local vw  = tsbtable and tsbtable[gl] and tsbtable[gl].ht
-    vw = vw and vw * factor or quad
-    local tsb = tsbtable and tsbtable[gl] and tsbtable[gl].tsb
-    local bb4 = dsc and dsc.boundingbox and dsc.boundingbox[4]
-    local asc = bb4 and tsb and (bb4+tsb)*factor or ascender
-    local hw = v.width or quad
-    local offset = hw/2 + goffset
-    local vh = hw > 0 and hw/2 or nil
+    local dsc     = descriptions[i]
+    local gl      = v.index
+    local tsb_gl  = tsbtable and tsbtable[gl]
+    local vw      = tsb_gl and tsb_gl.ht; vw = vw and vw * factor or quad
+    local tsb     = tsb_gl and tsb_gl.tsb
+    local bb4     = dsc and dsc.boundingbox and dsc.boundingbox[4]
+    local asc     = bb4 and tsb and (bb4+tsb)*factor or ascender
+    local hw      = v.width or quad
+    local offset  = hw/2 + goffset
+    local vh      = hw > 0 and hw/2 or nil
     v.commands = {
-      {'right', asc}, -- bbox4 + top_side_bearing
-      {'down', offset},
+      {'right',   asc}, -- bbox4 + top_side_bearing
+      {'down',    offset},
       {'special', 'pdf: q 0 1 -1 0 0 0 cm'},
       {'push'},
-      {'char', i},
+      {'char',    i},
       {'pop'},
       {'special', 'pdf: Q'},
     }
-    v.width = vw
-    v.height = vh
-    v.depth = vh
-    v.italic = nil
+    v.width   = vw
+    v.height  = vh
+    v.depth   = vh
+    v.italic  = nil
   end
   --- vertical gpos
   local res = vf.resources or {}
   if res.verticalgposhack then
     return vf -- avoid multiple running
   end
-  local fea = vf.shared and vf.shared.features or {}
+  local fea = shared.features or {}
   fea.kern = nil  -- only for horizontal typesetting
   fea.vert = true -- should be activated by default
   local vposkeys = {}
@@ -1953,9 +1930,7 @@ local function cjk_vertical_font (vf)
 end
 
 local function activate_vertical_virtual (tfmdata,value)
-  local loaded = luatexbase.priority_in_callback("luaotfload.patch_font",
-  "luatexko.vertical_virtual_font")
-  if value and not loaded then
+  if value and not tsbtable then
     require "fontloader"
     require "lfs"
     lfstouch      = lfs.touch
@@ -1966,8 +1941,8 @@ local function activate_vertical_virtual (tfmdata,value)
     mytime    = mytime and lfsattributes(mytime,"modification")
     cachedir  = caches.getwritablepath("..","luatexko")
     add_to_callback("luaotfload.patch_font",
-    cjk_vertical_font,
-    "luatexko.vertical_virtual_font")
+                    cjk_vertical_font,
+                    "luatexko.vertical_virtual_font")
   end
 end
 
