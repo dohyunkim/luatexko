@@ -12,7 +12,7 @@
 
 local err,warn,info,log = luatexbase.provides_module({
   name        = 'luatexko',
-  date        = '2015/05/23',
+  date        = '2015/05/25',
   version     = 1.9,
   description = 'Korean linebreaking and font-switching',
   author      = 'Dohyun Kim',
@@ -1829,12 +1829,15 @@ local function get_vwidth_tsb_table (filename,fontname)
     if metrics.subfonts then
       for _,v in ipairs(metrics.subfonts) do
         for ii,vv in pairs(v.glyphs) do
-          glyph_t[ii] = { ht = vv.vwidth, tsb = vv.tsidebearing }
+          local index = vv.orig_pos or ii
+          glyph_t[index] = { ht = vv.vwidth, tsb = vv.tsidebearing, vk = vv.vkerns }
+          glyph_t[vv.name] = index
         end
       end
     else
       for i,v in ipairs(metrics.glyphs) do
-        glyph_t[i] = { ht = v.vwidth, tsb = v.tsidebearing }
+        glyph_t[i] = { ht = v.vwidth, tsb = v.tsidebearing, vk = v.vkerns }
+        glyph_t[v.name] = i
       end
     end
     if lfstouch then
@@ -1869,6 +1872,7 @@ local function cjk_vertical_font (vf)
   local xheight   = params.x_height or quad/2
   local goffset   = xheight/2 - quad/2
   local descriptions = shared.rawdata and shared.rawdata.descriptions
+  local vkrn_tab, id2uni_tab  = {}, {}
   for i,v in pairs(vf.characters) do
     local dsc     = descriptions[i]
     local gl      = v.index
@@ -1893,6 +1897,21 @@ local function cjk_vertical_font (vf)
     v.height  = vh
     v.depth   = vh
     v.italic  = nil
+    -- for vkrn
+    local t = id2uni_tab[gl] or {}
+    t[#t + 1] = i
+    id2uni_tab[gl] = t
+    local vk  = tsb_gl.vk
+    if vk then
+      for _,vv in ipairs(vk) do
+        local index, off = vv.char, vv.off
+        index = index and tsbtable and tsbtable[index]
+        if index and off then
+          vkrn_tab[i] = vkrn_tab[i] or {}
+          vkrn_tab[i][index] = off
+        end
+      end
+    end
   end
   --- vertical gpos
   local res = vf.resources or {}
@@ -1905,7 +1924,7 @@ local function cjk_vertical_font (vf)
   local vposkeys = {}
   local seq = res.sequences or {}
   for _,v in ipairs(seq) do
-    if v.type == "gpos_single" and v.subtables then -- todo: gpos_pair...
+    if (v.type == "gpos_single" or v.type == "gpos_pair") and v.subtables then
       local feature = v.features or {}
       if feature.vhal or feature.vkrn or feature.valt or feature.vpal or feature.vert then
         for _,vv in ipairs(v.subtables) do
@@ -1923,6 +1942,20 @@ local function cjk_vertical_font (vf)
           vp[i] = { -vv[2], vv[1], vv[4], vv[3] }
         end
       end
+    else -- vkrn
+      local t = {}
+      for first,idofftab in pairs(vkrn_tab) do
+        for id,off in pairs(idofftab) do
+          local unis = id2uni_tab[id]
+          if unis then
+            for _,second in ipairs(unis) do
+              t[first] = t[first] or {}
+              t[first][second] = off
+            end
+          end
+        end
+      end
+      lookups[v] = t
     end
   end
   res.verticalgposhack = true
