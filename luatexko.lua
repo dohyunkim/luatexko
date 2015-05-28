@@ -12,7 +12,7 @@
 
 local err,warn,info,log = luatexbase.provides_module({
   name        = 'luatexko',
-  date        = '2015/05/25',
+  date        = '2015/05/28',
   version     = 1.9,
   description = 'Korean linebreaking and font-switching',
   author      = 'Dohyun Kim',
@@ -1821,23 +1821,21 @@ local function get_vwidth_tsb_table (filename,fontname)
     tsbtable[fontname] = dofile(cachefile)
     return tsbtable[fontname]
   end
-  local font = fontloader.open(filename,fontname)
-  if font then
-    local metrics = fontloader.to_table(font)
-    fontloader.close(font)
-    local glyph_t = {}
-    if metrics.subfonts then
-      for _,v in ipairs(metrics.subfonts) do
-        for ii,vv in pairs(v.glyphs) do
-          local index = vv.orig_pos or ii
-          glyph_t[index] = { ht = vv.vwidth, tsb = vv.tsidebearing, vk = vv.vkerns }
-          glyph_t[vv.name] = index
+  local fnt = fontloader.open(filename,fontname)
+  if fnt then
+    local fnt_t    = fontloader.to_table(fnt) -- for tsidebearing
+    fontloader.close(fnt)
+    local glyph_t  = {}
+    local subfonts = fnt_t.subfonts or {fnt_t}
+    for _,subfont in ipairs(subfonts) do
+      local glyphs = subfont.glyphs or {}
+      for i, gl in pairs(glyphs) do
+        local id   = gl.orig_pos or i
+        local name = gl.name
+        if name then
+          glyph_t[id]   = { ht = gl.vwidth, tsb = gl.tsidebearing, vk = gl.vkerns }
+          glyph_t[name] = id
         end
-      end
-    else
-      for i,v in ipairs(metrics.glyphs) do
-        glyph_t[i] = { ht = v.vwidth, tsb = v.tsidebearing, vk = v.vkerns }
-        glyph_t[v.name] = i
       end
     end
     if lfstouch then

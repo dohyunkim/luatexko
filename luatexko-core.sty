@@ -16,7 +16,7 @@
   \ifcsname ifpdf\endcsname\else \input ifpdf.sty \fi
   \catcode`@ = 11
 \else
-  \ProvidesPackage{luatexko-core}[2015/05/10 v1.8 Typesetting Korean with LuaTeX]
+  \ProvidesPackage{luatexko-core}[2015/05/28 v1.9 Typesetting Korean with LuaTeX]
   \RequirePackage{luaotfload}[2013/05/23]
 \fi
 
@@ -214,6 +214,39 @@
       \pagecontents}\luatexkorotatebox\z@\box\z@}%
     \maxdepth\z@ \luatexko@vertical}
 \fi
+
+% horizontal box inside vertical typesetting
+\protected\def\horizontal#1{%
+  \setbox\z@\vbox\bgroup
+    \ifnum\cjtypesetattr<\@ne
+      \unsetluatexattribute\cjtypesetattr
+      \spaceskip\fontdimen2\font
+                plus\fontdimen3\font
+                minus\fontdimen4\font
+    \fi
+    \hsize#1\relax
+    \everypar{}%
+    \leftskip\z@
+    \rightskip\z@
+    \parindent\z@
+}
+\protected\def\endhorizontal{\egroup\luatexkounrotatebox\z@\box\z@}
+\protected\def\luatexkounrotatebox#1{%
+  \leavevmode
+  \vbox to\wd#1\bgroup
+    \vfill
+    \hbox to\dimexpr\ht#1+\dp#1\bgroup
+      \wd#1\z@\ht#1\z@\dp#1\z@
+      \luatexko@rotate@counterclockwise{\box#1}%
+      \hfill
+    \egroup
+  \egroup
+}
+\def\luatexko@rotate@counterclockwise#1{%
+  \ifpdf\pdfliteral{q 0 1 -1 0 0 0 cm}#1\pdfliteral{Q}%
+  \else \special{pdf:btrans rotate 90}#1\special{pdf:etrans}%
+  \fi
+}
 
 %% underline using post_linebreak_filter
 %%  ulem doesn't work well with luatexko;
