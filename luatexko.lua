@@ -92,12 +92,7 @@ local d_nodecount       = nodedirect.count
 local d_end_of_math     = nodedirect.end_of_math
 local d_nodetail        = nodedirect.tail
 local d_nodedimensions  = nodedirect.dimensions
-
-local d_new_glue      = d_nodenew(gluenode)
-local d_new_glue_spec = d_nodenew(gluespecnode)
-local d_new_penalty   = d_nodenew(penaltynode)
-local d_new_kern      = d_nodenew(kernnode,1)
-local d_new_rule      = d_nodenew(rulenode)
+local d_nodefree        = nodedirect.free
 
 local emsize = 655360
 
@@ -469,8 +464,8 @@ local josa_code = {
 }
 
 local function d_get_gluenode (w,st,sh)
-  local g = d_copy_node(d_new_glue)
-  local s = d_copy_node(d_new_glue_spec)
+  local g = d_nodenew(gluenode)
+  local s = d_nodenew(gluespecnode)
   d_setfield(s,"width",   w  or 0)
   d_setfield(s,"stretch", st or 0)
   d_setfield(s,"shrink",  sh or 0)
@@ -479,19 +474,19 @@ local function d_get_gluenode (w,st,sh)
 end
 
 local function d_get_penaltynode (n)
-  local p = d_copy_node(d_new_penalty)
+  local p = d_nodenew(penaltynode)
   d_setfield(p,"penalty", n or 0)
   return p
 end
 
 local function d_get_kernnode (n)
-  local k = d_copy_node(d_new_kern)
+  local k = d_nodenew(kernnode,1)
   d_setfield(k,"kern", n or 0)
   return k
 end
 
 local function d_get_rulenode (w,h,d)
-  local r = d_copy_node(d_new_rule)
+  local r = d_nodenew(rulenode)
   d_setfield(r,"width",  w or 0)
   d_setfield(r,"height", h or 0)
   d_setfield(r,"depth",  d or 0)
@@ -908,6 +903,8 @@ local function remove_cj_spaceskip (head)
           local subtype = currsubtype
           if subtype == 13 then -- do not touch on xspaceskip for now
             d_remove_node(head,curr)
+            d_nodefree(curr)
+            curr = nxt
           elseif subtype == 0 then -- before \text?? spaceskip is replaced by glue type 0
             local spec = d_getfield(curr,"spec")
             local csp = spec and d_getfield(spec,"width")
@@ -927,6 +924,8 @@ local function remove_cj_spaceskip (head)
             end
             if sp == csp and st == cst and sh == csh then
               d_remove_node(head,curr)
+              d_nodefree(curr)
+              curr = nxt
             end
           end
         end
@@ -1010,6 +1009,7 @@ end
 -- ruby: pre-linebreak routine
 ------------------------------
 local function spread_ruby_box(head,extrawidth)
+  local to_free = {}
   for curr in d_traverse_id(gluenode,head) do
     local currspec = d_getfield(curr,"spec")
     if currspec then
@@ -1019,8 +1019,12 @@ local function spread_ruby_box(head,extrawidth)
       else
         head = d_insert_before(head,curr,d_get_kernnode(wd+extrawidth))
         head = d_remove_node(head,curr)
+        to_free[#to_free + 1] = curr
       end
     end
+  end
+  if #to_free > 0 then
+    for _,v in ipairs(to_free) do d_nodefree(v) end
   end
   return head
 end
@@ -1377,6 +1381,7 @@ local function get_josaprevs(curr,josaprev,ignoreparens,halt)
 end
 
 local function korean_autojosa (head)
+  local to_free = {}
   for curr in d_traverse_id(glyphnode,head) do
     local josaattr = d_has_attribute(curr,autojosaattr)
     if josaattr and d_has_attribute(curr,finemathattr) then
@@ -1396,7 +1401,13 @@ local function korean_autojosa (head)
         d_setfield(curr,"char", josa_list[thischar][josacode])
       end
     end
-    if d_getchar(curr) < 0 then d_remove_node(head,curr) end
+    if d_getchar(curr) < 0 then
+      d_remove_node(head,curr)
+      to_free[#to_free + 1] = curr
+    end
+  end
+  if #to_free > 0 then
+    for _,v in ipairs(to_free) do d_nodefree(v) end
   end
 end
 
@@ -1524,11 +1535,9 @@ local function font_substitute(head)
                     if nxtspec and d_getfield(nxtspec,"writable") and get_font_char(fid,32) then
                       local sp,st,sh = hangulspaceskip(eng, fid, nxtspec)
                       if sp and st and sh then
-                        local hg = d_copy_node(nxtspec)
-                        d_setfield(hg,"width",  sp)
-                        d_setfield(hg,"stretch",st)
-                        d_setfield(hg,"shrink", sh)
-                        d_setfield(nxt,"spec",  hg)
+                        d_setfield(nxtspec,"width",  sp)
+                        d_setfield(nxtspec,"stretch",st)
+                        d_setfield(nxtspec,"shrink", sh)
                       end
                     end
                   -- adjust next italic correction kern
@@ -1585,8 +1594,8 @@ local function reorderTM (head)
           if pid == glyphnode then
             local pc = get_cjk_class(d_get_unicode_char(p))
             if pc == 7 or pc == 8 then
-              head = d_insert_before(head,p,d_copy_node(curr))
               head = d_remove_node(head,curr)
+              head = d_insert_before(head,p,curr)
               break
             end
           elseif unichar.commands and pid == kernnode then
@@ -1741,6 +1750,7 @@ local function draw_underline(head,curr,width,ulinenum,ulstart)
       local nddata = d_getfield(nd,"data")
       if nddata and nddata:find("luako:uline") then
         head = d_remove_node(head,nd)
+        d_nodefree(nd)
       end
     end
   end
