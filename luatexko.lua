@@ -1736,10 +1736,9 @@ end
 ---------------------
 -- underline emphasis
 ---------------------
-local function draw_underline(head,curr,width,ulinenum,ulstart)
+local function draw_underline(head,curr,width,ubox,ulstart)
   if width and width > 0 then
     local glue = d_get_gluenode(width)
-    local ubox = d_todirect(ulinebox[ulinenum])
     d_setfield(glue,"subtype", 101) -- cleaders
     d_setfield(glue,"leader", d_copy_node(ubox))
     head = d_insert_before(head, ulstart, glue)
@@ -1779,18 +1778,20 @@ local function after_linebreak_underline(head,glueorder,glueset,gluesign,ulinenu
         if currdata:find("luako:ulinebegin=") then
           ulinenum = tonumber(currdata:match("(%d+)"))
           ulstart = curr
-        elseif ulstart and ulinenum
-          and currdata:find('luako:ulineend') then
+        elseif ulstart and ulinenum and currdata:find('luako:ulineend') then
+          local ubox = d_todirect(ulinebox[ulinenum])
           local wd = d_nodedimensions(glueset,gluesign,glueorder,ulstart,curr)
-          head = draw_underline(head,curr,wd,ulinenum,ulstart)
+          head = draw_underline(head,curr,wd,ubox,ulstart)
+          d_nodefree(ubox)
           ulinebox[ulinenum] = nil
           ulinenum = nil
         end
       end
     end
     if ulstart and ulinenum and curr == d_nodetail(head) then
+      local ubox = d_todirect(ulinebox[ulinenum])
       local wd = d_nodedimensions(glueset,gluesign,glueorder,ulstart,curr)
-      head = draw_underline(head,curr,wd,ulinenum,ulstart)
+      head = draw_underline(head,curr,wd,ubox,ulstart)
     end
   end
   return head, ulinenum
