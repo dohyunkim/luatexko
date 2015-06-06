@@ -1659,11 +1659,13 @@ end, 'luatexko.pre_linebreak_filter')
 --------------------------
 -- dot emphasis (드러냄표)
 --------------------------
-local function after_linebreak_dotemph (head)
+local function after_linebreak_dotemph (head, to_free)
+  local outer = not to_free
+  to_free = to_free or {}
   for curr in d_traverse(head) do
     local currid = d_getid(curr)
     if currid == hlistnode then -- hlist may be nested!!!
-      d_setfield(curr,"head", after_linebreak_dotemph(d_getlist(curr)))
+      d_setfield(curr,"head", after_linebreak_dotemph(d_getlist(curr), to_free))
     elseif currid == glyphnode then
       local attr = d_has_attribute(curr,dotemphattr)
       if attr and attr > 0 then
@@ -1684,17 +1686,22 @@ local function after_linebreak_dotemph (head)
               nn = d_nodenext(nn)
             end
           end
-          local d = d_copy_node(d_todirect(dotemphnode[attr]))
+          local dbox = d_todirect(dotemphnode[attr])
+          local d = d_copy_node(dbox)
           local dwidth = d_getfield(d,"width")
           local dot = d_get_kernnode(basewd/2-dwidth/2)
           d_setfield(dot,"next", d_getlist(d))
           d_setfield(d,"head", dot)
           d_setfield(d,"width", 0)
           head = d_insert_before(head,curr,d)
+          to_free[dbox] = true
         end
         d_unset_attribute(curr,dotemphattr)
       end
     end
+  end
+  if outer then
+    for k in pairs(to_free) do d_nodefree(k) end
   end
   return head
 end
