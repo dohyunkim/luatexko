@@ -1583,30 +1583,42 @@ end
 -- reorder hangul tone marks
 -----------------------------
 local function reorderTM (head)
-  for curr in d_traverse_id(glyphnode, head) do
-    local uni = d_get_unicode_char(curr)
-    if uni and (uni == 0x302E or uni == 0x302F) then
-      local unichar = get_font_char(d_getfont(curr), uni)
-      if unichar and unichar.width > 0 then
-        local p = d_nodeprev(curr)
-        while p do
-          local pid = d_getid(p)
-          if pid == glyphnode then
-            local pc = get_cjk_class(d_get_unicode_char(p))
-            if pc == 7 or pc == 8 then
-              head = d_remove_node(head,curr)
-              head = d_insert_before(head,p,curr)
+  local curr = d_nodetail(head)
+  while curr do
+    if d_getid(curr) == glyphnode then
+      local uni = d_get_unicode_char(curr)
+      if uni == 0x302E or uni == 0x302F then
+        local done = false
+        local unichar = get_font_char(d_getfont(curr), uni)
+        if unichar and unichar.width > 0 then
+          local p = d_nodeprev(curr)
+          while p do
+            local pid = d_getid(p)
+            if pid == glyphnode then
+              local pc = get_cjk_class(d_get_unicode_char(p))
+              if pc == 9 then
+              elseif pc == 7 or pc == 8 then
+                head = d_remove_node(head,curr)
+                head, curr = d_insert_before(head,p,curr)
+                done = true
+                break
+              else
+                break
+              end
+            else
               break
             end
-          elseif unichar.commands and pid == kernnode then
-            -- kerns in vertical typesetting mode
-          else
-            break
+            p = d_nodeprev(p)
           end
-          p = d_nodeprev(p)
+        end
+        if not done and get_font_char(d_getfont(curr), 0x25CC) then
+          local u_25CC = d_copy_node(curr)
+          d_setfield(u_25CC, "char", 0x25CC)
+          d_insert_after(head, curr, u_25CC)
         end
       end
     end
+    curr = d_nodeprev(curr)
   end
   return head
 end
