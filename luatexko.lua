@@ -1592,19 +1592,14 @@ local function reorderTM (head)
         local unichar = get_font_char(d_getfont(curr), uni)
         if unichar and unichar.width > 0 then
           local p = d_nodeprev(curr)
-          while p do
-            local pid = d_getid(p)
-            if pid == glyphnode then
-              local pc = get_cjk_class(d_get_unicode_char(p))
-              if pc == 9 then
-              elseif pc == 7 or pc == 8 then
-                head = d_remove_node(head,curr)
-                head, curr = d_insert_before(head,p,curr)
-                done = true
-                break
-              else
-                break
-              end
+          while p and d_getid(p) == glyphnode do
+            local pc = get_cjk_class(d_get_unicode_char(p))
+            if pc == 9 then
+            elseif pc == 7 or pc == 8 then
+              head = d_remove_node(head,curr)
+              head, curr = d_insert_before(head,p,curr)
+              done = true
+              break
             else
               break
             end
