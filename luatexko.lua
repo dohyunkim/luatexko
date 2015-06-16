@@ -1521,6 +1521,14 @@ local function font_substitute(head)
               myfontchar = fid and get_font_char(fid, currchar)
               if myfontchar then
                 d_setfield(curr,"font",fid)
+                --- charraise option charraise
+                local charraise = get_font_feature(fid, "charraise")
+                if charraise then
+                  charraise = tex_sp(charraise)
+                  local curryoffset = d_getfield(curr,"yoffset") or 0
+                  d_setfield(curr,"yoffset", charraise + curryoffset)
+                end
+                ---
                 local nxt = d_nodenext(curr)
                 local nxtid = nxt and d_getid(nxt)
                 if nxtid == glyphnode and is_unicode_vs(d_getchar(nxt)) then
@@ -1535,9 +1543,9 @@ local function font_substitute(head)
                     if nxtspec and d_getfield(nxtspec,"writable") and get_font_char(fid,32) then
                       local sp,st,sh = hangulspaceskip(eng, fid, nxtspec)
                       if sp and st and sh then
-                        d_setfield(nxtspec,"width",  sp)
-                        d_setfield(nxtspec,"stretch",st)
-                        d_setfield(nxtspec,"shrink", sh)
+                        head, curr = d_insert_before(head, nxt, d_get_gluenode(sp, st, sh))
+                        d_remove_node(head, nxt)
+                        d_nodefree(nxt)
                       end
                     end
                   -- adjust next italic correction kern
@@ -1548,14 +1556,6 @@ local function font_substitute(head)
                     end
                   end
                 end
-                --- charraise option charraise
-                local charraise = get_font_feature(fid, "charraise")
-                if charraise then
-                  charraise = tex_sp(charraise)
-                  local curryoffset = d_getfield(curr,"yoffset") or 0
-                  d_setfield(curr,"yoffset", charraise + curryoffset)
-                end
-                ---
                 break
               end
             end
@@ -1834,7 +1834,7 @@ end, 'luatexko.post_linebreak_filter')
 ------------------------------------
 -- vertical typesetting: EXPERIMENTAL
 ------------------------------------
-local tsbtable, mytime, currtime, cachedir, lfsattributes, lfstouch
+local tsbtable, mytime, currtime, cachedir, fontloader, lfs, lfsattributes, lfstouch
 
 local function get_vwidth_tsb_table (filename,fontname)
   if tsbtable[fontname] then return tsbtable[fontname] end
@@ -1987,8 +1987,8 @@ end
 
 local function activate_vertical_virtual (tfmdata,value)
   if value and not tsbtable then
-    require "fontloader"
-    require "lfs"
+    fontloader = require "fontloader"
+    lfs = require "lfs"
     lfstouch      = lfs.touch
     lfsattributes = lfs.attributes
     tsbtable  = {}
