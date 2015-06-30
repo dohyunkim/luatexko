@@ -941,63 +941,101 @@ end
 local function compress_fullwidth_punctuations (head)
   for curr in d_traverse_id(glyphnode,head) do
     local currfont, currchar = d_getfont(curr), d_getchar(curr)
-    if get_font_feature(currfont,'halt') or get_font_feature(currfont,'vhal') then
-    else
-      local uni = d_get_unicode_char(curr)
-      local class = uni and get_cjk_class(uni, d_has_attribute(curr, cjtypesetattr))
-      local chr = get_font_char(currfont, currchar)
-      if chr and class and class >= 1 and class <= 4 then
-        local width = d_getfield(curr,"width") or 655360
-        emsize = get_font_emsize(currfont)
-        local ensize = emsize/2
-        local oneoften = emsize/10
-        local bbox = get_char_boundingbox(currfont, currchar)
-        bbox = bbox or {ensize-oneoften, ensize-oneoften, ensize+oneoften, ensize+oneoften}
-        if class == 2 or class == 4 then
-          local wd
-          if get_font_feature(currfont,'vertical') then
-            wd = ensize<width and ensize-width or 0
-          else
-            wd = (bbox[3] < ensize) and ensize-width or bbox[3]-width+oneoften
-          end
-          if chr.right_protruding then
-            -- kern is a breakpoint if followed by a glue
+    local halt_on = get_font_feature(currfont,'halt') or get_font_feature(currfont,'vhal')
+    local uni = d_get_unicode_char(curr)
+    local class = uni and get_cjk_class(uni, d_has_attribute(curr, cjtypesetattr))
+    local chr = get_font_char(currfont, currchar)
+    if chr and class and class >= 1 and class <= 4 then
+      local width = d_getfield(curr,"width") or 655360
+      emsize = get_font_emsize(currfont)
+      local ensize = emsize/2
+      local oneoften = emsize/10
+      local bbox = get_char_boundingbox(currfont, currchar)
+      bbox = bbox or {ensize-oneoften, ensize-oneoften, ensize+oneoften, ensize+oneoften}
+      if class == 2 or class == 4 then
+        local wd
+        if get_font_feature(currfont,'vertical') then
+          wd = ensize<width and ensize-width or 0
+        else
+          wd = (bbox[3] < ensize) and ensize-width or bbox[3]-width+oneoften
+        end
+        if chr.right_protruding then
+          -- kern is a breakpoint if followed by a glue
+          if not halt_on then
             d_insert_after(head, curr, d_get_kernnode(wd))
-          else
-            d_insert_after(head, curr, d_get_rulenode(wd))
           end
-        elseif class == 1 then
-          local wd
-          if get_font_feature(currfont,'vertical') then
-            wd = ensize<width and ensize-width or 0
-          else
-            wd = (width-bbox[1] < ensize) and ensize-width or -bbox[1]+oneoften
+        else
+          if halt_on then
+            -- gluph halt_kern glue -> glyph halt_kern rule glue (kern is a breakpoint if followed by a glue)
+            local nn = d_nodenext(curr)
+            if nn and d_getid(nn) == kernnode then
+              wd = 0
+              curr = nn
+            end
           end
-          if chr.left_protruding then
+          d_insert_after(head, curr, d_get_rulenode(wd))
+        end
+      elseif class == 1 then
+        local wd
+        if get_font_feature(currfont,'vertical') then
+          wd = ensize<width and ensize-width or 0
+        else
+          wd = (width-bbox[1] < ensize) and ensize-width or -bbox[1]+oneoften
+        end
+        if chr.left_protruding then
+          if not halt_on then
             head = d_insert_before(head, curr, d_get_kernnode(wd))
-          else
-            head = d_insert_before(head, curr, d_get_rulenode(wd))
           end
-        elseif class == 3 then
-          local lwd, rwd
-          local quarter, thirdquarter, halfwd = ensize/2, ensize*1.5, width/2
-          if get_font_feature(currfont,'vertical') then
-            rwd = quarter<halfwd and quarter-halfwd or 0
-            lwd = rwd
-          else
-            rwd = (bbox[3] < thirdquarter) and quarter-halfwd or bbox[3]-width
-            lwd = (width-bbox[1] < thirdquarter) and quarter-halfwd or -bbox[1]
+        else
+          if halt_on then
+            local pn = d_nodeprev(curr)
+            if pn and d_getid(pn) == kernnode then
+              -- glue halt_kern glyph -> glue rule halt_kern glyph
+              wd = 0
+              curr = pn
+            elseif pn and d_getid(pn) == gluenode and d_getfield(d_getfield(pn,"spec"),"width") == 0 then
+              -- halt_kern glue glyph -> glue rule halt_kern glyph
+              local ppn = d_nodeprev(pn)
+              if ppn and d_getid(ppn) == kernnode then
+                wd = 0
+                head = d_remove_node(head, ppn)
+                head, curr = d_insert_before(head, curr, ppn)
+              end
+            end
           end
-          if chr.left_protruding then
+          head = d_insert_before(head, curr, d_get_rulenode(wd))
+        end
+      elseif class == 3 then
+        local lwd, rwd
+        local quarter, thirdquarter, halfwd = ensize/2, ensize*1.5, width/2
+        if get_font_feature(currfont,'vertical') then
+          rwd = quarter<halfwd and quarter-halfwd or 0
+          lwd = rwd
+        else
+          rwd = (bbox[3] < thirdquarter) and quarter-halfwd or bbox[3]-width
+          lwd = (width-bbox[1] < thirdquarter) and quarter-halfwd or -bbox[1]
+        end
+        if chr.left_protruding then
+          if not halt_on then
             head = d_insert_before(head, curr, d_get_kernnode(lwd))
-          else
-            head = d_insert_before(head, curr, d_get_rulenode(lwd))
           end
-          if chr.right_protruding then
+        else
+          if halt_on then lwd = 0 end -- there's already penalty 10000
+          head = d_insert_before(head, curr, d_get_rulenode(lwd))
+        end
+        if chr.right_protruding then
+          if not halt_on then
             d_insert_after (head, curr, d_get_kernnode(rwd))
-          else
-            d_insert_after (head, curr, d_get_rulenode(rwd))
           end
+        else
+          if halt_on then
+            local nn = d_nodenext(curr)
+            if nn and d_getid(nn) == kernnode then
+              rwd = 0
+              curr = nn
+            end
+          end
+          d_insert_after (head, curr, d_get_rulenode(rwd))
         end
       end
     end
