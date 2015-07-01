@@ -941,11 +941,11 @@ end
 local function compress_fullwidth_punctuations (head)
   for curr in d_traverse_id(glyphnode,head) do
     local currfont, currchar = d_getfont(curr), d_getchar(curr)
-    local halt_on = get_font_feature(currfont,'halt') or get_font_feature(currfont,'vhal')
     local uni = d_get_unicode_char(curr)
-    local class = uni and get_cjk_class(uni, d_has_attribute(curr, cjtypesetattr))
+    local class = uni and get_cjk_class(uni, d_has_attribute(curr, cjtypesetattr) or 0) -- include U+201C ...
     local chr = get_font_char(currfont, currchar)
     if chr and class and class >= 1 and class <= 4 then
+      local halt_on = get_font_feature(currfont,'halt') or get_font_feature(currfont,'vhal')
       local width = d_getfield(curr,"width") or 655360
       emsize = get_font_emsize(currfont)
       local ensize = emsize/2
