@@ -941,8 +941,9 @@ end
 local function compress_fullwidth_punctuations (head)
   for curr in d_traverse_id(glyphnode,head) do
     local currfont, currchar = d_getfont(curr), d_getchar(curr)
+    local cjtype = d_has_attribute(curr, cjtypesetattr)
     local uni = d_get_unicode_char(curr)
-    local class = uni and get_cjk_class(uni, d_has_attribute(curr, cjtypesetattr) or 0) -- include U+201C ...
+    local class = uni and get_cjk_class(uni, cjtype or 0) -- include U+201C ...
     local chr = get_font_char(currfont, currchar)
     if chr and class and class >= 1 and class <= 4 then
       local halt_on = get_font_feature(currfont,'halt') or get_font_feature(currfont,'vhal')
@@ -958,6 +959,7 @@ local function compress_fullwidth_punctuations (head)
           wd = ensize<width and ensize-width or 0
         else
           wd = (bbox[3] < ensize) and ensize-width or bbox[3]-width+oneoften
+          if not cjtype and wd > 0 then wd = 0 end
         end
         if chr.right_protruding then
           -- kern is a breakpoint if followed by a glue
@@ -981,6 +983,7 @@ local function compress_fullwidth_punctuations (head)
           wd = ensize<width and ensize-width or 0
         else
           wd = (width-bbox[1] < ensize) and ensize-width or -bbox[1]+oneoften
+          if not cjtype and wd > 0 then wd = 0 end
         end
         if chr.left_protruding then
           if not halt_on then
