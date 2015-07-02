@@ -4,6 +4,8 @@
 %% luatexko-doc.tex
 %%
 %% written by Dohyun Kim <nomos at ktug org>
+%%            Soojin Nam <jsunam at gmail com>
+%%
 %% public domain
 
 \documentclass[a4paper]{article}
@@ -48,6 +50,7 @@
 \begin{document}
 \title{\luatexko\ 간단 매뉴얼}
 \author{Dohyun Kim \normalsize |<nomos at ktug org>| \and
+        Soojin Nam \normalsize |<jsunam at gmail com>| \and
   \normalsize \url{<http://github.com/dohyunkim/luatexko>}}
 \date{Version 1.9\quad 2015/07/02}
 \maketitle
@@ -248,9 +251,8 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이
   이는 |Protrusion=default|와 같은 뜻이다.
   플레인텍에서는 |protrusion=default|.
   마이크로타입에 관심 있으면 자신만의 설정을 만들어 지정할 수 있다.\footnote{%
-    default 설정을 고치는 방법은 이를테면 다음과 같다.\par
-    \cs{directlua}\texttt{\{ fonts.protrusions.setups.default[0x201C] = \{ 1, 0 \}}\par
-      \texttt{\null\hskip6em fonts.protrusions.setups.default[0x201D] = \{ 0, 1 \} \}}
+    default 설정을 고치는 방법은 이를테면 다음과 같다:\par
+    \cs{directlua{ fonts.protrusions.setups.default[0x201C] = { 1, 0 } }}
   }
 
 \item[Expansion] 판면의 균일한 조판을 위해 글자들을 미세하게 늘이거나
