@@ -12,7 +12,7 @@
 
 local err,warn,info,log = luatexbase.provides_module({
   name        = 'luatexko',
-  date        = '2015/05/28',
+  date        = '2015/07/02',
   version     = 1.9,
   description = 'Korean linebreaking and font-switching',
   author      = 'Dohyun Kim',
@@ -463,13 +463,18 @@ local josa_code = {
   -- else 2
 }
 
-local function d_get_gluenode (w,st,sh)
-  local g = d_nodenew(gluenode)
+local function d_get_gluespec (w, st, sh)
   local s = d_nodenew(gluespecnode)
-  d_setfield(s,"width",   w  or 0)
-  d_setfield(s,"stretch", st or 0)
-  d_setfield(s,"shrink",  sh or 0)
-  d_setfield(g,"spec",    s)
+  d_setfield(s, "width",   w  or 0)
+  d_setfield(s, "stretch", st or 0)
+  d_setfield(s, "shrink",  sh or 0)
+  return s
+end
+
+local function d_get_gluenode (...)
+  local g = d_nodenew(gluenode)
+  local s = d_get_gluespec(...)
+  d_setfield(g, "spec", s)
   return g
 end
 
@@ -1584,9 +1589,9 @@ local function font_substitute(head)
                     if nxtspec and d_getfield(nxtspec,"writable") and get_font_char(fid,32) then
                       local sp,st,sh = hangulspaceskip(eng, fid, nxtspec)
                       if sp and st and sh then
-                        head, curr = d_insert_before(head, nxt, d_get_gluenode(sp, st, sh))
-                        d_remove_node(head, nxt)
-                        d_nodefree(nxt)
+                        local s = d_get_gluespec(sp, st, sh)
+                        d_setfield(nxt, "spec", s)
+                        d_nodefree(nxtspec)
                       end
                     end
                   -- adjust next italic correction kern
