@@ -13,8 +13,8 @@
 
 local err,warn,info,log = luatexbase.provides_module({
   name        = 'luatexko',
-  date        = '2015/07/02',
-  version     = 1.9,
+  date        = '2015/07/06',
+  version     = '1.10',
   description = 'Korean linebreaking and font-switching',
   author      = 'Dohyun Kim, Soojin Nam',
   license     = 'LPPL v1.3+',
@@ -1644,6 +1644,7 @@ local function reorderTM (head)
             if pc == 9 then
             elseif pc == 7 or pc == 8 then
               head = d_remove_node(head,curr)
+              d_setfield(curr, "prev", nil) -- prev might survive!
               head, curr = d_insert_before(head,p,curr)
               done = true
               break

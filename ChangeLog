@@ -1,3 +1,9 @@
+20XX-XX-XX      Dohyun Kim <nomos at ktug org>
+
+	Version 1.10
+
+	* luatexko.lua: fix an infinite loop in reorderTM
+
 2015-07-02      Dohyun Kim <nomos at ktug org>
 
 	Version 1.9
