@@ -13,7 +13,7 @@
 
 local err,warn,info,log = luatexbase.provides_module({
   name        = 'luatexko',
-  date        = '2015/07/06',
+  date        = '2015/07/15',
   version     = '1.10',
   description = 'Korean linebreaking and font-switching',
   author      = 'Dohyun Kim, Soojin Nam',
@@ -944,6 +944,31 @@ end
 ----------------------------------
 -- compress fullwidth punctuations
 ----------------------------------
+local function check_next_halt_kern (head, curr)
+  -- glyph halt_kern glue -> glyph halt_kern rule glue
+  local nn = d_nodenext(curr)
+  if nn and d_getid(nn) == kernnode and d_nodenext(nn) then
+    d_insert_after(head, nn, d_get_rulenode(0))
+  end
+end
+
+local function check_prev_halt_kern (head, curr)
+  local pn = d_nodeprev(curr)
+  if pn and d_getid(pn) == kernnode and d_nodeprev(pn) then
+    -- glue halt_kern glyph -> glue rule halt_kern glyph
+    head = d_insert_before(head, pn, d_get_rulenode(0))
+  elseif pn and d_getid(pn) == gluenode and d_has_attribute(pn, luakoglueattr) then
+    -- halt_kern ko_glue glyph -> ko_glue rule halt_kern glyph
+    local ppn = d_nodeprev(pn)
+    if d_getid(ppn) == kernnode then
+      head = d_remove_node(head, ppn)
+      head = d_insert_before(head, curr, ppn)
+      head = d_insert_before(head, ppn, d_get_rulenode(0))
+    end
+  end
+  return head
+end
+
 local function compress_fullwidth_punctuations (head)
   for curr in d_traverse_id(glyphnode,head) do
     local currfont, currchar = d_getfont(curr), d_getchar(curr)
@@ -974,14 +999,10 @@ local function compress_fullwidth_punctuations (head)
           end
         else
           if halt_on then
-            -- gluph halt_kern glue -> glyph halt_kern rule glue (kern is a breakpoint if followed by a glue)
-            local nn = d_nodenext(curr)
-            if nn and d_getid(nn) == kernnode then
-              wd = 0
-              curr = nn
-            end
+            check_next_halt_kern(head, curr)
+          else
+            d_insert_after(head, curr, d_get_rulenode(wd))
           end
-          d_insert_after(head, curr, d_get_rulenode(wd))
         end
       elseif class == 1 then
         local wd
@@ -997,22 +1018,10 @@ local function compress_fullwidth_punctuations (head)
           end
         else
           if halt_on then
-            local pn = d_nodeprev(curr)
-            if pn and d_getid(pn) == kernnode then
-              -- glue halt_kern glyph -> glue rule halt_kern glyph
-              wd = 0
-              curr = pn
-            elseif pn and d_getid(pn) == gluenode and d_getfield(d_getfield(pn,"spec"),"width") == 0 then
-              -- halt_kern glue glyph -> glue rule halt_kern glyph
-              local ppn = d_nodeprev(pn)
-              if ppn and d_getid(ppn) == kernnode then
-                wd = 0
-                head = d_remove_node(head, ppn)
-                head, curr = d_insert_before(head, curr, ppn)
-              end
-            end
+            head = check_prev_halt_kern(head, curr)
+          else
+            head = d_insert_before(head, curr, d_get_rulenode(wd))
           end
-          head = d_insert_before(head, curr, d_get_rulenode(wd))
         end
       elseif class == 3 then
         local lwd, rwd
@@ -1029,8 +1038,11 @@ local function compress_fullwidth_punctuations (head)
             head = d_insert_before(head, curr, d_get_kernnode(lwd))
           end
         else
-          if halt_on then lwd = 0 end -- there's already penalty 10000
-          head = d_insert_before(head, curr, d_get_rulenode(lwd))
+          if halt_on then -- there's already penalty 10000
+            head = check_prev_halt_kern(head, curr)
+          else
+            head = d_insert_before(head, curr, d_get_rulenode(lwd))
+          end
         end
         if chr.right_protruding then
           if not halt_on then
@@ -1038,13 +1050,10 @@ local function compress_fullwidth_punctuations (head)
           end
         else
           if halt_on then
-            local nn = d_nodenext(curr)
-            if nn and d_getid(nn) == kernnode then
-              rwd = 0
-              curr = nn
-            end
+            check_next_halt_kern(head, curr)
+          else
+            d_insert_after (head, curr, d_get_rulenode(rwd))
           end
-          d_insert_after (head, curr, d_get_rulenode(rwd))
         end
       end
     end
