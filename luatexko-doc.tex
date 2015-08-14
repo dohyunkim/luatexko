@@ -27,7 +27,15 @@
   BoldFont=* Bold,
   InterLatinCJK=.125em,
 ]
-\setmonofont{Source Han Sans HW K}[Color=191970] % MidnightBlue
+\setmonofont{Inconsolatazi4}[
+  Color=191970, % MidnightBlue
+]
+\setmonohangulfont{Source Han Sans K}[
+  UprightFont=* Normal,
+  BoldFont=* Bold,
+  CharRaise=-.25ex,
+  Color=191970, % MidnightBlue
+]
 \usepackage{hologo}
 \def\luatex{\hologo{LuaTeX}}
 \def\MP{\hologo{METAPOST}}
@@ -175,10 +183,6 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이
   |[Script=Hangul]| 옵션을 사용하는 것으로 충분하다.
   플레인텍이라면 |script=hang|.}
 
-그러나 \cs{defaulthangulfontfeatures} 따위 명령은 따로 구현돼 있지 않으며,
-설혹 사용하더라도 fontspec의 \cs{defaultfontfeatures}와 같은 효과를 가진다.
-다시 말해 한글 폰트 옵션과 라틴 폰트 옵션에 차이는 없다.
-
 \begin{figure}
   \fboxsep=1em
   \fbox{\parbox{\dimexpr\linewidth-2.1em\relax}{%
@@ -202,6 +206,10 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이
 }}
 \caption{옛한글 조판 보기}\label{fig:yethangul}
 \end{figure}
+
+그러나 \cs{defaulthangulfontfeatures} 따위 명령은 따로 구현돼 있지 않으며,
+설혹 사용하더라도 fontspec의 \cs{defaultfontfeatures}와 같은 효과를 가진다.
+다시 말해 한글 폰트 옵션과 라틴 폰트 옵션에 차이는 없다.
 
 \begin{description}
   \item[InterHangul] {\addhangulfontfeature{InterHangul=.5ex}한글 글자
@@ -274,9 +282,6 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이
 플레인텍에서는 {\small(문서 전체에 적용하지 않는다면 그룹을 열고)}
 \cs{chinese} \cs{japanese} 따위를 사용한다.
 
-일본어·중국어라도 글꼴 설정은 \cs{newhangulfontfamily}
-\cs{newhanjafontfamily} 따위를 이용한다.
-
 \begin{figure}
   \centering
   \fbox{\parbox{37em}{\japanese\sffamily
@@ -292,6 +297,9 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이
   }}
 \caption{고문헌 조판 보기. japanese 환경을 이용했다.}\label{fig:ancientdoc}
 \end{figure}
+
+일본어·중국어라도 글꼴 설정은 \cs{newhangulfontfamily}
+\cs{newhanjafontfamily} 따위를 이용한다.
 
 \luatexko가 글자 사이에 삽입하는 미세간격을 사용자가 영(zero)으로
 강제하기 위해선 \cs{inhibitglue} 명령을 이용한다.
