@@ -13,7 +13,7 @@
 
 local err,warn,info,log = luatexbase.provides_module({
   name        = 'luatexko',
-  date        = '2015/07/15',
+  date        = '2015/09/01',
   version     = '1.10',
   description = 'Korean linebreaking and font-switching',
   author      = 'Dohyun Kim, Soojin Nam',
@@ -261,6 +261,7 @@ local postbreakpenalty = {
   [0xFF40] = 10000,
   [0xFF5B] = 10000,
   [0xFE37] = 10000,
+  [0xFF62] = 10000, -- ｢
 }
 
 local prebreakpenalty = {
@@ -351,6 +352,7 @@ local prebreakpenalty = {
   [0xFE48] = 10000,
   [0xFF5D] = 10000,
   [0xFE38] = 10000,
+  [0xFF63] = 10000, -- ｣
 }
 
 local xspcode = {
