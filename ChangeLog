@@ -1,7 +1,8 @@
-20XX-XX-XX      Dohyun Kim <nomos at ktug org>
+2015-10-02      Dohyun Kim <nomos at ktug org>
 
 	Version 1.10
 
+	* luatexko.lua: adapt to new luatexbase
 	* luatexko.lua: assing pre/post penalty to U+FF62, U+FF63
 	* luatexko.lua: fix an infinite loop in reorderTM
 
