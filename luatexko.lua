@@ -11,17 +11,19 @@
 -- and version 1.3c or later is part of all distributions of LaTeX
 -- version 2006/05/20 or later.
 
-local err,warn,info,log = luatexbase.provides_module({
+luatexbase.provides_module {
   name        = 'luatexko',
   date        = '2015/10/02',
   version     = '1.10',
   description = 'Korean linebreaking and font-switching',
   author      = 'Dohyun Kim, Soojin Nam',
   license     = 'LPPL v1.3+',
-})
+}
 
 luatexko        = luatexko or {}
 local luatexko  = luatexko
+
+local warn = function(...) return luatexbase.module_warning("luatexko", format(...)) end
 
 local dotemphnode,rubynode,ulinebox = {},{},{}
 luatexko.dotemphnode        = dotemphnode
