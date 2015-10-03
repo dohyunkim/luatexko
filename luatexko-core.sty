@@ -21,6 +21,10 @@
   \RequirePackage{luaotfload}[2013/05/23]
 \fi
 
+\ifdefined\luatexfontid\else
+  \let\luatexfontid\fontid % latex  2015/10/01
+\fi
+
 %% make hangul catcode 12
 \count@"1100
 \loop \catcode\count@ 12

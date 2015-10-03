@@ -1683,33 +1683,14 @@ end
 -- add to callback : pre-linebreak
 ----------------------------------
 
-local add_to_callback_first_pos
-if luatexbase.callbacktypes then -- latex 2015/10/01
-  local callback_descriptions = luatexbase.callback_descriptions
-  local remove_from_callback  = luatexbase.remove_from_callback
-  add_to_callback_first_pos = function (cbname, myfunc, mydesc)
-    local origs = {{myfunc, mydesc}}
-    for _,v in ipairs(callback_descriptions(cbname)) do
-      origs[#origs+1] = {remove_from_callback(cbname,v)}
-    end
-    for _,v in ipairs(origs) do
-      add_to_callback(cbname, v[1], v[2])
-    end
-  end
-else
-  add_to_callback_first_pos = function (cbname, myfunc, mydesc)
-    add_to_callback(cbname, myfunc, mydesc, 1)
-  end
-end
-
-add_to_callback_first_pos("hpack_filter", function(head)
+add_to_callback("hpack_filter", function(head)
   head = d_todirect(head)
   assign_unicode_codevalue(head)
   korean_autojosa(head)
   remove_cj_spaceskip(head)
   font_substitute(head)
   return d_tonode(head)
-end, 'luatexko.hpack_filter_first')
+end, 'luatexko.hpack_filter_first', 1)
 
 add_to_callback('hpack_filter', function(head)
   head = d_todirect(head)
@@ -1722,14 +1703,14 @@ add_to_callback('hpack_filter', function(head)
   return d_tonode(head)
 end, 'luatexko.hpack_filter')
 
-add_to_callback_first_pos('pre_linebreak_filter', function(head)
+add_to_callback('pre_linebreak_filter', function(head)
   head = d_todirect(head)
   assign_unicode_codevalue(head)
   korean_autojosa(head)
   remove_cj_spaceskip(head)
   font_substitute(head)
   return d_tonode(head)
-end, 'luatexko.pre_linebreak_filter_first')
+end, 'luatexko.pre_linebreak_filter_first', 1)
 
 add_to_callback('pre_linebreak_filter', function(head)
   head = d_todirect(head)
