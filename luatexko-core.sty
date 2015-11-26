@@ -62,9 +62,9 @@
   \let\pdfsetrandomseed\setrandomseed
   \let\pdfrandomseed\randomseed
   \let\pdfprimitive\primitive
-  \let\ifpdfprimitive\ifprimitive
-  \let\ifpdfabsnum\ifabsnum
-  \let\ifpdfabsdim\ifabsdim
+  \expandafter\let\csname ifpdfprimitive\expandafter\endcsname\csname ifprimitive\endcsname
+  \expandafter\let\csname ifpdfabsnum\expandafter\endcsname\csname ifabsnum\endcsname
+  \expandafter\let\csname ifpdfabsdim\expandafter\endcsname\csname ifabsdim\endcsname
   \protected\def\pdfliteral{\pdfextension literal}
   \protected\def\pdfcolorstack{\pdfextension colorstack}
   \protected\def\pdfsetmatrix{\pdfextension setmatrix}
