@@ -14,7 +14,7 @@
 luatexbase.provides_module({
   name        = "luatexko-normalize",
   version     = "1.10",
-  date        = "2015/10/02",
+  date        = "2015/10/30",
   author      = "Dohyun Kim, Soojin Nam",
   description = "Hangul normalization",
   license     = "LPPL v1.3+",
@@ -408,6 +408,7 @@ local byte = unicodeutf8.byte
 local char = unicodeutf8.char
 local find = unicodeutf8.find
 local concat = table.concat
+local floor = math.floor
 local add_to_callback = luatexbase.add_to_callback
 local remove_from_callback = luatexbase.remove_from_callback
 local priority_in_callback = luatexbase.priority_in_callback
@@ -426,8 +427,8 @@ end
 local syllable2jamo = function(s)
     s = byte(s) - 0xac00
     local t = {}
-    t[1] = char(s / 588 + 0x1100)
-    t[2] = char(s % 588 / 28 + 0x1161)
+    t[1] = char(floor(s / 588 + 0x1100))
+    t[2] = char(floor(s % 588 / 28 + 0x1161))
     local jong = s % 28
     t[3] = jong > 0 and char(jong + 0x11a7) or nil
     return concat(t)
