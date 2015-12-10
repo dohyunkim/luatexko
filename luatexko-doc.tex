@@ -1,7 +1,6 @@
 %% !TEX program = lualatex
 %% !TEX encoding = UTF-8
 %%
-\RequirePackage{luatex85}
 %% luatexko-doc.tex
 %%
 %% written by Dohyun Kim <nomos at ktug org>
@@ -9,6 +8,7 @@
 %%
 %% public domain
 
+\ifx\outputmode\undefined\else\RequirePackage{luatex85}\fi
 \documentclass[a4paper]{article}
 \usepackage[hmargin=3.8cm]{geometry}
 \usepackage[hangul]{luatexko}
