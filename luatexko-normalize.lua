@@ -13,8 +13,8 @@
 
 luatexbase.provides_module({
   name        = "luatexko-normalize",
-  version     = "1.10",
-  date        = "2015/10/30",
+  version     = "1.11",
+  date        = "2015/12/10",
   author      = "Dohyun Kim, Soojin Nam",
   description = "Hangul normalization",
   license     = "LPPL v1.3+",
@@ -427,8 +427,8 @@ end
 local syllable2jamo = function(s)
     s = byte(s) - 0xac00
     local t = {}
-    t[1] = char(floor(s / 588 + 0x1100))
-    t[2] = char(floor(s % 588 / 28 + 0x1161))
+    t[1] = char(floor(s / 588) + 0x1100)
+    t[2] = char(floor(s % 588 / 28) + 0x1161)
     local jong = s % 28
     t[3] = jong > 0 and char(jong + 0x11a7) or nil
     return concat(t)
