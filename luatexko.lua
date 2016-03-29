@@ -1,6 +1,6 @@
 -- luatexko.lua
 --
--- Copyright (c) 2013-2015  Dohyun Kim  <nomos at ktug org>
+-- Copyright (c) 2013-2016  Dohyun Kim  <nomos at ktug org>
 --                          Soojin Nam  <jsunam at gmail com>
 --
 -- This work may be distributed and/or modified under the
@@ -13,8 +13,8 @@
 
 luatexbase.provides_module {
   name        = 'luatexko',
-  date        = '2015/12/10',
-  version     = '1.11',
+  date        = '2016/04/04',
+  version     = '1.12',
   description = 'Korean linebreaking and font-switching',
   author      = 'Dohyun Kim, Soojin Nam',
   license     = 'LPPL v1.3+',
@@ -22,8 +22,6 @@ luatexbase.provides_module {
 
 luatexko        = luatexko or {}
 local luatexko  = luatexko
-
-local warn = function(...) return luatexbase.module_warning("luatexko", format(...)) end
 
 local dotemphnode,rubynode,ulinebox = {},{},{}
 luatexko.dotemphnode        = dotemphnode
@@ -55,7 +53,26 @@ local hangulpunctsattr  = luatexbase.attributes.hangulpunctsattr
 local luakoglueattr     = luatexbase.new_attribute("luakoglueattr")
 local luakounicodeattr  = luatexbase.new_attribute("luakounicodeattr")
 
-local add_to_callback = luatexbase.add_to_callback
+local function warn (...)
+  return luatexbase.module_warning("luatexko", stringformat(...))
+end
+
+local function add_to_callback (name, func, desc, pos)
+  local t = {{func, desc}}
+  if pos then
+    for i,v in ipairs(luatexbase.callback_descriptions(name)) do
+      if i >= pos then
+        t[#t+1] = {luatexbase.remove_from_callback(name, v)}
+      end
+    end
+  end
+  for i,v in ipairs(t) do
+    luatexbase.add_to_callback(name, v[1], v[2])
+  end
+end
+
+local glue_type_space = 13
+local kern_type_itlc  = 3
 
 local gluenode        = node.id("glue")
 local gluespecnode    = node.id("glue_spec")
@@ -75,12 +92,15 @@ local d_tonode          = nodedirect.tonode
 local d_getid           = nodedirect.getid
 local d_getsubtype      = nodedirect.getsubtype
 local d_getchar         = nodedirect.getchar
+local d_setchar         = nodedirect.setchar
 local d_getfont         = nodedirect.getfont
 local d_getlist         = nodedirect.getlist
 local d_getfield        = nodedirect.getfield
 local d_setfield        = nodedirect.setfield
-local d_nodeprev        = nodedirect.getprev
-local d_nodenext        = nodedirect.getnext
+local d_getnext         = nodedirect.getnext
+local d_setnext         = nodedirect.setnext
+local d_getprev         = nodedirect.getprev
+local d_setprev         = nodedirect.setprev
 local d_has_attribute   = nodedirect.has_attribute
 local d_set_attribute   = nodedirect.set_attribute
 local d_unset_attribute = nodedirect.unset_attribute
@@ -613,7 +633,7 @@ local function get_char_boundingbox(fid, chr)
 end
 
 local function d_get_unicode_char(curr)
-  local uni = d_getchar(curr)
+  local uni = d_getchar(curr) or 0
   if (uni > 0xFF and uni < 0xE000) or (uni > 0xF8FF and uni < 0xF0000) then
     return uni -- no pua. no nanumgtm
   end
@@ -642,7 +662,7 @@ local function d_get_hlist_char_first (hlist)
       local currspec = d_getfield(curr,"spec")
       if currspec and d_getfield(currspec,"width") ~= 0 then return end
     end
-    curr = d_nodenext(curr)
+    curr = d_getnext(curr)
   end
 end
 
@@ -660,7 +680,7 @@ local function d_get_hlist_char_last (hlist,prevchar,prevfont)
       local currspec = d_getfield(curr,"spec")
       if currspec and d_getfield(currspec,"width") ~= 0 then return end
     end
-    curr = d_nodeprev(curr)
+    curr = d_getprev(curr)
   end
   return prevchar, prevfont
 end
@@ -722,7 +742,7 @@ local function cjk_insert_nodes(head,curr,currchar,currfont,prevchar,prevfont,wa
   local c = get_cjk_class(currchar, currentcjtype)
   ---[[raise latin puncts
   if d_getid(curr) == glyphnode and (d_has_attribute(curr,finemathattr) or 0) > 0 and c < 10 then -- not ttfamily
-    local nn, raise = d_nodenext(curr), nil
+    local nn, raise = d_getnext(curr), nil
     while nn do
       local nnid = d_getid(nn)
       if nnid == glyphnode and latin_fullstop[d_getchar(nn)] then
@@ -734,9 +754,9 @@ local function cjk_insert_nodes(head,curr,currchar,currfont,prevchar,prevfont,wa
           local yoff = d_getfield(nn,"yoffset") or 0
           d_setfield(nn,"yoffset", yoff + raise)
         end
-        nn = d_nodenext(nn)
+        nn = d_getnext(nn)
       elseif nnid == kernnode then
-        nn = d_nodenext(nn)
+        nn = d_getnext(nn)
       else
         break
       end
@@ -872,7 +892,7 @@ local function cjk_spacing_linebreak (head)
       end
       prevchar,prevfont,prevfine = 0,nil,nil -- treat \verb as latin character.
     end
-    curr = d_nodenext(curr)
+    curr = d_getnext(curr)
   end
 end
 
@@ -885,9 +905,9 @@ local function remove_cj_spaceskip (head)
     local currid,currsubtype = d_getid(curr), d_getsubtype(curr)
     if currid == mathnode and currsubtype == 0 then
       curr = d_end_of_math(curr)
-    elseif currid == gluenode then
+    elseif currid == gluenode and currsubtype == glue_type_space then -- do not touch on xspaceskip for now
       local cjattr = d_has_attribute(curr,cjtypesetattr)
-      local prv, nxt = d_nodeprev(curr), d_nodenext(curr)
+      local prv, nxt = d_getprev(curr), d_getnext(curr)
       if cjattr and cjattr > 0 and prv and nxt then
         local prevclass, prevchar, nextclass
         local prvid, nxtid = d_getid(prv), d_getid(nxt)
@@ -896,11 +916,11 @@ local function remove_cj_spaceskip (head)
         else
           -- what is this strange kern before \text??
           if prvid == kernnode and d_getfield(prv,"kern") == 0 then
-            prv = d_nodeprev(prv)
+            prv = d_getprev(prv)
           end
           if prvid == glyphnode then
             prevchar, prevfont = d_getchar(prv), d_getfont(prv)
-            if is_unicode_vs(prevchar) then prv = d_nodeprev(prv) end -- bypass VS
+            if is_unicode_vs(prevchar) then prv = d_getprev(prv) end -- bypass VS
             prevclass = get_cjk_class(d_get_unicode_char(prv), cjattr)
           end
         end
@@ -910,38 +930,13 @@ local function remove_cj_spaceskip (head)
           nextclass = get_cjk_class(d_get_hlist_char_first(nxt), cjattr)
         end
         if (prevclass and prevclass < 10) or (nextclass and nextclass < 10) then
-          local subtype = currsubtype
-          if subtype == 13 then -- do not touch on xspaceskip for now
-            d_remove_node(head,curr)
-            d_nodefree(curr)
-            curr = nxt
-          elseif subtype == 0 then -- before \text?? spaceskip is replaced by glue type 0
-            local spec = d_getfield(curr,"spec")
-            local csp = spec and d_getfield(spec,"width")
-            local cst = spec and d_getfield(spec,"stretch")
-            local csh = spec and d_getfield(spec,"shrink")
-            local fp = get_font_table(prevfont)
-            fp = fp and fp.parameters
-            local sp = fp and fp.space
-            local st = fp and fp.space_stretch
-            local sh = fp and fp.space_shrink
-            sp = sp and tex_round(sp)
-            st = st and tex_round(st)
-            sh = sh and tex_round(sh)
-            if prevchar and prevchar >= 65 and prevchar <= 90 then
-              st = st and mathfloor(st*(999/1000))
-              sh = sh and mathfloor(sh*(1001/1000))
-            end
-            if sp == csp and st == cst and sh == csh then
-              d_remove_node(head,curr)
-              d_nodefree(curr)
-              curr = nxt
-            end
-          end
+          d_remove_node(head,curr)
+          d_nodefree(curr)
+          curr = nxt
         end
       end
     end
-    curr = d_nodenext(curr)
+    curr = d_getnext(curr)
   end
 end
 
@@ -950,20 +945,20 @@ end
 ----------------------------------
 local function check_next_halt_kern (head, curr)
   -- glyph halt_kern glue -> glyph halt_kern rule glue
-  local nn = d_nodenext(curr)
-  if nn and d_getid(nn) == kernnode and d_nodenext(nn) then
+  local nn = d_getnext(curr)
+  if nn and d_getid(nn) == kernnode and d_getnext(nn) then
     d_insert_after(head, nn, d_get_rulenode(0))
   end
 end
 
 local function check_prev_halt_kern (head, curr)
-  local pn = d_nodeprev(curr)
-  if pn and d_getid(pn) == kernnode and d_nodeprev(pn) then
+  local pn = d_getprev(curr)
+  if pn and d_getid(pn) == kernnode and d_getprev(pn) then
     -- glue halt_kern glyph -> glue rule halt_kern glyph
     head = d_insert_before(head, pn, d_get_rulenode(0))
   elseif pn and d_getid(pn) == gluenode and d_has_attribute(pn, luakoglueattr) then
     -- halt_kern ko_glue glyph -> ko_glue rule halt_kern glyph
-    local ppn = d_nodeprev(pn)
+    local ppn = d_getprev(pn)
     if d_getid(ppn) == kernnode then
       head = d_remove_node(head, ppn)
       head = d_insert_before(head, curr, ppn)
@@ -1105,7 +1100,7 @@ local function spread_ruby_base_box (head)
         end
         local leading = d_get_kernnode(extrawidth/2)
         d_setfield(curr,"width", rubywidth)
-        d_setfield(leading,"next", basehead)
+        d_setnext(leading, basehead)
         d_setfield(curr,"head", leading)
       end
     end
@@ -1118,7 +1113,7 @@ local function get_ruby_side_width (basewidth,rubywidth,adjacent)
     if d_getid(adjacent) == glyphnode then
       local uni = d_get_unicode_char(adjacent)
       if is_unicode_vs(uni) then -- bypass VS
-        uni = d_get_unicode_char(d_nodeprev(adjacent))
+        uni = d_get_unicode_char(d_getprev(adjacent))
       end
       if not is_hanja(uni) then
         width = (rubywidth-basewidth-emsize)/2
@@ -1145,7 +1140,7 @@ local function get_ruby_side_kern (head)
       if currwidth < rubywidth then
         local _,fid = d_get_hlist_char_first(curr)
         emsize = get_font_emsize(fid)
-        local leftwidth,leftmargin = get_ruby_side_width(basewidth,rubywidth,d_nodeprev(curr))
+        local leftwidth,leftmargin = get_ruby_side_width(basewidth,rubywidth,d_getprev(curr))
         if leftwidth > 0 then
           currwidth = currwidth + leftwidth
           d_setfield(curr,"width", currwidth)
@@ -1153,7 +1148,7 @@ local function get_ruby_side_kern (head)
         if leftmargin > 0 then
           rubynode[attr].leftmargin = leftmargin
         end
-        local rightwidth,rightmargin = get_ruby_side_width(basewidth,rubywidth,d_nodenext(curr))
+        local rightwidth,rightmargin = get_ruby_side_width(basewidth,rubywidth,d_getnext(curr))
         if rightwidth > 0 then
           currwidth = currwidth + rightwidth
           d_setfield(curr,"width", currwidth)
@@ -1171,7 +1166,7 @@ local function get_ruby_side_kern (head)
             currhead = spread_ruby_box(currhead,extrawidth)
           end
           local leading = d_get_kernnode(extrawidth*(leftwidth/totalspace))
-          d_setfield(leading,"next", currhead)
+          d_setnext(leading, currhead)
           d_setfield(curr,"head", leading)
         end
       end
@@ -1202,7 +1197,7 @@ local function no_ruby_at_margin(head)
       end
       margin = rubynode[attr].rightmargin
       if margin then
-        local nn = d_nodenext(curr)
+        local nn = d_getnext(curr)
         if nn then
           local nnid = d_getid(nn)
           if nnid == gluenode then
@@ -1229,12 +1224,12 @@ local function inject_char_widow_penalty (head,curr,uni,cjattr)
     local class = get_cjk_class(uni, cjattr)
     if class and class < 9 then
       local pv = cjattr and 500 or 5000
-      local np = d_nodeprev(curr)
+      local np = d_getprev(curr)
       if np and d_getid(np) == rulenode then
-        curr = np; np = d_nodeprev(curr)
+        curr = np; np = d_getprev(curr)
       end
       if np and d_getid(np) == gluenode then
-        curr = np; np = d_nodeprev(curr)
+        curr = np; np = d_getprev(curr)
       end
       if np and d_getid(np) == penaltynode then
         curr = np
@@ -1269,7 +1264,7 @@ local function discourage_char_widow (head,curr)
       local cjattr = d_has_attribute(curr,cjtypesetattr)
       curr = inject_char_widow_penalty(head,curr,uni,cjattr)
     end
-    curr = d_nodeprev(curr)
+    curr = d_getprev(curr)
   end
 end
 
@@ -1435,7 +1430,7 @@ local function get_josaprevs(curr,josaprev,ignoreparens,halt)
       josaprev = get_josaprevs(d_nodetail(d_getlist(curr)),josaprev,ignoreparens,halt)
     end
     if #josaprev == 3 then break end
-    curr = d_nodeprev(curr)
+    curr = d_getprev(curr)
   end
   return josaprev
 end
@@ -1447,18 +1442,21 @@ local function korean_autojosa (head)
     if josaattr and d_has_attribute(curr,finemathattr) then
       local ignoreparens = josaattr > 1 and true or false
       local josaprev = {}
-      josaprev = get_josaprevs(d_nodeprev(curr),josaprev,ignoreparens)
+      josaprev = get_josaprevs(d_getprev(curr),josaprev,ignoreparens)
       local josacode = get_josacode(josaprev)
       local thischar = d_get_unicode_char(curr)
       if thischar == 0xC774 then
-        local nn = d_nodenext(curr)
-        if nn and d_getid(nn) == glyphnode and d_get_unicode_char(nn) == 0xB77C then
-          d_setfield(curr,"char", josa_list[0xC774][josacode])
+        local nn, nc = d_getnext(curr)
+        if nn and d_getid(nn) == glyphnode then
+          nc = d_get_unicode_char(nn)
+        end
+        if nc and nc >= 0xAC00 and nc <= 0xD7A3 then
+          d_setchar(curr, josa_list[0xC774][josacode])
         else
-          d_setfield(curr,"char", josa_list[0xAC00][josacode])
+          d_setchar(curr, josa_list[0xAC00][josacode])
         end
       elseif thischar and josa_list[thischar] then
-        d_setfield(curr,"char", josa_list[thischar][josacode])
+        d_setchar(curr, josa_list[thischar][josacode])
       end
     end
     if d_getchar(curr) < 0 then
@@ -1474,10 +1472,11 @@ end
 ------------------------------
 -- switch to hangul/hanja font
 ------------------------------
-local function hangulspaceskip (engfont, hfontid, spec)
+local function hangulspaceskip (engfont, hfontid, glue)
   local eng = engfont.parameters
   if not eng then return end
-  if not spec then return end
+  local spec = d_getfield(glue,"spec")
+  if not d_getfield(spec,"writable") then return end
   if d_getfield(spec,"stretch_order") ~= 0 or d_getfield(spec,"shrink_order") ~= 0 then return end
   local gsp, gst, gsh = d_getfield(spec,"width"), d_getfield(spec,"stretch"), d_getfield(spec,"shrink")
   local esp, est, esh = eng.space, eng.space_stretch, eng.space_shrink
@@ -1486,12 +1485,11 @@ local function hangulspaceskip (engfont, hfontid, spec)
   esh = esh and tex_round(esh)
   if esp == gsp and est == gst and esh == gsh then else return end
   local hf = get_font_table(hfontid)
-  if not hf then return end
-  local hp = hf.parameters
+  local hp = hf and hf.parameters
   if not hp then return end
   local hsp,hst,hsh = hp.space,hp.space_stretch,hp.space_shrink
   if hsp and hst and hsh then else return end
-  return tex_round(hsp), tex_round(hst), tex_round(hsh)
+  return tex_round(hsp), hst, hsh, gsp
 end
 
 local type1fonts = {} -- due to too verbose log
@@ -1500,7 +1498,10 @@ local function nanumtype1font(curr)
   if currchar > 0xFFFF then return end
   local fnt_t  = get_font_table(currfont)
   local family = (d_has_attribute(curr,finemathattr) or 0) > 1 and not is_hanja(currchar) and "nanummj" or "nanumgt"
-  local series = fnt_t.shared and fnt_t.shared.rawdata.metadata.pfminfo.weight
+  local series = fnt_t.shared and
+                 fnt_t.shared.rawdata and
+                 fnt_t.shared.rawdata.metadata and
+                 fnt_t.shared.rawdata.metadata.pfmweight
   if series then
     series = series > 500 and "b" or "m"
   else
@@ -1515,8 +1516,8 @@ local function nanumtype1font(curr)
   local newchr = currchar % 256
   local function ital_corr (curr,chr_t)
     if shape ~= "o" then return end
-    local nxt = d_nodenext(curr)
-    if nxt and d_getid(nxt) == kernnode and d_getsubtype(nxt) == 1 and d_getfield(nxt,"kern") == 0 then
+    local nxt = d_getnext(curr)
+    if nxt and d_getid(nxt) == kernnode and d_getsubtype(nxt) == kern_type_itlc and d_getfield(nxt,"kern") == 0 then
       d_setfield(nxt,"kern", chr_t.italic or 0)
     end
   end
@@ -1524,7 +1525,7 @@ local function nanumtype1font(curr)
     local fntchr = get_font_char(newfnt,newchr)
     if fntchr then
       d_setfield(curr,"font", newfnt)
-      d_setfield(curr,"char", newchr)
+      d_setchar(curr, newchr)
       ital_corr(curr,fntchr)
     end
   elseif kpse_find_file(subfnt,"tfm") then
@@ -1533,7 +1534,7 @@ local function nanumtype1font(curr)
     if id and fntchr then
       type1fonts[fspec] = id
       d_setfield(curr,"font", id)
-      d_setfield(curr,"char", newchr)
+      d_setchar(curr, newchr)
       ital_corr(curr,fntchr)
     end
   else
@@ -1551,7 +1552,7 @@ local function font_substitute(head)
       local currchar, currfont = d_getchar(curr), d_getfont(curr)
       if currchar then
         if is_unicode_vs(currchar) then -- ideograph variation selectors
-          local prev = d_nodeprev(curr)
+          local prev = d_getprev(curr)
           local prevfont = d_getid(prev) == glyphnode and d_getfont(prev)
           if prevfont ~= currfont then
             d_setfield(curr, "font", prevfont) -- sync font
@@ -1589,27 +1590,34 @@ local function font_substitute(head)
                   d_setfield(curr,"yoffset", charraise + curryoffset)
                 end
                 ---
-                local nxt = d_nodenext(curr)
+                local nxt = d_getnext(curr)
                 local nxtid = nxt and d_getid(nxt)
                 if nxtid == glyphnode and is_unicode_vs(d_getchar(nxt)) then
-                  nxt = d_nodenext(nxt)
+                  nxt = d_getnext(nxt)
                   nxtid = nxt and d_getid(nxt)
                 end
                 if eng and nxtid then
                   local nxtsubtype = d_getsubtype(nxt)
                   -- adjust next glue by hangul font space
-                  if nxtid == gluenode and nxtsubtype and nxtsubtype == 0 then
-                    local nxtspec = d_getfield(nxt,"spec")
-                    if nxtspec and d_getfield(nxtspec,"writable") and get_font_char(fid,32) then
-                      local sp,st,sh = hangulspaceskip(eng, fid, nxtspec)
-                      if sp and st and sh then
-                        local s = d_get_gluespec(sp, st, sh)
-                        d_setfield(nxt, "spec", s)
-                        d_nodefree(nxtspec)
+                  if nxtid == gluenode and nxtsubtype == glue_type_space and get_font_char(fid,32) then
+                    local sp,st,sh,oldwd = hangulspaceskip(eng, fid, nxt)
+                    if sp and st and sh and oldwd then
+                      local ft = get_font_table(fid)
+                      local newwd = ft and ft.space_char_width
+                      if ft and not newwd then
+                        local newsp = d_tonode(d_copy_node(curr))
+                        newsp.char = 32
+                        newsp = nodes.simple_font_handler(newsp)
+                        newwd = newsp and newsp.width
+                        ft.space_char_width = newwd
+                        node.free(newsp)
+                      end
+                      if newwd and oldwd ~= newwd then
+                        d_setfield(nxt, "spec", d_get_gluespec(newwd,newwd/2,newwd/3))
                       end
                     end
                   -- adjust next italic correction kern
-                  elseif nxtid == kernnode and nxtsubtype == 1 and d_getfield(nxt,"kern") == 0 then
+                  elseif nxtid == kernnode and nxtsubtype == kern_type_itlc and d_getfield(nxt,"kern") == 0 then
                     local ksl = get_font_table(fid).parameters.slant
                     if ksl and ksl > 0 then
                       d_setfield(nxt,"kern", myfontchar.italic or 0)
@@ -1626,7 +1634,7 @@ local function font_substitute(head)
         end
       end
     end
-    curr = d_nodenext(curr)
+    curr = d_getnext(curr)
   end
 end
 
@@ -1651,30 +1659,30 @@ local function reorderTM (head)
         local done = false
         local unichar = get_font_char(d_getfont(curr), uni)
         if unichar and unichar.width > 0 then
-          local p = d_nodeprev(curr)
+          local p = d_getprev(curr)
           while p and d_getid(p) == glyphnode do
             local pc = get_cjk_class(d_get_unicode_char(p))
             if pc == 9 then
             elseif pc == 7 or pc == 8 then
               head = d_remove_node(head,curr)
-              d_setfield(curr, "prev", nil) -- prev might survive!
+              d_setprev(curr, nil) -- prev might survive!
               head, curr = d_insert_before(head,p,curr)
               done = true
               break
             else
               break
             end
-            p = d_nodeprev(p)
+            p = d_getprev(p)
           end
         end
         if not done and get_font_char(d_getfont(curr), 0x25CC) then
           local u_25CC = d_copy_node(curr)
-          d_setfield(u_25CC, "char", 0x25CC)
+          d_setchar(u_25CC, 0x25CC)
           d_insert_after(head, curr, u_25CC)
         end
       end
     end
-    curr = d_nodeprev(curr)
+    curr = d_getprev(curr)
   end
   return head
 end
@@ -1742,7 +1750,7 @@ local function after_linebreak_dotemph (head, to_free)
         if cc and (cc == 0 or cc == 7 or cc == 8) then
           local basewd = d_getfield(curr,"width") or 0
           if cc == 8 then -- check next char for old hangul jung/jongseong
-            local nn = d_nodenext(curr)
+            local nn = d_getnext(curr)
             while nn do
               if d_getid(nn) ~= glyphnode then break end
               local uni = d_get_unicode_char(nn)
@@ -1752,14 +1760,14 @@ local function after_linebreak_dotemph (head, to_free)
               else
                 break
               end
-              nn = d_nodenext(nn)
+              nn = d_getnext(nn)
             end
           end
           local dbox = d_todirect(dotemphnode[attr])
           local d = d_copy_node(dbox)
           local dwidth = d_getfield(d,"width")
           local dot = d_get_kernnode(basewd/2-dwidth/2)
-          d_setfield(dot,"next", d_getlist(d))
+          d_setnext(dot, d_getlist(d))
           d_setfield(d,"head", dot)
           d_setfield(d,"width", 0)
           head = d_insert_before(head,curr,d)
@@ -1835,7 +1843,7 @@ end
 local function after_linebreak_underline(head,glueorder,glueset,gluesign,ulinenum)
   local ulstart = ulinenum and head or false
   if ulstart and d_getid(ulstart) == gluenode then
-    ulstart = d_nodenext(ulstart)
+    ulstart = d_getnext(ulstart)
   end
   for curr in d_traverse(head) do
     local currid = d_getid(curr)
@@ -2095,14 +2103,17 @@ otffeatures.register {
 -- italic correction for fake-slant font
 ------------------------------------
 local function fakeslant_itlc (tfmdata)
+  --[[ should be removed
+  if tfmdata.format == "unknown" then
+    tfmdata.name = tfmdata.name:gsub("^\"(.-)\"$","%1")
+  end
+  --]]
   local slfactor = tfmdata.parameters.slantfactor
   if slfactor and slfactor > 0 then else return end
   tfmdata.parameters.slant = slfactor * 65536
-  local factor = tfmdata.parameters.factor or 655.36
-  local itlcoff = (tfmdata.shared.rawdata.metadata.uwidth or 40)/2 * factor
   local chrs = tfmdata.characters
   for i,v in pairs(chrs) do
-    local italic = v.height * slfactor - itlcoff
+    local italic = v.height * slfactor
     if italic > 0 then
       chrs[i].italic = italic
     end

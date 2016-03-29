@@ -1,3 +1,9 @@
+2016-04-04      Dohyun Kim <nomos at ktug org>
+
+	Version 1.12
+
+	* *.sty, *.lua: drop loading luatexbase.sty; updates for luatex 0.90
+
 2015-12-10      Dohyun Kim <nomos at ktug org>
 
 	Version 1.11

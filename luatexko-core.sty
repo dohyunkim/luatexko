@@ -1,6 +1,6 @@
 % luatexko-core.sty
 %
-% Copyright (c) 2013-2015 Dohyun Kim  <nomos at ktug org>
+% Copyright (c) 2013-2016 Dohyun Kim  <nomos at ktug org>
 %                         Soojin Nam  <jsunam at gmail com>
 %
 % This work may be distributed and/or modified under the
@@ -17,21 +17,23 @@
   \ifcsname ifpdf\endcsname\else \input ifpdf.sty \fi
   \catcode`@ = 11
 \else
-  \ProvidesPackage{luatexko-core}[2015/12/10 v1.11 Typesetting Korean with LuaTeX]
-  \RequirePackage{luaotfload}[2013/05/23]
+  \ProvidesPackage{luatexko-core}[2016/04/04 v1.12 Typesetting Korean with LuaTeX]
+  \RequirePackage{luaotfload}[2015/12/09]
   \RequirePackage{ifpdf}
 \fi
 
-\ifdefined\luatexfontid\else
-  \let\luatexfontid\fontid % latex  2015/10/01
+\ifdefined\fontid\else
+  \let\fontid\luatexfontid % latex  2015/10/01
 \fi
-\ifdefined\newluatexattribute\else % luaotfload 2.6
-  \begingroup\expandafter\expandafter\expandafter\endgroup
-  \expandafter\ifx\csname RequirePackage\endcsname\relax
-    \input luatexbase.sty
-  \else
-    \RequirePackage{luatexbase}
-  \fi
+\ifdefined\newattribute\else % luaotfload 2.6
+  \let\newattribute\newluatexattribute
+  \let\unsetattribute\unsetluatexattribute
+  \let\scantextokens\luatexscantextokens
+  \let\luaescapestring\luatexluaescapestring
+\fi
+\ifdefined\pdffontsize\else % luatex 0.87
+  \def\pdffontsize{\dimexpr\pdffeedback fontsize\relax}
+  \protected\def\pdfliteral{\pdfextension literal}
 \fi
 
 %% make hangul catcode 12
@@ -49,18 +51,18 @@
   \ifnum\count@<"D7A3 \advance\count@\@ne \repeat
 
 %% attributes
-\newluatexattribute\finemathattr \finemathattr\tw@ % finemath on by default
-\newluatexattribute\cjtypesetattr
-\newluatexattribute\dotemphattr
-\newluatexattribute\autojosaattr
-\newluatexattribute\luakorubyattr \chardef\luakorubyattrnum\the\allocationnumber
-\newluatexattribute\hangulfntattr
-\newluatexattribute\hanjafntattr
-\newluatexattribute\fallbackfntattr
-\newluatexattribute\hangulpunctsattr
+\newattribute\finemathattr \finemathattr\tw@ % finemath on by default
+\newattribute\cjtypesetattr
+\newattribute\dotemphattr
+\newattribute\autojosaattr
+\newattribute\luakorubyattr \chardef\luakorubyattrnum\the\allocationnumber
+\newattribute\hangulfntattr
+\newattribute\hanjafntattr
+\newattribute\fallbackfntattr
+\newattribute\hangulpunctsattr
 
 %% load lua modules
-\RequireLuaModule{luatexko}
+\directlua{require "luatexko"}
 
 %% japanese/chinese/pre-modern
 \protected\def\japanese{\frenchspacing\cjtypesetattr\@ne  \parindent1em }
@@ -68,10 +70,10 @@
 \protected\def\Tchinese{\frenchspacing\cjtypesetattr\thr@@\parindent2em }
 \let\chinese\Schinese
 % korean in japanese/chinese env.
-\protected\def\korean{\unsetluatexattribute\cjtypesetattr}
+\protected\def\korean{\unsetattribute\cjtypesetattr}
 
 % inhibitglue
-\protected\def\inhibitglue{{\unsetluatexattribute\cjtypesetattr\hskip\z@skip}}
+\protected\def\inhibitglue{{\unsetattribute\cjtypesetattr\hskip\z@skip}}
 
 %% auto josa
 \def\josaignoreparens{\afterassignment\josa@ignore@parens\count@}
@@ -233,7 +235,7 @@
 \protected\def\horizontal#1{%
   \setbox\z@\vbox\bgroup
     \ifnum\cjtypesetattr<\@ne
-      \unsetluatexattribute\cjtypesetattr
+      \unsetattribute\cjtypesetattr
       \spaceskip\fontdimen2\font
                 plus\fontdimen3\font
                 minus\fontdimen4\font
@@ -309,7 +311,7 @@
   \hangul@font
   \expandafter\expandafter\expandafter
   \endgroup
-  \expandafter\hangulfntattr\luatexfontid\font\relax
+  \expandafter\hangulfntattr\fontid\font\relax
   \fi
 }
 \def\luatexko@hanja@selectfont{%
@@ -321,7 +323,7 @@
   \hanja@font
   \expandafter\expandafter\expandafter
   \endgroup
-  \expandafter\hanjafntattr\luatexfontid\font\relax
+  \expandafter\hanjafntattr\fontid\font\relax
   \fi
 }
 \def\luatexko@fallback@selectfont{%
@@ -333,7 +335,7 @@
   \fallback@font
   \expandafter\expandafter\expandafter
   \endgroup
-  \expandafter\fallbackfntattr\luatexfontid\font\relax
+  \expandafter\fallbackfntattr\fontid\font\relax
   \fi
 }
 
@@ -368,7 +370,7 @@
 \fi
 
 %% hangul normalization
-\def\luatexhangulnormalize{\RequireLuaModule{luatexko-normalize}%
+\def\luatexhangulnormalize{\directlua{require "luatexko-normalize"}%
   \afterassignment\luatexh@ngulnorm@lize\count@}
 \def\luatexh@ngulnorm@lize{%
   \ifcase\count@ % 0: none
@@ -380,7 +382,7 @@
   \fi}
 
 %% uhc to utf8
-\def\luatexuhcinputencoding{\RequireLuaModule{luatexko-uhc2utf8}%
+\def\luatexuhcinputencoding{\directlua{require "luatexko-uhc2utf8"}%
   \afterassignment\luatexuhcinput@ncoding\count@}
 \def\luatexuhcinput@ncoding{%
   \ifcase\count@
@@ -390,7 +392,7 @@
   \fi}
 
 %% uhc file names
-\def\luatexuhcfilenames{\RequireLuaModule{luatexko-uhc2utf8}%
+\def\luatexuhcfilenames{\directlua{require "luatexko-uhc2utf8"}%
   \afterassignment\luatexuhcfilen@mes\count@}
 \def\luatexuhcfilen@mes{%
   \ifcase\count@
@@ -413,7 +415,7 @@
 \def\hangulpunctuations{\afterassignment\h@ngulpunctu@tions\count@}
 \def\h@ngulpunctu@tions{%
   \ifcase\count@
-    \unsetluatexattribute\hangulpunctsattr
+    \unsetattribute\hangulpunctsattr
   \else
     \hangulpunctsattr\@ne
   \fi
@@ -455,9 +457,9 @@
 \def\actualtext@@#1#2{%
   \endgroup
   \luatexko@pdfspecial{/Span<</ActualText\directlua{
-    luatexko.actualtext("\luatexluaescapestring{\detokenize{#2}}")
+    luatexko.actualtext("\luaescapestring{\detokenize{#2}}")
   }>>BDC}%
-  \luatexscantextokens{#2}%
+  \scantextokens{#2}%
   \ifx*#1%
     \begingroup
     \ifdefined\actualtext@spacefont\else

@@ -1,6 +1,6 @@
 -- luatexko-normalize.lua
 --
--- Copyright (c) 2013-2015  Dohyun Kim  <nomos at ktug org>
+-- Copyright (c) 2013-2016  Dohyun Kim  <nomos at ktug org>
 --                          Soojin Nam  <jsunam at gmail com>
 --
 -- This work may be distributed and/or modified under the
@@ -13,8 +13,8 @@
 
 luatexbase.provides_module({
   name        = "luatexko-normalize",
-  version     = "1.11",
-  date        = "2015/12/10",
+  version     = "1.12",
+  date        = "2016/04/04",
   author      = "Dohyun Kim, Soojin Nam",
   description = "Hangul normalization",
   license     = "LPPL v1.3+",
@@ -411,7 +411,6 @@ local concat = table.concat
 local floor = math.floor
 local add_to_callback = luatexbase.add_to_callback
 local remove_from_callback = luatexbase.remove_from_callback
-local priority_in_callback = luatexbase.priority_in_callback
 
 local jamo2syllable = function(l,v,t)
   if find(t,ojong) then return end
@@ -468,9 +467,12 @@ local hangulcompose = function(buffer)
   return buffer
 end
 
+local loaded = false
+
 local function unload()
-  if priority_in_callback('process_input_buffer', 'luatexko-hangul-normalize') then
+  if loaded then
     remove_from_callback('process_input_buffer', 'luatexko-hangul-normalize')
+    loaded = false
   end
 end
 luatexkonormalize.unload = unload
@@ -478,11 +480,13 @@ luatexkonormalize.unload = unload
 local function compose()
   unload()
   add_to_callback('process_input_buffer', hangulcompose, 'luatexko-hangul-normalize')
+  loaded = true
 end
 luatexkonormalize.compose = compose
 
 local function decompose()
   unload()
   add_to_callback('process_input_buffer', hanguldecompose, 'luatexko-hangul-normalize')
+  loaded = true
 end
 luatexkonormalize.decompose = decompose
