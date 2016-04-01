@@ -75,7 +75,6 @@ local glue_type_space = 13
 local kern_type_itlc  = 3
 
 local gluenode        = node.id("glue")
-local gluespecnode    = node.id("glue_spec")
 local glyphnode       = node.id("glyph")
 local mathnode        = node.id("math")
 local hlistnode       = node.id("hlist")
@@ -91,16 +90,21 @@ local d_todirect        = nodedirect.todirect
 local d_tonode          = nodedirect.tonode
 local d_getid           = nodedirect.getid
 local d_getsubtype      = nodedirect.getsubtype
+local d_setsubtype      = nodedirect.setsubtype
 local d_getchar         = nodedirect.getchar
 local d_setchar         = nodedirect.setchar
 local d_getfont         = nodedirect.getfont
 local d_getlist         = nodedirect.getlist
+local d_setlist         = nodedirect.setlist
 local d_getfield        = nodedirect.getfield
 local d_setfield        = nodedirect.setfield
 local d_getnext         = nodedirect.getnext
 local d_setnext         = nodedirect.setnext
 local d_getprev         = nodedirect.getprev
 local d_setprev         = nodedirect.setprev
+local d_setleader       = nodedirect.setleader
+local d_getglue         = nodedirect.getglue
+-- local d_setglue         = nodedirect.setglue
 local d_has_attribute   = nodedirect.has_attribute
 local d_set_attribute   = nodedirect.set_attribute
 local d_unset_attribute = nodedirect.unset_attribute
@@ -116,6 +120,16 @@ local d_end_of_math     = nodedirect.end_of_math
 local d_nodetail        = nodedirect.tail
 local d_nodedimensions  = nodedirect.dimensions
 local d_nodefree        = nodedirect.free
+
+local function d_setglue (n, wd, st, sh, sto, sho)
+  if d_getid(n) == gluenode then
+    if tonumber(wd ) then d_setfield(n, "width",         wd ) end
+    if tonumber(st ) then d_setfield(n, "stretch",       st ) end
+    if tonumber(sh ) then d_setfield(n, "shrink",        sh ) end
+    if tonumber(sto) then d_setfield(n, "stretch_order", sto) end
+    if tonumber(sho) then d_setfield(n, "shrink_order",  sho) end
+  end
+end
 
 local emsize = 655360
 
@@ -488,18 +502,9 @@ local josa_code = {
   -- else 2
 }
 
-local function d_get_gluespec (w, st, sh)
-  local s = d_nodenew(gluespecnode)
-  d_setfield(s, "width",   w  or 0)
-  d_setfield(s, "stretch", st or 0)
-  d_setfield(s, "shrink",  sh or 0)
-  return s
-end
-
 local function d_get_gluenode (...)
   local g = d_nodenew(gluenode)
-  local s = d_get_gluespec(...)
-  d_setfield(g, "spec", s)
+  d_setglue(g, ...)
   return g
 end
 
@@ -659,8 +664,7 @@ local function d_get_hlist_char_first (hlist)
       local c,f = d_get_hlist_char_first(curr)
       if c then return c,f end
     elseif currid == gluenode then
-      local currspec = d_getfield(curr,"spec")
-      if currspec and d_getfield(currspec,"width") ~= 0 then return end
+      if d_getglue(curr) ~= 0 then return end
     end
     curr = d_getnext(curr)
   end
@@ -677,8 +681,7 @@ local function d_get_hlist_char_last (hlist,prevchar,prevfont)
       local c,f = d_get_hlist_char_last(curr)
       if c then return c,f end
     elseif currid == gluenode then
-      local currspec = d_getfield(curr,"spec")
-      if currspec and d_getfield(currspec,"width") ~= 0 then return end
+      if d_getglue(curr) ~= 0 then return end
     end
     curr = d_getprev(curr)
   end
@@ -1066,16 +1069,13 @@ end
 local function spread_ruby_box(head,extrawidth)
   local to_free = {}
   for curr in d_traverse_id(gluenode,head) do
-    local currspec = d_getfield(curr,"spec")
-    if currspec then
-      local wd = d_getfield(currspec,"width") or 0
-      if d_has_attribute(curr,luakoglueattr) then
-        d_setfield(currspec,"width", wd + extrawidth)
-      else
-        head = d_insert_before(head,curr,d_get_kernnode(wd+extrawidth))
-        head = d_remove_node(head,curr)
-        to_free[#to_free + 1] = curr
-      end
+    local wd = d_getglue(curr) or 0
+    if d_has_attribute(curr,luakoglueattr) then
+      d_setglue(curr, wd + extrawidth)
+    else
+      head = d_insert_before(head,curr,d_get_kernnode(wd+extrawidth))
+      head = d_remove_node(head,curr)
+      to_free[#to_free + 1] = curr
     end
   end
   if #to_free > 0 then
@@ -1101,7 +1101,7 @@ local function spread_ruby_base_box (head)
         local leading = d_get_kernnode(extrawidth/2)
         d_setfield(curr,"width", rubywidth)
         d_setnext(leading, basehead)
-        d_setfield(curr,"head", leading)
+        d_setlist(curr, leading)
       end
     end
   end
@@ -1167,7 +1167,7 @@ local function get_ruby_side_kern (head)
           end
           local leading = d_get_kernnode(extrawidth*(leftwidth/totalspace))
           d_setnext(leading, currhead)
-          d_setfield(curr,"head", leading)
+          d_setlist(curr, leading)
         end
       end
     end
@@ -1475,21 +1475,16 @@ end
 local function hangulspaceskip (engfont, hfontid, glue)
   local eng = engfont.parameters
   if not eng then return end
-  local spec = d_getfield(glue,"spec")
-  if not d_getfield(spec,"writable") then return end
-  if d_getfield(spec,"stretch_order") ~= 0 or d_getfield(spec,"shrink_order") ~= 0 then return end
-  local gsp, gst, gsh = d_getfield(spec,"width"), d_getfield(spec,"stretch"), d_getfield(spec,"shrink")
+  local gsp, gst, gsh, gsto, gsho = d_getglue(glue)
+  if gsto ~= 0 or gsho ~= 0 then return end
   local esp, est, esh = eng.space, eng.space_stretch, eng.space_shrink
   esp = esp and tex_round(esp)
   est = est and tex_round(est)
   esh = esh and tex_round(esh)
   if esp == gsp and est == gst and esh == gsh then else return end
   local hf = get_font_table(hfontid)
-  local hp = hf and hf.parameters
-  if not hp then return end
-  local hsp,hst,hsh = hp.space,hp.space_stretch,hp.space_shrink
-  if hsp and hst and hsh then else return end
-  return tex_round(hsp), hst, hsh, gsp
+  if hf and hf.encodingbytes == 2 then else return end
+  return gsp, hf
 end
 
 local type1fonts = {} -- due to too verbose log
@@ -1600,11 +1595,10 @@ local function font_substitute(head)
                   local nxtsubtype = d_getsubtype(nxt)
                   -- adjust next glue by hangul font space
                   if nxtid == gluenode and nxtsubtype == glue_type_space and get_font_char(fid,32) then
-                    local sp,st,sh,oldwd = hangulspaceskip(eng, fid, nxt)
-                    if sp and st and sh and oldwd then
-                      local ft = get_font_table(fid)
-                      local newwd = ft and ft.space_char_width
-                      if ft and not newwd then
+                    local oldwd, ft = hangulspaceskip(eng, fid, nxt)
+                    if oldwd and ft then
+                      local newwd = ft.space_char_width
+                      if not newwd then
                         local newsp = d_tonode(d_copy_node(curr))
                         newsp.char = 32
                         newsp = nodes.simple_font_handler(newsp)
@@ -1613,7 +1607,7 @@ local function font_substitute(head)
                         node.free(newsp)
                       end
                       if newwd and oldwd ~= newwd then
-                        d_setfield(nxt, "spec", d_get_gluespec(newwd,newwd/2,newwd/3))
+                        d_setglue(nxt, newwd, newwd/2, newwd/3)
                       end
                     end
                   -- adjust next italic correction kern
@@ -1742,7 +1736,7 @@ local function after_linebreak_dotemph (head, to_free)
   for curr in d_traverse(head) do
     local currid = d_getid(curr)
     if currid == hlistnode then -- hlist may be nested!!!
-      d_setfield(curr,"head", after_linebreak_dotemph(d_getlist(curr), to_free))
+      d_setlist(curr, after_linebreak_dotemph(d_getlist(curr), to_free))
     elseif currid == glyphnode then
       local attr = d_has_attribute(curr,dotemphattr)
       if attr and attr > 0 then
@@ -1768,7 +1762,7 @@ local function after_linebreak_dotemph (head, to_free)
           local dwidth = d_getfield(d,"width")
           local dot = d_get_kernnode(basewd/2-dwidth/2)
           d_setnext(dot, d_getlist(d))
-          d_setfield(d,"head", dot)
+          d_setlist(d, dot)
           d_setfield(d,"width", 0)
           head = d_insert_before(head,curr,d)
           to_free[dbox] = true
@@ -1801,7 +1795,7 @@ local function after_linebreak_ruby (head)
           local extrawidth = (currwidth - rubywidth)/(numofglues + 1)
           d_setfield(ruby,"width", currwidth - extrawidth/2)
           if numofglues > 0 then
-            d_setfield(ruby,"head", spread_ruby_box(rubyhead,extrawidth))
+            d_setlist(ruby, spread_ruby_box(rubyhead,extrawidth))
           end
         else
           local right = rubynode[attr].rightshift or 0
@@ -1823,8 +1817,8 @@ end
 local function draw_underline(head,curr,width,ubox,ulstart)
   if width and width > 0 then
     local glue = d_get_gluenode(width)
-    d_setfield(glue,"subtype", 101) -- cleaders
-    d_setfield(glue,"leader", d_copy_node(ubox))
+    d_setsubtype(glue, 101) -- cleaders
+    d_setleader(glue, d_copy_node(ubox))
     head = d_insert_before(head, ulstart, glue)
     head = d_insert_before(head, ulstart, d_get_kernnode(-width))
   end
@@ -1855,7 +1849,7 @@ local function after_linebreak_underline(head,glueorder,glueset,gluesign,ulinenu
         d_getfield(curr,"glue_set"),
         d_getfield(curr,"glue_sign"),
         ulinenum)
-      d_setfield(curr,"head", newhead)
+      d_setlist(curr, newhead)
     elseif currid == whatsitnode and d_getsubtype(curr) == whatsitspecial then
       local currdata = d_getfield(curr,"data")
       if currdata then
