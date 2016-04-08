@@ -104,7 +104,7 @@ local d_getprev         = nodedirect.getprev
 local d_setprev         = nodedirect.setprev
 local d_setleader       = nodedirect.setleader
 local d_getglue         = nodedirect.getglue
--- local d_setglue         = nodedirect.setglue
+local d_setglue         = nodedirect.setglue
 local d_has_attribute   = nodedirect.has_attribute
 local d_set_attribute   = nodedirect.set_attribute
 local d_unset_attribute = nodedirect.unset_attribute
@@ -120,16 +120,6 @@ local d_end_of_math     = nodedirect.end_of_math
 local d_nodetail        = nodedirect.tail
 local d_nodedimensions  = nodedirect.dimensions
 local d_nodefree        = nodedirect.free
-
-local function d_setglue (n, wd, st, sh, sto, sho)
-  if d_getid(n) == gluenode then
-    if tonumber(wd ) then d_setfield(n, "width",         wd ) end
-    if tonumber(st ) then d_setfield(n, "stretch",       st ) end
-    if tonumber(sh ) then d_setfield(n, "shrink",        sh ) end
-    if tonumber(sto) then d_setfield(n, "stretch_order", sto) end
-    if tonumber(sho) then d_setfield(n, "shrink_order",  sho) end
-  end
-end
 
 local emsize = 655360
 

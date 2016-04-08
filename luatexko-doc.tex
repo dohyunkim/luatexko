@@ -8,7 +8,7 @@
 %%
 %% public domain
 
-\ifx\outputmode\undefined\else\RequirePackage{luatex85}\fi
+\RequirePackage{luatex85}
 \documentclass[a4paper]{article}
 \usepackage[hmargin=3.8cm]{geometry}
 \usepackage[hangul]{luatexko}
@@ -61,7 +61,7 @@
 \author{Dohyun Kim \normalsize |<nomos at ktug org>| \and
         Soojin Nam \normalsize |<jsunam at gmail com>| \and
   \normalsize \url{<http://github.com/dohyunkim/luatexko>}}
-\date{Version 1.11\quad 2015/12/10}
+\date{Version 1.12\quad 2016/04/04}
 \maketitle
 
 \begin{quote}\small
@@ -103,8 +103,7 @@
 \smallskip
 
 \section{}
-\hemph{\texlive\ 2014 이상}을 사용해야 한다.
-{\small (\texlive\ 2015\,$=$\,\luatex\ v0.80 이상을 권장한다.)}
+\hemph{\texlive\ 2016 이상}{\small (\luatex\ v0.95 이상)}을 사용해야 한다.
 아직 \luatex은 베타 상태로 개발 중에 있으므로 안정적인 동작을 보장하지 않는다.
 
 \section{}\label{sec:loading}
