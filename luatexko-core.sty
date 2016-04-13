@@ -32,7 +32,7 @@
   \let\luaescapestring\luatexluaescapestring
 \fi
 \ifdefined\pdffontsize\else % luatex 0.87
-  \def\pdffontsize{\dimexpr\pdffeedback fontsize\relax}
+  \def\pdffontsize{\pdffeedback fontsize}
   \protected\def\pdfliteral{\pdfextension literal}
 \fi
 
