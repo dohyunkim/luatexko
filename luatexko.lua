@@ -88,23 +88,67 @@ local whatsitspecial  = node.subtype("special")
 local nodedirect        = node.direct
 local d_todirect        = nodedirect.todirect
 local d_tonode          = nodedirect.tonode
+local d_has_field       = nodedirect.has_field
+local d_copy_node       = nodedirect.copy
 local d_getid           = nodedirect.getid
+local d_getfield        = nodedirect.getfield
+local d_setfield        = nodedirect.setfield
 local d_getsubtype      = nodedirect.getsubtype
-local d_setsubtype      = nodedirect.setsubtype
+local d_setsubtype      = nodedirect.setsubtype or function (n,t)
+  d_setfield(n, "subtype", t)
+end
 local d_getchar         = nodedirect.getchar
 local d_setchar         = nodedirect.setchar
 local d_getfont         = nodedirect.getfont
 local d_getlist         = nodedirect.getlist
-local d_setlist         = nodedirect.setlist
-local d_getfield        = nodedirect.getfield
-local d_setfield        = nodedirect.setfield
+local d_setlist         = nodedirect.setlist or function (n,h)
+  if d_getid(n) == hlistnode or d_getid(n) == vlistnode then
+    d_setfield(n, "head", h)
+  end
+end
 local d_getnext         = nodedirect.getnext
 local d_setnext         = nodedirect.setnext
 local d_getprev         = nodedirect.getprev
 local d_setprev         = nodedirect.setprev
-local d_setleader       = nodedirect.setleader
-local d_getglue         = nodedirect.getglue
-local d_setglue         = nodedirect.setglue
+local d_setleader       = nodedirect.setleader or function (n,l)
+  if d_getid(n) == gluenode then
+    d_setfield(n, "leader", l)
+  end
+end
+local d_getglue         = nodedirect.getglue or function (n)
+  if d_getid(n) == gluenode then
+    if not d_has_field(n,"width") then
+      n = d_getfield(n, "spec")
+    end
+    return d_getfield(n, "width"),
+           d_getfield(n, "stretch"),
+           d_getfield(n, "shrink"),
+           d_getfield(n, "stretch_order"),
+           d_getfield(n, "shrink_order")
+  end
+end
+local d_setglue = nodedirect.setglue or function (n,wd,st,sh,sto,sho)
+  if d_getid(n) == gluenode then
+    if d_has_field(n, "width") then
+      if wd  then d_setfield(n, "width", wd)          end
+      if st  then d_setfield(n, "stretch", st)        end
+      if sh  then d_setfield(n, "shrink", sh)         end
+      if sto then d_setfield(n, "stretch_order", sto) end
+      if sho then d_setfield(n, "shrink_order", sho)  end
+    else
+      local spec = d_getfield(n, "spec")
+      if not d_getfield(spec, "writable") then
+        spec = d_copy_node(spec)
+        if wd  then d_setfield(spec, "width", wd)          end
+        if st  then d_setfield(spec, "stretch", st)        end
+        if sh  then d_setfield(spec, "shrink", sh)         end
+        if sto then d_setfield(spec, "stretch_order", sto) end
+        if sho then d_setfield(spec, "shrink_order", sho)  end
+        d_setfield(n, "spec", spec)
+      end
+    end
+  end
+end
 local d_has_attribute   = nodedirect.has_attribute
 local d_set_attribute   = nodedirect.set_attribute
 local d_unset_attribute = nodedirect.unset_attribute
@@ -112,7 +156,6 @@ local d_traverse        = nodedirect.traverse
 local d_traverse_id     = nodedirect.traverse_id
 local d_insert_before   = nodedirect.insert_before
 local d_insert_after    = nodedirect.insert_after
-local d_copy_node       = nodedirect.copy
 local d_remove_node     = nodedirect.remove
 local d_nodenew         = nodedirect.new
 local d_nodecount       = nodedirect.count
