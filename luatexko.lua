@@ -1868,7 +1868,7 @@ local function draw_underline(head,curr,width,ubox,ulstart)
 end
 
 local function after_linebreak_underline(head,glueorder,glueset,gluesign,ulinenum)
-  local ulstart = ulinenum and head or false
+  local ulstart = ulinenum and head
   if ulstart and d_getid(ulstart) == gluenode then
     ulstart = d_getnext(ulstart)
   end
@@ -1888,14 +1888,14 @@ local function after_linebreak_underline(head,glueorder,glueset,gluesign,ulinenu
       if currdata then
         if currdata:find("luako:ulinebegin=") then
           ulinenum = tonumber(currdata:match("(%d+)"))
-          ulstart = curr
+          ulinenum = ulinebox[ulinenum] and ulinenum
+          ulstart  = ulinenum and curr
         elseif ulstart and ulinenum and currdata:find('luako:ulineend') then
           local ubox = d_todirect(ulinebox[ulinenum])
           local wd = d_nodedimensions(glueset,gluesign,glueorder,ulstart,curr)
           head = draw_underline(head,curr,wd,ubox,ulstart)
           d_nodefree(ubox)
-          ulinebox[ulinenum] = nil
-          ulinenum = nil
+          ulinebox[ulinenum], ulinenum, ulstart  = nil, nil, nil
         end
       end
     end
