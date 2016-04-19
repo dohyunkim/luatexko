@@ -13,7 +13,7 @@
 
 luatexbase.provides_module {
   name        = 'luatexko',
-  date        = '2016/04/04',
+  date        = '2016/04/20',
   version     = '1.12',
   description = 'Korean linebreaking and font-switching',
   author      = 'Dohyun Kim, Soojin Nam',
@@ -1874,7 +1874,7 @@ local function after_linebreak_underline(head,glueorder,glueset,gluesign,ulinenu
   end
   for curr in d_traverse(head) do
     local currid = d_getid(curr)
-    if currid == hlistnode then
+    if currid == hlistnode and not ulstart then -- skip nested hbox
       local newhead
       newhead,ulinenum = after_linebreak_underline(
         d_getlist(curr),
