@@ -2047,8 +2047,8 @@ local function cjk_vertical_font (vf)
     local fea = v.features or {}
     if fea.vhal or fea.vkrn or fea.valt or fea.vpal or fea.vert then
       if v.type == "gpos_single" then
-        for _,vv in pairs(v.steps) do
-          local cover = vv.coverage
+        for _,vv in pairs(v.steps or{}) do
+          local cover = vv.coverage or {}
           for iii,vvv in pairs(cover) do
             if #vvv == 4 then
               cover[iii] = { -vvv[2], vvv[1], vvv[4], vvv[3] }
@@ -2056,8 +2056,8 @@ local function cjk_vertical_font (vf)
           end
         end
       elseif v.type == "gpos_pair" then
-        for _,vv in pairs(v.steps) do
-          local cover = vv.coverage
+        for _,vv in pairs(v.steps or {}) do
+          local cover = vv.coverage or {}
           for _,vvv in pairs(cover) do
             for iiii,vvvv in pairs(vvv) do
               if #vvvv == 4 then
