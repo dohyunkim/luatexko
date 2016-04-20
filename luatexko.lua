@@ -2044,38 +2044,29 @@ local function cjk_vertical_font (vf)
   local vposkeys = {}
   local seq = res.sequences or {}
   for _,v in ipairs(seq) do
-    if (v.type == "gpos_single" or v.type == "gpos_pair") and v.subtables then
-      local feature = v.features or {}
-      if feature.vhal or feature.vkrn or feature.valt or feature.vpal or feature.vert then
-        for _,vv in ipairs(v.subtables) do
-          vposkeys[#vposkeys+1] = vv
+    local fea = v.features or {}
+    if fea.vhal or fea.vkrn or fea.valt or fea.vpal or fea.vert then
+      if v.type == "gpos_single" then
+        for _,vv in pairs(v.steps) do
+          local cover = vv.coverage
+          for iii,vvv in pairs(cover) do
+            if #vvv == 4 then
+              cover[iii] = { -vvv[2], vvv[1], vvv[4], vvv[3] }
+            end
+          end
         end
-      end
-    end
-  end
-  local lookups = res.lookuphash or {}
-  for _,v in ipairs(vposkeys) do
-    local vp = lookups[v]
-    if vp then
-      for i,vv in pairs(vp) do
-        if #vv == 4 then
-          vp[i] = { -vv[2], vv[1], vv[4], vv[3] }
-        end
-      end
-    else -- vkrn
-      local t = {}
-      for first,idofftab in pairs(vkrn_tab) do
-        for id,off in pairs(idofftab) do
-          local unis = id2uni_tab[id]
-          if unis then
-            for _,second in ipairs(unis) do
-              t[first] = t[first] or {}
-              t[first][second] = off
+      elseif v.type == "gpos_pair" then
+        for _,vv in pairs(v.steps) do
+          local cover = vv.coverage
+          for _,vvv in pairs(cover) do
+            for iiii,vvvv in pairs(vvv) do
+              if #vvvv == 4 then
+                vvv[iiii] = { -vvvv[2], vvvv[1], vvvv[4], vvvv[3] }
+              end
             end
           end
         end
       end
-      lookups[v] = t
     end
   end
   res.verticalgposhack = true
