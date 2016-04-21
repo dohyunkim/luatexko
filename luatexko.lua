@@ -225,8 +225,11 @@ local cjkclass = {
   [0xFE19] = 5, -- … vert
   [0x2025] = 5, -- ‥
   [0xFE30] = 5, -- ‥ vert
+  [0xFE31] = 5, -- ︱ vert
   [0xFF1F] = 6, -- ？
   [0xFF01] = 6, -- ！
+  [0xFE16] = 6, -- ︖ vert
+  [0xFE15] = 6, -- ︕ vert
 }
 
 local inhibitxspcode = {
