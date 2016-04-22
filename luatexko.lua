@@ -13,7 +13,7 @@
 
 luatexbase.provides_module {
   name        = 'luatexko',
-  date        = '2016/04/20',
+  date        = '2016/04/22',
   version     = '1.12',
   description = 'Korean linebreaking and font-switching',
   author      = 'Dohyun Kim, Soojin Nam',
@@ -94,61 +94,19 @@ local d_getid           = nodedirect.getid
 local d_getfield        = nodedirect.getfield
 local d_setfield        = nodedirect.setfield
 local d_getsubtype      = nodedirect.getsubtype
-local d_setsubtype      = nodedirect.setsubtype or function (n,t)
-  d_setfield(n, "subtype", t)
-end
+local d_setsubtype      = nodedirect.setsubtype
 local d_getchar         = nodedirect.getchar
 local d_setchar         = nodedirect.setchar
 local d_getfont         = nodedirect.getfont
 local d_getlist         = nodedirect.getlist
-local d_setlist         = nodedirect.setlist or function (n,h)
-  if d_getid(n) == hlistnode or d_getid(n) == vlistnode then
-    d_setfield(n, "head", h)
-  end
-end
+local d_setlist         = nodedirect.setlist
 local d_getnext         = nodedirect.getnext
 local d_setnext         = nodedirect.setnext
 local d_getprev         = nodedirect.getprev
 local d_setprev         = nodedirect.setprev
-local d_setleader       = nodedirect.setleader or function (n,l)
-  if d_getid(n) == gluenode then
-    d_setfield(n, "leader", l)
-  end
-end
-local d_getglue         = nodedirect.getglue or function (n)
-  if d_getid(n) == gluenode then
-    if not d_has_field(n,"width") then
-      n = d_getfield(n, "spec")
-    end
-    return d_getfield(n, "width"),
-           d_getfield(n, "stretch"),
-           d_getfield(n, "shrink"),
-           d_getfield(n, "stretch_order"),
-           d_getfield(n, "shrink_order")
-  end
-end
-local d_setglue = nodedirect.setglue or function (n,wd,st,sh,sto,sho)
-  if d_getid(n) == gluenode then
-    if d_has_field(n, "width") then
-      if wd  then d_setfield(n, "width", wd)          end
-      if st  then d_setfield(n, "stretch", st)        end
-      if sh  then d_setfield(n, "shrink", sh)         end
-      if sto then d_setfield(n, "stretch_order", sto) end
-      if sho then d_setfield(n, "shrink_order", sho)  end
-    else
-      local spec = d_getfield(n, "spec")
-      if not d_getfield(spec, "writable") then
-        spec = d_copy_node(spec)
-        if wd  then d_setfield(spec, "width", wd)          end
-        if st  then d_setfield(spec, "stretch", st)        end
-        if sh  then d_setfield(spec, "shrink", sh)         end
-        if sto then d_setfield(spec, "stretch_order", sto) end
-        if sho then d_setfield(spec, "shrink_order", sho)  end
-        d_setfield(n, "spec", spec)
-      end
-    end
-  end
-end
+local d_setleader       = nodedirect.setleader
+local d_getglue         = nodedirect.getglue
+local d_setglue         = nodedirect.setglue
 local d_has_attribute   = nodedirect.has_attribute
 local d_set_attribute   = nodedirect.set_attribute
 local d_unset_attribute = nodedirect.unset_attribute
@@ -214,9 +172,9 @@ local cjkclass = {
   [0x00B7] = 3, -- ·
   [0x30FB] = 3, -- ・
   [0xFF1A] = 3, -- ：
-  [0xFE13] = 3, -- ： vert
+--  [0xFE13] = 3, -- ： vert
   [0xFF1B] = 3, -- ；
-  [0xFE14] = 3, -- ； vert
+--  [0xFE14] = 3, -- ； vert
   [0x3002] = 4, -- 。
   [0xFE12] = 4, -- 。 vert
   [0xFF0E] = 4, -- ．
@@ -1955,12 +1913,7 @@ local function get_vwidth_tsb_table (filename,fontname)
     for _,subfont in ipairs(subfonts) do
       local glyphs = subfont.glyphs or {}
       for i, gl in pairs(glyphs) do
-        local id   = gl.orig_pos or i
-        local name = gl.name
-        if name then
-          glyph_t[id]   = { ht = gl.vwidth, tsb = gl.tsidebearing, vk = gl.vkerns }
-          glyph_t[name] = id
-        end
+        glyph_t[i] = { ht = gl.vwidth, tsb = gl.tsidebearing }
       end
     end
     if lfstouch then
@@ -1995,7 +1948,6 @@ local function cjk_vertical_font (vf)
   local xheight   = params.x_height or quad/2
   local goffset   = xheight/2 - quad/2
   local descriptions = shared.rawdata and shared.rawdata.descriptions
-  local vkrn_tab, id2uni_tab  = {}, {}
   for i,v in pairs(vf.characters) do
     local dsc     = descriptions[i]
     local gl      = v.index
@@ -2020,21 +1972,6 @@ local function cjk_vertical_font (vf)
     v.height  = vh
     v.depth   = vh
     v.italic  = nil
-    -- for vkrn
-    local t = id2uni_tab[gl] or {}
-    t[#t + 1] = i
-    id2uni_tab[gl] = t
-    local vk  = tsb_gl.vk
-    if vk then
-      for _,vv in ipairs(vk) do
-        local index, off = vv.char, vv.off
-        index = index and tsbtable and tsbtable[index]
-        if index and off then
-          vkrn_tab[i] = vkrn_tab[i] or {}
-          vkrn_tab[i][index] = off
-        end
-      end
-    end
   end
   --- vertical gpos
   local res = vf.resources or {}
@@ -2044,7 +1981,6 @@ local function cjk_vertical_font (vf)
   local fea = shared.features or {}
   fea.kern = nil  -- only for horizontal typesetting
   fea.vert = true -- should be activated by default
-  local vposkeys = {}
   local seq = res.sequences or {}
   for _,v in ipairs(seq) do
     local fea = v.features or {}
@@ -2053,18 +1989,20 @@ local function cjk_vertical_font (vf)
         for _,vv in pairs(v.steps or{}) do
           local cover = vv.coverage or {}
           for iii,vvv in pairs(cover) do
-            if #vvv == 4 then
-              cover[iii] = { -vvv[2], vvv[1], vvv[4], vvv[3] }
+            if type(vvv) == "table" and #vvv == 4 then
+              cover[iii] = { -vvv[2], vvv[1], vvv[4], vvv[3], 0 }
             end
           end
         end
       elseif v.type == "gpos_pair" then
         for _,vv in pairs(v.steps or {}) do
-          local cover = vv.coverage or {}
-          for _,vvv in pairs(cover) do
-            for iiii,vvvv in pairs(vvv) do
-              if #vvvv == 4 then
-                vvv[iiii] = { -vvvv[2], vvvv[1], vvvv[4], vvvv[3] }
+          for _,vvv in pairs(vv.coverage or {}) do
+            for _,vvvv in pairs(vvv) do
+              for iiiii,vvvvv in pairs(vvvv) do
+                if type(vvvvv) == "table" and #vvvvv == 4 then
+                  -- last 0 to avoid multiple round
+                  vvvv[iiiii] = { -vvvvv[2], vvvvv[1], vvvvv[4], vvvvv[3], 0 }
+                end
               end
             end
           end
