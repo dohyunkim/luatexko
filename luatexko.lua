@@ -1892,38 +1892,133 @@ end, 'luatexko.post_linebreak_filter')
 ------------------------------------
 -- vertical typesetting: EXPERIMENTAL
 ------------------------------------
-local tsbtable, mytime, currtime, cachedir, fontloader, lfs, lfsattributes, lfstouch
+local streamreader = fonts.handlers.otf.readers.streamreader
+local openfile     = streamreader.open
+local closefile    = streamreader.close
+local readstring   = streamreader.readstring
+local readulong    = streamreader.readcardinal4
+local readushort   = streamreader.readcardinal2
+local readfixed    = streamreader.readfixed4
+local readshort    = streamreader.readinteger2
+local setpos       = streamreader.setposition
 
-local function get_vwidth_tsb_table (filename,fontname)
-  if tsbtable[fontname] then return tsbtable[fontname] end
-  local cachefile = stringformat("%s/luatexko_vertical_metrics_%s.lua",
-                                cachedir,fontname:gsub("%W","_"))
-  local cattr = lfs.isfile(cachefile) and lfsattributes(cachefile)
-  local fonttime = lfsattributes(filename,"modification")
-  if cattr and cattr.access > mytime and cattr.modification == fonttime then
-    tsbtable[fontname] = dofile(cachefile)
-    return tsbtable[fontname]
+local function getotftables (f, subfont)
+  if f then
+    local sfntversion = readstring(f,4)
+    if sfntversion == "ttcf" then
+      local subfont = subfont or 1
+      local ttcversion  = readfixed(f)
+      local numfonts    = readulong(f)
+      if subfont >= 1 and subfont <= numfonts then
+        local offsets = {}
+        for i = 1, numfonts do
+          offsets[i] = readulong(f)
+        end
+        setpos(f, offsets[subfont])
+        sfntversion = readstring(f,4)
+      end
+    end
+    if sfntversion == "OTTO" or sfntversion == "true" or sfntversion == "\0\1\0\0" then
+      local numtables     = readushort(f)
+      local searchrange   = readushort(f)
+      local entryselector = readushort(f)
+      local rangeshift    = readushort(f)
+      local tables        = {}
+      for i= 1, numtables do
+        local tag = readstring(f,4)
+        tables[tag] = {
+          checksum = readulong(f),
+          offset   = readulong(f),
+          length   = readulong(f),
+        }
+      end
+      return tables
+    end
   end
-  local fnt = fontloader.open(filename,fontname)
-  if fnt then
-    local fnt_t    = fontloader.to_table(fnt) -- for tsidebearing
-    fontloader.close(fnt)
-    local glyph_t  = {}
-    local subfonts = fnt_t.subfonts or {fnt_t}
-    for _,subfont in ipairs(subfonts) do
-      local glyphs = subfont.glyphs or {}
-      for i, gl in pairs(glyphs) do
-        glyph_t[i] = { ht = gl.vwidth, tsb = gl.tsidebearing }
+end
+
+local function readmaxp (f, t)
+  if f and t then
+    setpos(f, t.offset)
+    return {
+      version   = readfixed(f),
+      numglyphs = readushort(f),
+    }
+  end
+end
+
+local function readvhea (f, t)
+  if f and t then
+    setpos(f, t.offset)
+    return {
+      version               = readfixed(f),
+      ascent                = readshort(f),
+      descent               = readshort(f),
+      lineGap               = readshort(f),
+      advanceheightmax      = readshort(f),
+      mintopsidebearing     = readshort(f),
+      minbottomsidebrearing = readshort(f),
+      ymaxextent            = readshort(f),
+      caretsloperise        = readshort(f),
+      caretsloperun         = readshort(f),
+      caretoffset           = readshort(f),
+      reserved1             = readshort(f),
+      reserved2             = readshort(f),
+      reserved3             = readshort(f),
+      reserved4             = readshort(f),
+      metricdataformat      = readshort(f),
+      numheights            = readushort(f),
+    }
+  end
+end
+
+local function readvmtx (f, t, numofheights, numofglyphs)
+  if f and t then
+    setpos(f, t.offset)
+    local vmtx = {}
+    local height = 0
+    for i = 0, numofheights-1 do
+      height = readushort(f)
+      vmtx[i] = {
+        ht  = height,
+        tsb = readshort(f),
+      }
+    end
+    for i = numofheights, numofglyphs-1 do
+      vmtx[i] = {
+        ht = height,
+        tsb = readshort(f),
+      }
+    end
+    return vmtx
+  end
+end
+
+local tsbtable
+
+local function get_tsb_table (filename,subfont)
+  if subfont == "" or not subfont then
+    subfont = 1
+  end
+  local key = stringformat("%s::%s", filename, subfont)
+  if tsbtable[key] then
+    return tsbtable[key]
+  end
+  local f = openfile(filename,true) -- true: zero-based
+  if f then
+    local tables = getotftables(f, subfont)
+    if tables then
+      local vhea = readvhea(f, tables.vhea)
+      local numofheights = vhea and vhea.numheights
+      local maxp = readmaxp(f, tables.maxp)
+      local numofglyphs = maxp and maxp.numglyphs
+      local vmtx = readvmtx(f, tables.vmtx, numofheights, numofglyphs)
+      if vmtx then
+        tsbtable[key] = vmtx
+        return vmtx
       end
     end
-    if lfstouch then
-      table.tofile(cachefile,glyph_t,"return")
-      if not lfstouch(cachefile,currtime,fonttime) then
-        warn("Writing cache file '%s' failed!",cachefile)
-      end
-    end
-    tsbtable[fontname] = glyph_t
-    return glyph_t
+    closefile(f)
   end
 end
 
@@ -1933,7 +2028,8 @@ local function cjk_vertical_font (vf)
   if not vf.shared.features["vertical"] then return end
   if vf.type == "virtual" then return end
 
-  local tsbtable = get_vwidth_tsb_table(vf.filename,vf.fontname)
+  local subfont  = vf.specification and vf.specification.sub
+  local tsbtable = get_tsb_table(vf.filename, subfont)
   if not tsbtable then return end
 
   local id = fontdefine(table.copy(vf)) -- fastcopy takes time too long.
@@ -2014,29 +2110,17 @@ local function cjk_vertical_font (vf)
   return vf
 end
 
-local function activate_vertical_virtual (tfmdata,value)
-  if value and not tsbtable then
-    fontloader = require "fontloader"
-    lfs = require "lfs"
-    lfstouch      = lfs.touch
-    lfsattributes = lfs.attributes
-    tsbtable  = {}
-    currtime  = os.time()
-    mytime    = kpse_find_file("luatexko.lua")
-    mytime    = mytime and lfsattributes(mytime,"modification")
-    cachedir  = caches.getwritablepath("..","luatexko")
-    add_to_callback("luaotfload.patch_font",
-                    cjk_vertical_font,
-                    "luatexko.vertical_virtual_font")
-  end
-end
-
 local otffeatures = fonts.constructors.newfeatures("otf")
 otffeatures.register {
   name         = "vertical",
   description  = "vertical typesetting",
   initializers = {
-    node = activate_vertical_virtual,
+    node = function (tfmdata,value)
+      if value and not tsbtable then
+        tsbtable  = {}
+        add_to_callback("luaotfload.patch_font",cjk_vertical_font,"luatexko.vertical_virtual_font")
+      end
+    end
   }
 }
 
