@@ -1973,7 +1973,7 @@ local function readvhea (f, t)
 end
 
 local function readvmtx (f, t, numofheights, numofglyphs)
-  if f and t then
+  if f and t and numofheights and numofglyphs then
     setpos(f, t.offset)
     local vmtx = {}
     local height = 0
