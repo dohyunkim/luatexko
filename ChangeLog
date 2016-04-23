@@ -1,3 +1,9 @@
+2016-04-25      Dohyun Kim <nomos at ktug org>
+
+	Version 1.13
+
+	* luatexko.lua: direct access to vmtx table; drop caching
+
 2016-04-22      Dohyun Kim <nomos at ktug org>
 
 	Version 1.12

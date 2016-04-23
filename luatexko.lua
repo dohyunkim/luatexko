@@ -13,8 +13,8 @@
 
 luatexbase.provides_module {
   name        = 'luatexko',
-  date        = '2016/04/22',
-  version     = '1.12',
+  date        = '2016/04/25',
+  version     = '1.13',
   description = 'Korean linebreaking and font-switching',
   author      = 'Dohyun Kim, Soojin Nam',
   license     = 'LPPL v1.3+',
@@ -1892,7 +1892,7 @@ end, 'luatexko.post_linebreak_filter')
 ------------------------------------
 -- vertical typesetting: EXPERIMENTAL
 ------------------------------------
-local streamreader = fonts.handlers.otf.readers.streamreader
+local streamreader = utilities.files
 local openfile     = streamreader.open
 local closefile    = streamreader.close
 local readstring   = streamreader.readstring
@@ -1906,9 +1906,9 @@ local function getotftables (f, subfont)
   if f then
     local sfntversion = readstring(f,4)
     if sfntversion == "ttcf" then
-      local subfont = subfont or 1
-      local ttcversion  = readfixed(f)
-      local numfonts    = readulong(f)
+      local subfont    = tonumber(subfont) or 1
+      local ttcversion = readfixed(f)
+      local numfonts   = readulong(f)
       if subfont >= 1 and subfont <= numfonts then
         local offsets = {}
         for i = 1, numfonts do
@@ -1986,7 +1986,7 @@ local function readvmtx (f, t, numofheights, numofglyphs)
     end
     for i = numofheights, numofglyphs-1 do
       vmtx[i] = {
-        ht = height,
+        ht  = height,
         tsb = readshort(f),
       }
     end
@@ -1996,7 +1996,7 @@ end
 
 local tsbtable
 
-local function get_tsb_table (filename,subfont)
+local function get_tsb_table (filename, subfont)
   if subfont == "" or not subfont then
     subfont = 1
   end
@@ -2004,21 +2004,20 @@ local function get_tsb_table (filename,subfont)
   if tsbtable[key] then
     return tsbtable[key]
   end
-  local f = openfile(filename,true) -- true: zero-based
+  local f = openfile(filename, true) -- true: zero-based
   if f then
+    local vmtx
     local tables = getotftables(f, subfont)
     if tables then
       local vhea = readvhea(f, tables.vhea)
       local numofheights = vhea and vhea.numheights
       local maxp = readmaxp(f, tables.maxp)
       local numofglyphs = maxp and maxp.numglyphs
-      local vmtx = readvmtx(f, tables.vmtx, numofheights, numofglyphs)
-      if vmtx then
-        tsbtable[key] = vmtx
-        return vmtx
-      end
+      vmtx = readvmtx(f, tables.vmtx, numofheights, numofglyphs)
     end
     closefile(f)
+    tsbtable[key] = vmtx
+    return vmtx
   end
 end
 
