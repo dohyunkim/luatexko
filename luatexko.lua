@@ -1906,7 +1906,6 @@ local function getotftables (f, subfont)
   if f then
     local sfntversion = readstring(f,4)
     if sfntversion == "ttcf" then
-      local subfont    = tonumber(subfont) or 1
       local ttcversion = readfixed(f)
       local numfonts   = readulong(f)
       if subfont >= 1 and subfont <= numfonts then
@@ -1997,9 +1996,7 @@ end
 local tsbtable
 
 local function get_tsb_table (filename, subfont)
-  if subfont == "" or not subfont then
-    subfont = 1
-  end
+  subfont = tonumber(subfont) or 1
   local key = stringformat("%s::%s", filename, subfont)
   if tsbtable[key] then
     return tsbtable[key]
@@ -2029,7 +2026,10 @@ local function cjk_vertical_font (vf)
 
   local subfont  = vf.specification and vf.specification.sub
   local tsbtable = get_tsb_table(vf.filename, subfont)
-  if not tsbtable then return end
+  if not tsbtable then
+    warn("%s does not have vertical metric info", vf.fontname)
+    return
+  end
 
   local id = fontdefine(table.copy(vf)) -- fastcopy takes time too long.
 
