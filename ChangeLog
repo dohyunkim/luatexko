@@ -1,3 +1,10 @@
+2016-05-08      Dohyun Kim <nomos at ktug org>
+
+	Version 1.14
+
+	* luatexko.lua, luatexko-core.sty: more updates for luatex 0.95,
+	user_defined whatsit intead of special whatsit
+
 2016-04-25      Dohyun Kim <nomos at ktug org>
 
 	Version 1.13

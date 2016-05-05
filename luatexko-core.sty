@@ -17,7 +17,7 @@
   \ifcsname ifpdf\endcsname\else \input ifpdf.sty \fi
   \catcode`@ = 11
 \else
-  \ProvidesPackage{luatexko-core}[2016/04/25 v1.13 Typesetting Korean with LuaTeX]
+  \ProvidesPackage{luatexko-core}[2016/05/08 v1.14 Typesetting Korean with LuaTeX]
   \RequirePackage{luaotfload}[2016/04/21]
   \RequirePackage{ifpdf}
 \fi
@@ -270,28 +270,27 @@
 \def\ulinewidth{0.04em }
 \def\ulinedown {0.25em }
 \newcount\luakoulineboxcnt\luakoulineboxcnt\z@
-\protected\def\uline#1{%
-  \ifnum\luakoulineboxcnt > 65535 \luakoulineboxcnt\z@ \fi
-  \global\advance\luakoulineboxcnt\@ne
-  \dimen@\dimexpr\ulinedown+\ulinewidth\relax
-  \dimen@ii-\dimexpr\ulinedown\relax
-  \setbox\z@\hbox{\vrule width\z@ height\dimen@ii depth\dimen@}%
-  \directlua{luatexko.ulinebox[\the\luakoulineboxcnt]=node.copy_list(tex.box[0].head)}%
-  \leavevmode\special{luako:ulinebegin=\the\luakoulineboxcnt}%
-  #1\special{luako:ulineend}}
-% strike-out
-\protected\def\sout#1{{\def\ulinedown{-0.5ex-\ulinewidth/2}\uline{#1}}}
 % ulem with arbitray box
 \protected\def\markoverwith#1#2{%
+  \begingroup
   \ifnum\luakoulineboxcnt > 65535 \luakoulineboxcnt\z@ \fi
   \global\advance\luakoulineboxcnt\@ne
+  \edef\luako@temp@{\the\luakoulineboxcnt}%
   \setbox\z@\hbox{#1}%
-  \directlua{luatexko.ulinebox[\the\luakoulineboxcnt]=node.copy_list(tex.box[0])}%
-  \leavevmode\special{luako:ulinebegin=\the\luakoulineboxcnt}%
-  #2\special{luako:ulineend}}
+  \directlua{luatexko.ulinebox[\luako@temp@]=node.copy_list(tex.box[0])}%
+  \leavevmode
+  \directlua{luatexko.uline_boundary(\luako@temp@,true)}%
+  #2%
+  \directlua{luatexko.uline_boundary(\luako@temp@,false)}%
+  \endgroup}
+\protected\def\uline{%
+  \dimen@\dimexpr\ulinedown+\ulinewidth\relax
+  \dimen@ii-\dimexpr\ulinedown\relax
+  \markoverwith{\vrule width.1em height\dimen@ii depth\dimen@}}
+\protected\def\sout#1{{\def\ulinedown{-0.5ex-\ulinewidth/2}\uline{#1}}}
 \protected\def\uuline{\dimen@ii-\dimexpr\ulinedown\relax
   \dimen@\dimexpr\ulinedown+\ulinewidth\relax
-  \markoverwith{\vtop{\hrule width.2em height\dimen@ii depth\dimen@
+  \markoverwith{\vtop{\hrule width.1em height\dimen@ii depth\dimen@
   \kern.1em\hrule height\dimen@ii depth\dimen@}}}
 \protected\def\uwave {\ifx\ltxko@sixly\undefined \font\ltxko@sixly=lasy6 \fi
   \markoverwith{\lower4\p@\hbox{\ltxko@sixly\char58}}}

@@ -13,8 +13,8 @@
 
 luatexbase.provides_module {
   name        = 'luatexko',
-  date        = '2016/04/25',
-  version     = '1.13',
+  date        = '2016/05/08',
+  version     = '1.14',
   description = 'Korean linebreaking and font-switching',
   author      = 'Dohyun Kim, Soojin Nam',
   license     = 'LPPL v1.3+',
@@ -83,7 +83,7 @@ local kernnode        = node.id("kern")
 local penaltynode     = node.id("penalty")
 local rulenode        = node.id("rule")
 local whatsitnode     = node.id("whatsit")
-local whatsitspecial  = node.subtype("special")
+local user_whatsit    = node.subtype("user_defined")
 
 local nodedirect        = node.direct
 local d_todirect        = nodedirect.todirect
@@ -121,6 +121,7 @@ local d_end_of_math     = nodedirect.end_of_math
 local d_nodetail        = nodedirect.tail
 local d_nodedimensions  = nodedirect.dimensions
 local d_nodefree        = nodedirect.free
+local d_nodewrite       = nodedirect.write
 
 local emsize = 655360
 
@@ -1808,65 +1809,83 @@ end
 ---------------------
 -- underline emphasis
 ---------------------
-local function draw_underline(head,curr,width,ubox,ulstart)
+
+local uline_start_id = luatexbase.new_whatsit("luako_uline_start")
+local uline_stop_id  = luatexbase.new_whatsit("luako_uline_stop")
+local function uline_boundary (num, start)
+  local n = d_nodenew(whatsitnode, user_whatsit) -- todo: use node list
+  d_setfield(n, "user_id", start and uline_start_id or uline_stop_id)
+  d_setfield(n, "type", 100)
+  d_setfield(n, "value", num)
+  d_nodewrite(n)
+end
+luatexko.uline_boundary = uline_boundary
+
+local function draw_underline(head,curr,width,ubox,start)
   if width and width > 0 then
     local glue = d_get_gluenode(width)
     d_setsubtype(glue, 101) -- cleaders
     d_setleader(glue, d_copy_node(ubox))
-    head = d_insert_before(head, ulstart, glue)
-    head = d_insert_before(head, ulstart, d_get_kernnode(-width))
-  end
-  for _,nd in ipairs({ulstart,curr}) do
-    if d_getid(nd) == whatsitnode and d_getsubtype(nd) == whatsitspecial then
-      local nddata = d_getfield(nd,"data")
-      if nddata and nddata:find("luako:uline") then
-        head = d_remove_node(head,nd)
-        d_nodefree(nd)
-      end
-    end
+    head = d_insert_before(head, start, glue)
+    head = d_insert_before(head, start, d_get_kernnode(-width))
   end
   return head
 end
 
-local function after_linebreak_underline(head,glueorder,glueset,gluesign,ulinenum)
-  local ulstart = ulinenum and head
-  if ulstart and d_getid(ulstart) == gluenode then
-    ulstart = d_getnext(ulstart)
-  end
+local ulstart = {}
+
+local function after_linebreak_underline(head,glueorder,glueset,gluesign,level)
+  level = level or 0
+  local ulhead = d_getid(head) == gluenode and d_getnext(head) or head
+
   for curr in d_traverse(head) do
     local currid = d_getid(curr)
-    if currid == hlistnode and not ulstart then -- skip nested hbox
-      local newhead
-      newhead,ulinenum = after_linebreak_underline(
+    if currid == hlistnode then
+      local newhead = after_linebreak_underline(
         d_getlist(curr),
         d_getfield(curr,"glue_order"),
         d_getfield(curr,"glue_set"),
         d_getfield(curr,"glue_sign"),
-        ulinenum)
+        level+1)
       d_setlist(curr, newhead)
-    elseif currid == whatsitnode and d_getsubtype(curr) == whatsitspecial then
-      local currdata = d_getfield(curr,"data")
-      if currdata then
-        if currdata:find("luako:ulinebegin=") then
-          ulinenum = tonumber(currdata:match("(%d+)"))
-          ulinenum = ulinebox[ulinenum] and ulinenum
-          ulstart  = ulinenum and curr
-        elseif ulstart and ulinenum and currdata:find('luako:ulineend') then
-          local ubox = d_todirect(ulinebox[ulinenum])
-          local wd = d_nodedimensions(glueset,gluesign,glueorder,ulstart,curr)
-          head = draw_underline(head,curr,wd,ubox,ulstart)
-          d_nodefree(ubox)
-          ulinebox[ulinenum], ulinenum, ulstart  = nil, nil, nil
+    elseif currid == whatsitnode and d_getsubtype(curr) == user_whatsit then
+      local user_id = d_getfield(curr,"user_id")
+      local whatsit_type = d_getfield(curr, "type")
+      if whatsit_type == 100 then
+        if user_id == uline_start_id then
+          local num = d_getfield(curr,"value")
+          if num and ulinebox[num] then
+            ulstart[num] = { start = curr, level = level }
+          end
+        elseif user_id == uline_stop_id then
+          local num = d_getfield(curr,"value")
+          if num and ulinebox[num] and ulstart[num] then
+            local ubox = d_todirect(ulinebox[num])
+            local start = ulstart[num].start or ulhead
+            local wd = d_nodedimensions(glueset,gluesign,glueorder,start,curr)
+            head = draw_underline(head,curr,wd,ubox,start)
+            d_nodefree(ubox)
+            ulinebox[num], ulstart[num] = nil, nil
+          end
         end
       end
     end
-    if ulstart and ulinenum and curr == d_nodetail(head) then
-      local ubox = d_todirect(ulinebox[ulinenum])
-      local wd = d_nodedimensions(glueset,gluesign,glueorder,ulstart,curr)
-      head = draw_underline(head,curr,wd,ubox,ulstart)
+  end
+
+  local curr   = d_nodetail(head)
+  for i, v in pairs(ulstart) do
+    if level == v.level then
+      local ubox = d_todirect(ulinebox[i])
+      if ubox then
+        local start = v.start or ulhead
+        local wd = d_nodedimensions(glueset,gluesign,glueorder,start,curr)
+        head = draw_underline(head,curr,wd,ubox,start)
+        ulstart[i].start = nil
+      end
     end
   end
-  return head, ulinenum
+
+  return head
 end
 
 -----------------------------------
