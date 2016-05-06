@@ -276,12 +276,12 @@
   \ifnum\luakoulineboxcnt > 65535 \luakoulineboxcnt\z@ \fi
   \global\advance\luakoulineboxcnt\@ne
   \edef\luako@temp@{\the\luakoulineboxcnt}%
-  \setbox\z@\hbox{#1}%
-  \directlua{luatexko.ulinebox[\luako@temp@]=node.copy_list(tex.box[0])}%
   \leavevmode
-  \directlua{luatexko.uline_boundary(\luako@temp@,true)}%
+  \setbox\z@\hbox{#1}%
+  \directlua{ luatexko.ulinebox[\luako@temp@]=node.copy_list(tex.box[0])
+              luatexko.uline_boundary(\luako@temp@,true) }%
   #2%
-  \directlua{luatexko.uline_boundary(\luako@temp@,false)}%
+  \directlua{ luatexko.uline_boundary(\luako@temp@,false) }%
   \endgroup}
 \protected\def\uline{%
   \dimen@\dimexpr\ulinedown+\ulinewidth\relax
