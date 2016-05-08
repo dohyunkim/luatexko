@@ -270,6 +270,21 @@
 \def\ulinewidth{0.04em }
 \def\ulinedown {0.25em }
 \newcount\luakoulineboxcnt\luakoulineboxcnt\z@
+\protected\def\uline#1{%
+  \begingroup
+  \ifnum\luakoulineboxcnt > 65535 \luakoulineboxcnt\z@ \fi
+  \global\advance\luakoulineboxcnt\@ne
+  \edef\luako@temp@{\the\luakoulineboxcnt}%
+  \leavevmode
+  \dimen@\dimexpr\ulinedown+\ulinewidth\relax
+  \dimen@ii-\dimexpr\ulinedown\relax
+  \setbox\z@\hbox{\vrule width0pt height\dimen@ii depth\dimen@}%
+  \directlua{ luatexko.ulinebox[\luako@temp@]=node.copy_list(tex.box[0].head)
+              luatexko.uline_boundary(\luako@temp@,true) }%
+  #1%
+  \directlua{ luatexko.uline_boundary(\luako@temp@,false) }%
+  \endgroup}
+\protected\def\sout#1{{\def\ulinedown{-0.5ex-\ulinewidth/2}\uline{#1}}}
 % ulem with arbitray box
 \protected\def\markoverwith#1#2{%
   \begingroup
@@ -283,11 +298,6 @@
   #2%
   \directlua{ luatexko.uline_boundary(\luako@temp@,false) }%
   \endgroup}
-\protected\def\uline{%
-  \dimen@\dimexpr\ulinedown+\ulinewidth\relax
-  \dimen@ii-\dimexpr\ulinedown\relax
-  \markoverwith{\vrule width.1em height\dimen@ii depth\dimen@}}
-\protected\def\sout#1{{\def\ulinedown{-0.5ex-\ulinewidth/2}\uline{#1}}}
 \protected\def\uuline{\dimen@ii-\dimexpr\ulinedown\relax
   \dimen@\dimexpr\ulinedown+\ulinewidth\relax
   \markoverwith{\vtop{\hrule width.1em height\dimen@ii depth\dimen@
