@@ -1487,6 +1487,7 @@ local function nanumtype1font(curr)
   local currchar, currfont = d_getchar(curr), d_getfont(curr)
   if currchar > 0xFFFF then return end
   local fnt_t  = get_font_table(currfont)
+  if not fnt_t then return end
   local family = (d_has_attribute(curr,finemathattr) or 0) > 1 and not is_hanja(currchar) and "nanummj" or "nanumgt"
   local series = fnt_t.shared and
                  fnt_t.shared.rawdata and
