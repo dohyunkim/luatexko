@@ -1,3 +1,9 @@
+2016-05-14      Dohyun Kim <nomos at ktug org>
+
+	Version 1.15
+
+	* luatexko-core.sty: allow nested underline emphasis
+
 2016-05-08      Dohyun Kim <nomos at ktug org>
 
 	Version 1.14
