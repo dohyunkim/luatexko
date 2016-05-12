@@ -286,10 +286,9 @@
   \dimen@\dimexpr\ulinedown+\ulinewidth\relax
   \dimen@ii-\dimexpr\ulinedown\relax
   \setbox\z@\hbox{\vrule width\z@ height\dimen@ii depth\dimen@}%
-  \directlua{ luatexko.ulinebox[\luako@temp@]=node.copy_list(tex.box[0].head)
-              luatexko.uline_boundary(\luako@temp@,true) }%
+  \directlua{ luatexko.uline_boundary(\luako@temp@,tex.box[0].head,true) }%
   #1%
-  \directlua{ luatexko.uline_boundary(\luako@temp@,false) }%
+  \directlua{ luatexko.uline_boundary(\luako@temp@,nil,false) }%
   \endgroup}
 \protected\def\sout#1{{\def\ulinedown{-0.5ex-\ulinewidth/2}\uline{#1}}}
 \protected\def\uuline#1{\uline{\uline{#1}}}
@@ -301,10 +300,9 @@
   \edef\luako@temp@{\the\luakoulineboxcnt}%
   \leavevmode
   \setbox\z@\hbox{#1}%
-  \directlua{ luatexko.ulinebox[\luako@temp@]=node.copy_list(tex.box[0])
-              luatexko.uline_boundary(\luako@temp@,true) }%
+  \directlua{ luatexko.uline_boundary(\luako@temp@,tex.box[0],true) }%
   #2%
-  \directlua{ luatexko.uline_boundary(\luako@temp@,false) }%
+  \directlua{ luatexko.uline_boundary(\luako@temp@,nil,false) }%
   \endgroup}
 \protected\def\uwave{\ifx\ltxko@sixly\undefined \font\ltxko@sixly=lasy6 \fi
   \markoverwith{\lower4\p@\hbox{\ltxko@sixly\char58}}}

@@ -23,10 +23,9 @@ luatexbase.provides_module {
 luatexko        = luatexko or {}
 local luatexko  = luatexko
 
-local dotemphnode,rubynode,ulinebox = {},{},{}
+local dotemphnode,rubynode  = {},{}
 luatexko.dotemphnode        = dotemphnode
 luatexko.rubynode           = rubynode
-luatexko.ulinebox           = ulinebox
 
 local stringbyte    = string.byte
 local stringchar    = string.char
@@ -52,6 +51,7 @@ local fallbackfntattr   = luatexbase.attributes.fallbackfntattr
 local hangulpunctsattr  = luatexbase.attributes.hangulpunctsattr
 local luakoglueattr     = luatexbase.new_attribute("luakoglueattr")
 local luakounicodeattr  = luatexbase.new_attribute("luakounicodeattr")
+local luakoulineattr    = luatexbase.new_attribute("luakoulineattr")
 
 local function warn (...)
   return luatexbase.module_warning("luatexko", stringformat(...))
@@ -84,6 +84,7 @@ local penaltynode     = node.id("penalty")
 local rulenode        = node.id("rule")
 local whatsitnode     = node.id("whatsit")
 local user_whatsit    = node.subtype("user_defined")
+local n_copy_list     = node.copy_list
 
 local nodedirect        = node.direct
 local d_todirect        = nodedirect.todirect
@@ -1813,11 +1814,12 @@ end
 
 local uline_start_id = luatexbase.new_whatsit("luako_uline_start")
 local uline_stop_id  = luatexbase.new_whatsit("luako_uline_stop")
-local function uline_boundary (num, start)
-  local n = d_nodenew(whatsitnode, user_whatsit) -- todo: use node list
+local function uline_boundary (num, list, start)
+  local n = d_nodenew(whatsitnode, user_whatsit)
   d_setfield(n, "user_id", start and uline_start_id or uline_stop_id)
-  d_setfield(n, "type", 100)
-  d_setfield(n, "value", num)
+  d_setfield(n, "type", 110) -- node list
+  d_setfield(n, "value", n_copy_list(list))
+  d_set_attribute(n, luakoulineattr, num)
   d_nodewrite(n)
 end
 luatexko.uline_boundary = uline_boundary
@@ -1853,17 +1855,17 @@ local function after_linebreak_underline(head,glueorder,glueset,gluesign,ulstart
         level+1)
       d_setlist(curr, newhead)
     elseif currid == whatsitnode and d_getsubtype(curr) == user_whatsit then
-      local user_id      = d_getfield(curr, "user_id")
+      local attr = d_has_attribute(curr, luakoulineattr)
       local whatsit_type = d_getfield(curr, "type")
-      local num          = d_getfield(curr, "value")
-      if num and ulinebox[num] and whatsit_type == 100 then
+      if attr and whatsit_type == 110 then
+        local user_id = d_getfield(curr, "user_id")
         if user_id == uline_start_id then
-          ulstart[num] = { start = curr, level = level }
-        elseif user_id == uline_stop_id and ulstart[num] then
-          local ubox = d_todirect(ulinebox[num])
-          head = draw_underline(head,curr,glueset,gluesign,glueorder,ubox,ulstart[num].start)
-          d_nodefree(ubox)
-          ulinebox[num], ulstart[num] = nil, nil
+          local list = d_getfield(curr, "value")
+          ulstart[attr] = { start = curr, list = list, level = level }
+        elseif user_id == uline_stop_id and ulstart[attr] then
+          local ubox, start = ulstart[attr].list, ulstart[attr].start
+          head = draw_underline(head,curr,glueset,gluesign,glueorder,ubox,start)
+          ulstart[attr] = nil
         end
       end
     end
@@ -1871,9 +1873,9 @@ local function after_linebreak_underline(head,glueorder,glueset,gluesign,ulstart
 
   local curr = d_nodetail(head)
   for i, v in pairs(ulstart) do
-    local ubox = d_todirect(ulinebox[i])
+    local ubox, start = v.list, v.start
     if ubox and level == v.level then
-      head = draw_underline(head,curr,glueset,gluesign,glueorder,ubox,v.start)
+      head = draw_underline(head,curr,glueset,gluesign,glueorder,ubox,start)
       ulstart[i].start = nil
     end
   end
