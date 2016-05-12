@@ -276,33 +276,31 @@
     \edef\ulinedown{\the\dimexpr\ulinedown+0.1em\relax}%
   \fi
   \chardef\luako@uline@level\@ne}
-\protected\def\uline#1{%
+\def\luako@uline@code@common{%
   \begingroup
   \ifnum\luakoulineboxcnt > 65535 \luakoulineboxcnt\z@ \fi
   \global\advance\luakoulineboxcnt\@ne
-  \edef\luako@temp@{\the\luakoulineboxcnt}%
+  \count@\luakoulineboxcnt
+  \leavevmode}
+\protected\def\uline#1{%
+  \luako@uline@code@common
   \luako@nested@ulinedown
-  \leavevmode
   \dimen@\dimexpr\ulinedown+\ulinewidth\relax
   \dimen@ii-\dimexpr\ulinedown\relax
   \setbox\z@\hbox{\vrule width\z@ height\dimen@ii depth\dimen@}%
-  \directlua{ luatexko.uline_boundary(\luako@temp@,tex.box[0].head,true) }%
+  \directlua{ luatexko.uline_boundary(\the\count@,tex.box[0].head) }%
   #1%
-  \directlua{ luatexko.uline_boundary(\luako@temp@,nil,false) }%
+  \directlua{ luatexko.uline_boundary(\the\count@) }%
   \endgroup}
 \protected\def\sout#1{{\def\ulinedown{-0.5ex-\ulinewidth/2}\uline{#1}}}
 \protected\def\uuline#1{\uline{\uline{#1}}}
 % ulem with arbitray box
 \protected\def\markoverwith#1#2{%
-  \begingroup
-  \ifnum\luakoulineboxcnt > 65535 \luakoulineboxcnt\z@ \fi
-  \global\advance\luakoulineboxcnt\@ne
-  \edef\luako@temp@{\the\luakoulineboxcnt}%
-  \leavevmode
+  \luako@uline@code@common
   \setbox\z@\hbox{#1}%
-  \directlua{ luatexko.uline_boundary(\luako@temp@,tex.box[0],true) }%
+  \directlua{ luatexko.uline_boundary(\the\count@,tex.box[0]) }%
   #2%
-  \directlua{ luatexko.uline_boundary(\luako@temp@,nil,false) }%
+  \directlua{ luatexko.uline_boundary(\the\count@) }%
   \endgroup}
 \protected\def\uwave{\ifx\ltxko@sixly\undefined \font\ltxko@sixly=lasy6 \fi
   \markoverwith{\lower4\p@\hbox{\ltxko@sixly\char58}}}

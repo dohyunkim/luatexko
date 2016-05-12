@@ -1814,9 +1814,9 @@ end
 
 local uline_start_id = luatexbase.new_whatsit("luako_uline_start")
 local uline_stop_id  = luatexbase.new_whatsit("luako_uline_stop")
-local function uline_boundary (num, list, start)
+local function uline_boundary (num, list)
   local n = d_nodenew(whatsitnode, user_whatsit)
-  d_setfield(n, "user_id", start and uline_start_id or uline_stop_id)
+  d_setfield(n, "user_id", list and uline_start_id or uline_stop_id)
   d_setfield(n, "type", 110) -- node list
   d_setfield(n, "value", n_copy_list(list))
   d_set_attribute(n, luakoulineattr, num)
