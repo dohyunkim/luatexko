@@ -1774,9 +1774,24 @@ local function uline_boundary (num, list)
 end
 luatexko.uline_boundary = uline_boundary
 
+local skippable = {
+  [gluenode   ] = true,
+  [penaltynode] = true,
+  [kernnode   ] = true,
+  [whatsitnode] = true,
+}
 local function draw_underline(head,curr,glueset,gluesign,glueorder,ubox,start)
   if not start then
-    start = d_getid(head) == gluenode and d_getsubtype(head) < 100 and d_getnext(head) or head
+    start = head
+    while start do
+      if not skippable[d_getid(start)] then break end
+      start = d_getnext(start)
+    end
+  end
+  while curr do
+    local p = d_getprev(curr)
+    if not skippable[d_getid(p)] then break end
+    curr = p
   end
   local width = d_nodedimensions(glueset,gluesign,glueorder,start,curr)
   if width and width > 0 then
@@ -2109,11 +2124,6 @@ otffeatures.register {
 -- italic correction for fake-slant font
 ------------------------------------
 local function fakeslant_itlc (tfmdata)
-  --[[ should be removed
-  if tfmdata.format == "unknown" then
-    tfmdata.name = tfmdata.name:gsub("^\"(.-)\"$","%1")
-  end
-  --]]
   local slfactor = tfmdata.parameters.slantfactor
   if slfactor and slfactor > 0 then else return end
   tfmdata.parameters.slant = slfactor * 65536
