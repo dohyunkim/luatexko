@@ -1781,12 +1781,10 @@ local skippable = {
   [whatsitnode] = true,
 }
 local function draw_underline(head,curr,glueset,gluesign,glueorder,ubox,start)
-  if not start then
-    start = head
-    while start do
-      if not skippable[d_getid(start)] then break end
-      start = d_getnext(start)
-    end
+  start = start or head
+  while start do
+    if not skippable[d_getid(start)] then break end
+    start = d_getnext(start)
   end
   while curr do
     local p = d_getprev(curr)
