@@ -293,7 +293,7 @@
   \directlua{ luatexko.uline_boundary(\the\count@) }%
   \endgroup}
 \let\uline\ulineluatexko
-\protected\def\sout#1{{\def\ulinedown{-0.5ex-\ulinewidth/2}\uline{#1}}}
+\protected\def\sout#1{{\def\ulinedown{-0.5ex-\ulinewidth/2}\ulineluatexko{#1}}}
 \protected\def\uuline#1{\ulineluatexko{\ulineluatexko{#1}}}
 % ulem with arbitray box
 \protected\def\markoverwith#1#2{%

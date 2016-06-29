@@ -543,10 +543,14 @@ local function get_cjk_class (ch, cjtype)
   end
 end
 
+local type1fonts = {}
+
 local function get_font_table (fid)
   if fid then
     if fontdata[fid] then
       return fontdata[fid]
+    elseif type1fonts[fid] then
+      return type1fonts[fid]
     else
       return font.fonts[fid]
     end
@@ -1429,11 +1433,37 @@ local function hangulspaceskip (engfont, hfontid, glue)
   esh = esh and tex_round(esh)
   if esp == gsp and est == gst and esh == gsh then else return end
   local hf = get_font_table(hfontid)
-  if hf and hf.encodingbytes == 2 then else return end
+--  if hf and hf.encodingbytes == 2 then else return end
   return gsp, hf
 end
 
-local type1fonts = {} -- due to too verbose log
+local function virtual_unifont (prefix,size)
+  local data = {
+    name       = prefix.."vf",
+    type       = "virtual",
+    fonts      = {},
+    characters = {},
+  }
+  local fonts = data.fonts
+  local chars = data.characters
+  for index = 0, 255 do
+    local name = string.format(prefix.."%02x", index)
+    if kpse_find_file(name,"tfm") then
+      local tfm = font.read_tfm(name, size)
+      data.parameters = data.parameters or tfm.parameters
+      fonts[#fonts+1] = { name=name, size=size }
+      local fid = #fonts
+      local zro = 256 * index
+      for i,v in pairs(tfm.characters) do
+        local slot = zro + i
+        chars[slot] = v
+        chars[slot].commands = { { "slot", fid, i } }
+      end
+    end
+  end
+  return data
+end
+
 local function nanumtype1font(curr)
   local currchar, currfont = d_getchar(curr), d_getfont(curr)
   if currchar > 0xFFFF then return end
@@ -1450,38 +1480,21 @@ local function nanumtype1font(curr)
     series = fnt_t.name:find("^cmb") and "b" or "m"
   end
   local shape  = fnt_t.parameters.slant > 0 and "o" or ""
-  local subfnt = stringformat("%s%s%s%02x",family,series,shape,currchar/256)
+  local prefix = stringformat("%s%s%s",family,series,shape)
   local fsize  = fnt_t.size or 655360
-  local fspec  = stringformat("%s@%d",subfnt,fsize)
-  local newfnt = type1fonts[fspec]
-  if newfnt == false then return end
-  local newchr = currchar % 256
-  local function ital_corr (curr,chr_t)
-    if shape ~= "o" then return end
-    local nxt = d_getnext(curr)
-    if nxt and d_getid(nxt) == kernnode and d_getsubtype(nxt) == kern_type_itlc and d_getfield(nxt,"kern") == 0 then
-      d_setfield(nxt,"kern", chr_t.italic or 0)
+  local fspec  = stringformat("%s@%d",prefix,fsize)
+  local fontid = type1fonts[fspec]
+  if fontid == nil then -- bypass false
+    local fontdata = virtual_unifont(prefix, fsize)
+    fontid = fontdata and fontdefine(fontdata)
+    if fontid then
+      type1fonts[fspec]  = fontid
+      type1fonts[fontid] = fontdata
+    else
+      type1fonts[fspec] = false
     end
   end
-  if newfnt then
-    local fntchr = get_font_char(newfnt,newchr)
-    if fntchr then
-      d_setfield(curr,"font", newfnt)
-      d_setchar(curr, newchr)
-      ital_corr(curr,fntchr)
-    end
-  elseif kpse_find_file(subfnt,"tfm") then
-    local ft, id = fonts.constructors.readanddefine(subfnt,fsize)
-    local fntchr = ft and ft.characters[newchr]
-    if id and fntchr then
-      type1fonts[fspec] = id
-      d_setfield(curr,"font", id)
-      d_setchar(curr, newchr)
-      ital_corr(curr,fntchr)
-    end
-  else
-    type1fonts[fspec] = false
-  end
+  return fontid
 end
 
 local function font_substitute(head)
@@ -1522,6 +1535,10 @@ local function font_substitute(head)
             for i = 1,3 do
               local fid = ftable[i]
               myfontchar = fid and get_font_char(fid, currchar)
+              if not myfontchar and not hangulpunctuations[currchar] then
+                fid = nanumtype1font(curr)
+                myfontchar = fid and get_font_char(fid, currchar)
+              end
               if myfontchar then
                 d_setfield(curr,"font",fid)
                 --- charraise option charraise
@@ -1567,9 +1584,6 @@ local function font_substitute(head)
                 end
                 break
               end
-            end
-            if not myfontchar then
-              nanumtype1font(curr)
             end
           end
         end
