@@ -1532,57 +1532,58 @@ local function font_substitute(head)
               uni = uni and get_cjk_class(uni)
               if uni and uni < 7 then ftable = {hanja, hangul, fallback} end
             end
+            local fid
             for i = 1,3 do
-              local fid = ftable[i]
+              fid = ftable[i]
               myfontchar = fid and get_font_char(fid, currchar)
-              if not myfontchar and not hangulpunctuations[currchar] then
-                fid = nanumtype1font(curr)
-                myfontchar = fid and get_font_char(fid, currchar)
+              if myfontchar then break end
+            end
+            if not myfontchar and not hangulpunctuations[currchar] then
+              fid = nanumtype1font(curr)
+              myfontchar = fid and get_font_char(fid, currchar)
+            end
+            if myfontchar then
+              d_setfield(curr,"font",fid)
+              --- charraise option charraise
+              local charraise = get_font_feature(fid, "charraise")
+              if charraise then
+                charraise = tex_sp(charraise)
+                local curryoffset = d_getfield(curr,"yoffset") or 0
+                d_setfield(curr,"yoffset", charraise + curryoffset)
               end
-              if myfontchar then
-                d_setfield(curr,"font",fid)
-                --- charraise option charraise
-                local charraise = get_font_feature(fid, "charraise")
-                if charraise then
-                  charraise = tex_sp(charraise)
-                  local curryoffset = d_getfield(curr,"yoffset") or 0
-                  d_setfield(curr,"yoffset", charraise + curryoffset)
-                end
-                ---
-                local nxt = d_getnext(curr)
-                local nxtid = nxt and d_getid(nxt)
-                if nxtid == glyphnode and is_unicode_vs(d_getchar(nxt)) then
-                  nxt = d_getnext(nxt)
-                  nxtid = nxt and d_getid(nxt)
-                end
-                if eng and nxtid then
-                  local nxtsubtype = d_getsubtype(nxt)
-                  -- adjust next glue by hangul font space
-                  if nxtid == gluenode and nxtsubtype == glue_type_space and get_font_char(fid,32) then
-                    local oldwd, ft = hangulspaceskip(eng, fid, nxt)
-                    if oldwd and ft then
-                      local newwd = ft.space_char_width
-                      if not newwd then
-                        local newsp = d_tonode(d_copy_node(curr))
-                        newsp.char = 32
-                        newsp = nodes.simple_font_handler(newsp)
-                        newwd = newsp and newsp.width
-                        ft.space_char_width = newwd
-                        node.free(newsp)
-                      end
-                      if newwd and oldwd ~= newwd then
-                        d_setglue(nxt, newwd, newwd/2, newwd/3)
-                      end
+              ---
+              local nxt = d_getnext(curr)
+              local nxtid = nxt and d_getid(nxt)
+              if nxtid == glyphnode and is_unicode_vs(d_getchar(nxt)) then
+                nxt = d_getnext(nxt)
+                nxtid = nxt and d_getid(nxt)
+              end
+              if eng and nxtid then
+                local nxtsubtype = d_getsubtype(nxt)
+                -- adjust next glue by hangul font space
+                if nxtid == gluenode and nxtsubtype == glue_type_space and get_font_char(fid,32) then
+                  local oldwd, ft = hangulspaceskip(eng, fid, nxt)
+                  if oldwd and ft then
+                    local newwd = ft.space_char_width
+                    if not newwd then
+                      local newsp = d_tonode(d_copy_node(curr))
+                      newsp.char = 32
+                      newsp = nodes.simple_font_handler(newsp)
+                      newwd = newsp and newsp.width
+                      ft.space_char_width = newwd
+                      node.free(newsp)
                     end
-                  -- adjust next italic correction kern
-                  elseif nxtid == kernnode and nxtsubtype == kern_type_itlc and d_getfield(nxt,"kern") == 0 then
-                    local ksl = get_font_table(fid).parameters.slant
-                    if ksl and ksl > 0 then
-                      d_setfield(nxt,"kern", myfontchar.italic or 0)
+                    if newwd and oldwd ~= newwd then
+                      d_setglue(nxt, newwd, newwd/2, newwd/3)
                     end
                   end
+                -- adjust next italic correction kern
+                elseif nxtid == kernnode and nxtsubtype == kern_type_itlc and d_getfield(nxt,"kern") == 0 then
+                  local ksl = get_font_table(fid).parameters.slant
+                  if ksl and ksl > 0 then
+                    d_setfield(nxt,"kern", myfontchar.italic or 0)
+                  end
                 end
-                break
               end
             end
           end
@@ -2062,7 +2063,7 @@ local function cjk_vertical_font (vf)
   --- vertical gpos
   local res = vf.resources or {}
   if res.verticalgposhack then
-    return vf -- avoid multiple running
+    return -- avoid multiple running
   end
   local fea = shared.features or {}
   fea.kern = nil  -- only for horizontal typesetting
@@ -2097,7 +2098,6 @@ local function cjk_vertical_font (vf)
     end
   end
   res.verticalgposhack = true
-  return vf
 end
 
 local otffeatures = fonts.constructors.newfeatures("otf")
