@@ -23,7 +23,7 @@
   \expandafter\endinput
 \fi
 
-\ProvidesPackage{luatexko}[2016/05/14 v1.15 Typesetting Korean with LuaLaTeX]
+\ProvidesPackage{luatexko}[2017/02/06 v1.16 Typesetting Korean with LuaLaTeX]
 
 \ifdefined\adjustspacing\else % luatex < 0.87
   \let\adjustspacing\pdfadjustspacing
@@ -87,19 +87,9 @@
     ]
     {Ligatures=TeX}
   %% macros for Korean fonts
-  \cs_new:Nn \__luako_pass_args:nnn
+  \DeclareDocumentCommand \setmainhangulfont { O{} m O{} }
     {
-      \IfNoValueTF {#2}
-        { \__luako_post_args:w {#1} {#3} }
-        { #1 {#2} {#3} }
-    }
-  \NewDocumentCommand \__luako_post_args:w { m m O{} }
-    { #1 {#3} {#2} }
-  \DeclareDocumentCommand \setmainhangulfont { o m }
-    { \__luako_pass_args:nnn \__luako_setmainhangulfont:nn {#1} {#2} }
-  \cs_new:Nn \__luako_setmainhangulfont:nn
-    {
-      \newfontfamily \serifhangul@font [#1] {#2}
+      \newfontfamily \serifhangul@font [#1,#3] {#2}
       \str_if_eq_x:nnT \familydefault \rmdefault
         {
           \cs_set_eq:NN \hangul@font \serifhangul@font
@@ -107,11 +97,9 @@
         }
       \ignorespaces
     }
-  \DeclareDocumentCommand \setmainhanjafont { o m }
-    { \__luako_pass_args:nnn \__luako_setmainhanjafont:nn {#1} {#2} }
-  \cs_new:Nn \__luako_setmainhanjafont:nn
+  \DeclareDocumentCommand \setmainhanjafont { O{} m O{} }
     {
-      \newfontfamily \serifhanja@font [#1] {#2}
+      \newfontfamily \serifhanja@font [#1,#3] {#2}
       \str_if_eq_x:nnT \familydefault \rmdefault
         {
           \cs_set_eq:NN \hanja@font \serifhanja@font
@@ -119,11 +107,9 @@
         }
       \ignorespaces
     }
-  \DeclareDocumentCommand \setmainfallbackfont { o m }
-    { \__luako_pass_args:nnn \__luako_setmainfallbackfont:nn {#1} {#2} }
-  \cs_new:Nn \__luako_setmainfallbackfont:nn
+  \DeclareDocumentCommand \setmainfallbackfont { O{} m O{} }
     {
-      \newfontfamily \seriffallback@font [#1] {#2}
+      \newfontfamily \seriffallback@font [#1,#3] {#2}
       \str_if_eq_x:nnT \familydefault \rmdefault
         {
           \cs_set_eq:NN \fallback@font \seriffallback@font
@@ -131,11 +117,9 @@
         }
       \ignorespaces
     }
-  \DeclareDocumentCommand \setsanshangulfont { o m }
-    { \__luako_pass_args:nnn \__luako_setsanshangulfont:nn {#1} {#2} }
-  \cs_new:Nn \__luako_setsanshangulfont:nn
+  \DeclareDocumentCommand \setsanshangulfont { O{} m O{} }
     {
-      \newfontfamily \sanshangul@font [#1] {#2}
+      \newfontfamily \sanshangul@font [#1,#3] {#2}
       \str_if_eq_x:nnT \familydefault \sfdefault
         {
           \cs_set_eq:NN \hangul@font \sanshangul@font
@@ -143,11 +127,9 @@
         }
       \ignorespaces
     }
-  \DeclareDocumentCommand \setsanshanjafont { o m }
-    { \__luako_pass_args:nnn \__luako_setsanshanjafont:nn {#1} {#2} }
-  \cs_new:Nn \__luako_setsanshanjafont:nn
+  \DeclareDocumentCommand \setsanshanjafont { O{} m O{} }
     {
-      \newfontfamily \sanshanja@font [#1] {#2}
+      \newfontfamily \sanshanja@font [#1,#3] {#2}
       \str_if_eq_x:nnT \familydefault \sfdefault
         {
           \cs_set_eq:NN \hanja@font \sanshanja@font
@@ -155,11 +137,9 @@
         }
       \ignorespaces
     }
-  \DeclareDocumentCommand \setsansfallbackfont { o m }
-    { \__luako_pass_args:nnn \__luako_setsansfallbackfont:nn {#1} {#2} }
-  \cs_new:Nn \__luako_setsansfallbackfont:nn
+  \DeclareDocumentCommand \setsansfallbackfont { O{} m O{} }
     {
-      \newfontfamily \sansfallback@font [#1] {#2}
+      \newfontfamily \sansfallback@font [#1,#3] {#2}
       \str_if_eq_x:nnT \familydefault \sfdefault
         {
           \cs_set_eq:NN \fallback@font \sansfallback@font
@@ -167,11 +147,9 @@
         }
       \ignorespaces
     }
-  \DeclareDocumentCommand \setmonohangulfont { o m }
-    { \__luako_pass_args:nnn \__luako_setmonohangulfont:nn {#1} {#2} }
-  \cs_new:Nn \__luako_setmonohangulfont:nn
+  \DeclareDocumentCommand \setmonohangulfont { O{} m O{} }
     {
-      \newfontfamily \monohangul@font [#1] {#2}
+      \newfontfamily \monohangul@font [#1,#3] {#2}
       \str_if_eq_x:nnT \familydefault \ttdefault
         {
           \cs_set_eq:NN \hangul@font \monohangul@font
@@ -179,11 +157,9 @@
         }
       \ignorespaces
     }
-  \DeclareDocumentCommand \setmonohanjafont { o m }
-    { \__luako_pass_args:nnn \__luako_setmonohanjafont:nn {#1} {#2} }
-  \cs_new:Nn \__luako_setmonohanjafont:nn
+  \DeclareDocumentCommand \setmonohanjafont { O{} m O{} }
     {
-      \newfontfamily \monohanja@font [#1] {#2}
+      \newfontfamily \monohanja@font [#1,#3] {#2}
       \str_if_eq_x:nnT \familydefault \ttdefault
         {
           \cs_set_eq:NN \hanja@font \monohanja@font
@@ -191,11 +167,9 @@
         }
       \ignorespaces
     }
-  \DeclareDocumentCommand \setmonofallbackfont { o m }
-    { \__luako_pass_args:nnn \__luako_setmonofallbackfont:nn {#1} {#2} }
-  \cs_new:Nn \__luako_setmonofallbackfont:nn
+  \DeclareDocumentCommand \setmonofallbackfont { O{} m O{} }
     {
-      \newfontfamily \monofallback@font [#1] {#2}
+      \newfontfamily \monofallback@font [#1,#3] {#2}
       \str_if_eq_x:nnT \familydefault \ttdefault
         {
           \cs_set_eq:NN \fallback@font \monofallback@font
@@ -203,95 +177,77 @@
         }
       \ignorespaces
     }
-  \DeclareDocumentCommand \newhangulfontfamily { m o m }
-    { \__luako_pass_args:nnn { \__luako_newhangulfontfamily:Nnn #1 } {#2} {#3} }
-  \cs_new:Nn \__luako_newhangulfontfamily:Nnn
+  \DeclareDocumentCommand \newhangulfontfamily { m O{} m O{} }
     {
-      \exp_args:Nc \newfontfamily { luatexkofont@ \token_to_str:N #1 } [#2] {#3}
+      \exp_args:Nc \newfontfamily { luatexkofont@ \token_to_str:N #1 } [#2,#4] {#3}
       \DeclareRobustCommand #1
         {
           \cs_set_eq:Nc \hangul@font { luatexkofont@ \token_to_str:N #1 }
           \luatexko@hangul@selectfont
         }
     }
-  \DeclareDocumentCommand \newhanjafontfamily { m o m }
-    { \__luako_pass_args:nnn { \__luako_newhanjafontfamily:Nnn #1 } {#2} {#3} }
-  \cs_new:Nn \__luako_newhanjafontfamily:Nnn
+  \DeclareDocumentCommand \newhanjafontfamily { m O{} m O{} }
     {
-      \exp_args:Nc \newfontfamily { luatexkofont@ \token_to_str:N #1 } [#2] {#3}
+      \exp_args:Nc \newfontfamily { luatexkofont@ \token_to_str:N #1 } [#2,#4] {#3}
       \DeclareRobustCommand #1
         {
           \cs_set_eq:Nc \hanja@font { luatexkofont@ \token_to_str:N #1 }
           \luatexko@hanja@selectfont
         }
     }
-  \DeclareDocumentCommand \newfallbackfontfamily { m o m }
-    { \__luako_pass_args:nnn { \__luako_newfallbackfontfamily:Nnn #1 } {#2} {#3} }
-  \cs_new:Nn \__luako_newfallbackfontfamily:Nnn
+  \DeclareDocumentCommand \newfallbackfontfamily { m O{} m O{} }
     {
-      \exp_args:Nc \newfontfamily { luatexkofont@ \token_to_str:N #1 } [#2] {#3}
+      \exp_args:Nc \newfontfamily { luatexkofont@ \token_to_str:N #1 } [#2,#4] {#3}
       \DeclareRobustCommand #1
         {
           \cs_set_eq:Nc \fallback@font { luatexkofont@ \token_to_str:N #1 }
           \luatexko@fallback@selectfont
         }
     }
-  \DeclareDocumentCommand \newhangulfontface { m o m }
-    { \__luako_pass_args:nnn { \__luako_newhangulfontface:Nnn #1 } {#2} {#3} }
-  \cs_new:Nn \__luako_newhangulfontface:Nnn
+  \DeclareDocumentCommand \newhangulfontface { m O{} m O{} }
     {
-      \exp_args:Nc \newfontface { luatexkofont@ \token_to_str:N #1 } [#2] {#3}
+      \exp_args:Nc \newfontface { luatexkofont@ \token_to_str:N #1 } [#2,#4] {#3}
       \DeclareRobustCommand #1
         {
           \cs_set_eq:Nc \hangul@font { luatexkofont@ \token_to_str:N #1 }
           \luatexko@hangul@selectfont
         }
     }
-  \DeclareDocumentCommand \newhanjafontface { m o m }
-    { \__luako_pass_args:nnn { \__luako_newhanjafontface:Nnn #1 } {#2} {#3} }
-  \cs_new:Nn \__luako_newhanjafontface:Nnn
+  \DeclareDocumentCommand \newhanjafontface { m O{} m O{} }
     {
-      \exp_args:Nc \newfontface { luatexkofont@ \token_to_str:N #1 } [#2] {#3}
+      \exp_args:Nc \newfontface { luatexkofont@ \token_to_str:N #1 } [#2,#4] {#3}
       \DeclareRobustCommand #1
         {
           \cs_set_eq:Nc \hanja@font { luatexkofont@ \token_to_str:N #1 }
           \luatexko@hanja@selectfont
         }
     }
-  \DeclareDocumentCommand \newfallbackfontface { m o m }
-    { \__luako_pass_args:nnn { \__luako_newfallbackfontface:Nnn #1 } {#2} {#3} }
-  \cs_new:Nn \__luako_newfallbackfontface:Nnn
+  \DeclareDocumentCommand \newfallbackfontface { m O{} m O{} }
     {
-      \exp_args:Nc \newfontface { luatexkofont@ \token_to_str:N #1 } [#2] {#3}
+      \exp_args:Nc \newfontface { luatexkofont@ \token_to_str:N #1 } [#2,#4] {#3}
       \DeclareRobustCommand #1
         {
           \cs_set_eq:Nc \fallback@font { luatexkofont@ \token_to_str:N #1 }
           \luatexko@fallback@selectfont
         }
     }
-  \DeclareDocumentCommand \hangulfontspec { o m }
-    { \__luako_pass_args:nnn \__luako_hangulfontspec:nn {#1} {#2} }
-  \cs_new:Nn \__luako_hangulfontspec:nn
+  \DeclareDocumentCommand \hangulfontspec { O{} m O{} }
     {
-      \newfontfamily \hangul@font [#1] {#2}
+      \newfontfamily \hangul@font [#1,#3] {#2}
       \luatexko@hangul@selectfont
       \ignorespaces
     }
   \cs_set_eq:NN \adhochangulfont \hangulfontspec
-  \DeclareDocumentCommand \hanjafontspec { o m }
-    { \__luako_pass_args:nnn \__luako_hanjafontspec:nn {#1} {#2} }
-  \cs_new:Nn \__luako_hanjafontspec:nn
+  \DeclareDocumentCommand \hanjafontspec { O{} m O{} }
     {
-      \newfontfamily \hanja@font [#1] {#2}
+      \newfontfamily \hanja@font [#1,#3] {#2}
       \luatexko@hanja@selectfont
       \ignorespaces
     }
   \cs_set_eq:NN \adhochanjafont \hanjafontspec
-  \DeclareDocumentCommand \fallbackfontspec { o m }
-    { \__luako_pass_args:nnn \__luako_fallbackfontspec:nn {#1} {#2} }
-  \cs_new:Nn \__luako_fallbackfontspec:nn
+  \DeclareDocumentCommand \fallbackfontspec { O{} m O{} }
     {
-      \newfontfamily \fallback@font [#1] {#2}
+      \newfontfamily \fallback@font [#1,#3] {#2}
       \luatexko@fallback@selectfont
       \ignorespaces
     }
@@ -348,12 +304,63 @@
     }
   \cs_set_eq:NN \addfallbackfontfeatures \addfallbackfontfeature
   % hangul math font command
-  \DeclareDocumentCommand \setmathhangulfont { o m }
-    { \__luako_pass_args:nnn \__luako_setmathhangulfont:nn {#1} {#2} }
-  \cs_new:Nn \__luako_setmathhangulfont:nn
+  \DeclareDocumentCommand \setmathhangulfont { O{} m O{} }
     {
-      \fontspec_set_family:Nnn \luatexko@math@hangul@family {#1} {#2}
+      \fontspec_set_family:Nnn \luatexko@math@hangul@family {#1,#3} {#2}
     }
+% fontspec 2017
+\RenewDocumentCommand \setmainfont { O{} m O{} }
+ {
+  \fontspec_set_family:Nnn \g__fontspec_rmfamily_family {#1,#3} {#2}
+  \tl_set_eq:NN \rmdefault \g__fontspec_rmfamily_family
+  \use:x { \exp_not:n { \DeclareRobustCommand \rmfamily }
+   {
+    \exp_not:N \luatexko@serif@fonts
+    \exp_not:N \fontencoding { \l__fontspec_nfss_enc_tl }
+    \exp_not:N \fontfamily { \g__fontspec_rmfamily_family }
+    \exp_not:N \selectfont
+   }
+  }
+  \str_if_eq_x:nnT {\familydefault} {\rmdefault}
+    { \tl_set_eq:NN \encodingdefault \l__fontspec_nfss_enc_tl }
+  \normalfont
+  \ignorespaces
+ }
+\RenewDocumentCommand \setsansfont { O{} m O{} }
+ {
+  \fontspec_set_family:Nnn \g__fontspec_sffamily_family {#1,#3} {#2}
+  \tl_set_eq:NN \sfdefault \g__fontspec_sffamily_family
+  \use:x { \exp_not:n { \DeclareRobustCommand \sffamily }
+   {
+    \exp_not:N \luatexko@sans@fonts
+    \exp_not:N \fontencoding { \l__fontspec_nfss_enc_tl }
+    \exp_not:N \fontfamily { \g__fontspec_sffamily_family }
+    \exp_not:N \selectfont
+   }
+  }
+  \str_if_eq_x:nnT {\familydefault} {\sfdefault}
+    { \tl_set_eq:NN \encodingdefault \l__fontspec_nfss_enc_tl }
+  \normalfont
+  \ignorespaces
+ }
+\RenewDocumentCommand \setmonofont { O{} m O{} }
+ {
+  \fontspec_set_family:Nnn \g__fontspec_ttfamily_family {#1,#3} {#2}
+  \tl_set_eq:NN \ttdefault \g__fontspec_ttfamily_family
+  \use:x { \exp_not:n { \DeclareRobustCommand \ttfamily }
+   {
+    \exp_not:N \luatexko@mono@fonts
+    \exp_not:N \fontencoding { \l__fontspec_nfss_enc_tl }
+    \exp_not:N \fontfamily { \g__fontspec_ttfamily_family }
+    \exp_not:N \selectfont
+   }
+  }
+  \str_if_eq_x:nnT {\familydefault} {\ttdefault}
+    { \tl_set_eq:NN \encodingdefault \l__fontspec_nfss_enc_tl }
+  \normalfont
+  \ignorespaces
+ }
+\cs_set_eq:NN \setromanfont \setmainfont
   \ExplSyntaxOff
 \fi
 

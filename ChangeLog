@@ -1,3 +1,9 @@
+2017-02-06      Dohyun Kim <nomos at ktug org>
+
+	Version 1.16
+
+	* luatexko.sty: patch {rm|sf|tt}family of fontspec 2017
+
 2016-05-14      Dohyun Kim <nomos at ktug org>
 
 	Version 1.15
