@@ -1,6 +1,6 @@
 -- luatexko-normalize.lua
 --
--- Copyright (c) 2013-2016  Dohyun Kim  <nomos at ktug org>
+-- Copyright (c) 2013-2017  Dohyun Kim  <nomos at ktug org>
 --                          Soojin Nam  <jsunam at gmail com>
 --
 -- This work may be distributed and/or modified under the
@@ -13,8 +13,8 @@
 
 luatexbase.provides_module({
   name        = "luatexko-normalize",
-  version     = "1.13",
-  date        = "2016/04/25",
+  version     = "1.16",
+  date        = "2017/02/06",
   author      = "Dohyun Kim, Soojin Nam",
   description = "Hangul normalization",
   license     = "LPPL v1.3+",
