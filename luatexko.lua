@@ -217,6 +217,7 @@ local inhibitxspcode = setmetatable({
   [0x00B0] = 1, -- °
   [0x2032] = 1, -- ′
   [0x2033] = 1, -- ″
+  [0x25CC] = 2, -- dotted circle
   [0x3012] = 2, -- 〒
   [0x301C] = 0, -- 〜
   [0xFE14] = 1, -- ︔
@@ -1612,17 +1613,16 @@ local function reorderTM (head)
     if d_getid(curr) == glyphnode then
       local uni = d_get_unicode_char(curr)
       if uni == 0x302E or uni == 0x302F then
-        local done = false
         local unichar = get_font_char(d_getfont(curr), uni)
-        if unichar and unichar.width > 0 then
+        if unichar then
+          local done = false
           local p = d_getprev(curr)
           while p and d_getid(p) == glyphnode do
-            local pc = get_cjk_class(d_get_unicode_char(p))
-            if pc == 9 then
-            elseif pc == 7 or pc == 8 then
-              head = d_remove_node(head,curr)
-              d_setprev(curr, nil) -- prev might survive!
-              head, curr = d_insert_before(head,p,curr)
+            local pu = d_get_unicode_char(p)
+            if pu == 0x302E or pu == 0x302F then
+              break
+            elseif is_jungjongsong(pu) then
+            elseif is_hangul(pu) or is_chosong(pu) or pu == 0x25CC then
               done = true
               break
             else
@@ -1630,11 +1630,23 @@ local function reorderTM (head)
             end
             p = d_getprev(p)
           end
-        end
-        if not done and get_font_char(d_getfont(curr), 0x25CC) then
-          local u_25CC = d_copy_node(curr)
-          d_setchar(u_25CC, 0x25CC)
-          d_insert_after(head, curr, u_25CC)
+          if done then
+            if unichar.width > 0 then
+              head = d_remove_node(head,curr)
+              d_setprev(curr, nil) -- prev might survive!
+              head, curr = d_insert_before(head,p,curr)
+            else
+              curr = p
+            end
+          elseif get_font_char(d_getfont(curr), 0x25CC) then
+            local u_25CC = d_copy_node(curr)
+            d_setchar(u_25CC, 0x25CC)
+            if unichar.width > 0 then
+              d_insert_after(head, curr, u_25CC)
+            else
+              head, curr = d_insert_before(head, curr, u_25CC)
+            end
+          end
         end
       end
     end
