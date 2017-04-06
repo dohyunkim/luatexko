@@ -1608,49 +1608,42 @@ end
 -- reorder hangul tone marks
 -----------------------------
 local function reorderTM (head)
-  local curr = d_nodetail(head)
+  local curr, todo = head, nil
   while curr do
-    if d_getid(curr) == glyphnode then
+    local nid = d_getid(curr)
+    if nid == glyphnode then
       local uni = d_get_unicode_char(curr)
       if uni == 0x302E or uni == 0x302F then
-        local unichar = get_font_char(d_getfont(curr), uni)
-        if unichar then
-          local done = false
-          local p = d_getprev(curr)
-          while p and d_getid(p) == glyphnode do
-            local pu = d_get_unicode_char(p)
-            if pu == 0x302E or pu == 0x302F then
-              break
-            elseif is_jungjongsong(pu) then
-            elseif is_hangul(pu) or is_chosong(pu) or pu == 0x25CC then
-              done = true
-              break
-            else
-              break
-            end
-            p = d_getprev(p)
+        local tmgl = get_font_char(d_getfont(curr), uni)
+        if todo then
+          if tmgl.width > 0 then
+            local tm = curr
+            head, curr = d_remove_node(head, curr)
+            d_setprev(tm, nil) -- prev might survive!
+            head = d_insert_before(head, todo, tm)
+            curr = d_getprev(curr)
           end
-          if done then
-            if unichar.width > 0 then
-              head = d_remove_node(head,curr)
-              d_setprev(curr, nil) -- prev might survive!
-              head, curr = d_insert_before(head,p,curr)
-            else
-              curr = p
-            end
-          elseif get_font_char(d_getfont(curr), 0x25CC) then
-            local u_25CC = d_copy_node(curr)
-            d_setchar(u_25CC, 0x25CC)
-            if unichar.width > 0 then
-              d_insert_after(head, curr, u_25CC)
-            else
-              head, curr = d_insert_before(head, curr, u_25CC)
-            end
+        elseif get_font_char(d_getfont(curr), 0x25CC) then
+          local u25CC = d_copy_node(curr)
+          d_setchar(u25CC, 0x25CC)
+          if tmgl.width > 0 then
+            head, curr = d_insert_after(head, curr, u25CC)
+          else
+            head = d_insert_before(head, curr, u25CC)
           end
         end
+        todo = nil
+      elseif is_hangul(uni) or is_chosong(uni) or uni == 0x25CC then
+        todo = curr
+      elseif is_jungjongsong(uni) then
+      else
+        todo = nil
       end
+    elseif nid == kernnode then
+    else
+      todo = nil
     end
-    curr = d_getprev(curr)
+    curr = d_getnext(curr)
   end
   return head
 end
