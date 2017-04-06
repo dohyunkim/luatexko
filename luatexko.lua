@@ -13,8 +13,8 @@
 
 luatexbase.provides_module {
   name        = 'luatexko',
-  date        = '2017/02/06',
-  version     = '1.16',
+  date        = '2017/04/06',
+  version     = '1.17',
   description = 'Korean linebreaking and font-switching',
   author      = 'Dohyun Kim, Soojin Nam',
   license     = 'LPPL v1.3+',
@@ -1615,8 +1615,9 @@ local function reorderTM (head)
       local uni = d_get_unicode_char(curr)
       if uni == 0x302E or uni == 0x302F then
         local tmgl = get_font_char(d_getfont(curr), uni)
+        local tmwidth = tmgl and tmgl.width or 0
         if todo then
-          if tmgl.width > 0 then
+          if tmwidth > 0 then
             local tm = curr
             head, curr = d_remove_node(head, curr)
             d_setprev(tm, nil) -- prev might survive!
@@ -1626,7 +1627,7 @@ local function reorderTM (head)
         elseif get_font_char(d_getfont(curr), 0x25CC) then
           local u25CC = d_copy_node(curr)
           d_setchar(u25CC, 0x25CC)
-          if tmgl.width > 0 then
+          if tmwidth > 0 then
             head, curr = d_insert_after(head, curr, u25CC)
           else
             head = d_insert_before(head, curr, u25CC)
