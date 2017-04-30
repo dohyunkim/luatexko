@@ -1,3 +1,10 @@
+2017-05-01      Dohyun Kim <nomos at ktug org>
+
+	Version 1.17
+
+	* luatexko.lua: rewrite reorderTM (reorder-tone-marks) function
+
+
 2017-02-06      Dohyun Kim <nomos at ktug org>
 
 	Version 1.16
