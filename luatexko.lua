@@ -487,8 +487,7 @@ local function is_cjk_k (c)
   or (c >= 0xFE10  and c <= 0xFE1F )
   or (c >= 0xFE30  and c <= 0xFE4F )
   or (c >= 0xFF00  and c <= 0xFFEF )
-  or (c >= 0x20000 and c <= 0x2A6DF)
-  or (c >= 0x2F800 and c <= 0x2FA1F)
+  or (c >= 0x20000 and c <= 0x2FA1F)
   or  c == 0x00B0  or  c == 0x2015
   --  or  c == 0x2018  or  c == 0x2019
   --  or  c == 0x201C  or  c == 0x201D
@@ -499,8 +498,7 @@ end
 local function is_hanja (c)
   return (c >= 0x3400 and c <= 0x9FFF )
   or (c >= 0xF900 and c <= 0xFAFF )
-  or (c >= 0x20000 and c <= 0x2A6DF)
-  or (c >= 0x2F800 and c <= 0x2FA1F)
+  or (c >= 0x20000 and c <= 0x2FA1F)
 end
 
 local function is_hangul (c)
