@@ -23,7 +23,7 @@
   \expandafter\endinput
 \fi
 
-\ProvidesPackage{luatexko}[2017/02/06 v1.16 Typesetting Korean with LuaLaTeX]
+\ProvidesPackage{luatexko}[2017/09/29 v1.18 Typesetting Korean with LuaLaTeX]
 
 \ifdefined\adjustspacing\else % luatex < 0.87
   \let\adjustspacing\pdfadjustspacing
@@ -465,10 +465,10 @@
       \fi
     \endgroup
     \DeclareSymbolFont{mathhangul}%
-      \zf@enc\luatexko@math@hangul@family\mddefault\updefault
-    \ifcsname\zf@enc/\luatexko@math@hangul@family/\bfdefault/\updefault\endcsname
+      \f@encoding\luatexko@math@hangul@family\mddefault\updefault
+    \ifcsname\f@encoding/\luatexko@math@hangul@family/\bfdefault/\updefault\endcsname
       \SetSymbolFont{mathhangul}{bold}%
-        \zf@enc\luatexko@math@hangul@family\bfdefault\updefault
+        \f@encoding\luatexko@math@hangul@family\bfdefault\updefault
     \fi
     \setmathhangulblock{AC00}{D7A3}
   }

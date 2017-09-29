@@ -1,3 +1,9 @@
+2017-09-29      Dohyun Kim <nomos at ktug org>
+
+	Version 1.18
+
+	* luatexko.sty: zf@enc -> f@encoding
+
 2017-05-01      Dohyun Kim <nomos at ktug org>
 
 	Version 1.17
