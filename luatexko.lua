@@ -1,6 +1,6 @@
 -- luatexko.lua
 --
--- Copyright (c) 2013-2017  Dohyun Kim  <nomos at ktug org>
+-- Copyright (c) 2013-2018  Dohyun Kim  <nomos at ktug org>
 --                          Soojin Nam  <jsunam at gmail com>
 --
 -- This work may be distributed and/or modified under the
@@ -13,8 +13,8 @@
 
 luatexbase.provides_module {
   name        = 'luatexko',
-  date        = '2017/05/01',
-  version     = '1.17',
+  date        = '2018/02/01',
+  version     = '1.19',
   description = 'Korean linebreaking and font-switching',
   author      = 'Dohyun Kim, Soojin Nam',
   license     = 'LPPL v1.3+',

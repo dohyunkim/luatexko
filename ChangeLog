@@ -1,3 +1,9 @@
+2018-02-01      Dohyun Kim <nomos at ktug org>
+
+	Version 1.19
+
+	* luatexko.sty: use glueexpr
+
 2017-09-29      Dohyun Kim <nomos at ktug org>
 
 	Version 1.18
