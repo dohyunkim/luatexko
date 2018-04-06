@@ -13,7 +13,7 @@
 
 luatexbase.provides_module {
   name        = 'luatexko',
-  date        = '2018/02/01',
+  date        = '2018/04/06',
   version     = '1.19',
   description = 'Korean linebreaking and font-switching',
   author      = 'Dohyun Kim, Soojin Nam',
