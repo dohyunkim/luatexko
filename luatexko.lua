@@ -13,8 +13,8 @@
 
 luatexbase.provides_module {
   name        = 'luatexko',
-  date        = '2018/04/06',
-  version     = '1.19',
+  date        = '2018/04/19',
+  version     = '1.20',
   description = 'Korean linebreaking and font-switching',
   author      = 'Dohyun Kim, Soojin Nam',
   license     = 'LPPL v1.3+',
@@ -119,10 +119,11 @@ local d_remove_node     = nodedirect.remove
 local d_nodenew         = nodedirect.new
 local d_nodecount       = nodedirect.count
 local d_end_of_math     = nodedirect.end_of_math
-local d_nodetail        = nodedirect.tail
+local d_nodetail        = nodedirect.slide -- tail seems to be no good
 local d_nodedimensions  = nodedirect.dimensions
 local d_nodefree        = nodedirect.free
 local d_nodewrite       = nodedirect.write
+local d_node_zero_glue  = nodedirect.is_zero_glue
 
 local emsize = 655360
 
@@ -613,28 +614,28 @@ local function d_get_hlist_char_first (hlist)
       local c,f = d_get_hlist_char_first(curr)
       if c then return c,f end
     elseif currid == gluenode then
-      if d_getglue(curr) ~= 0 then return end
+      if not d_node_zero_glue(curr) then return end
     end
     curr = d_getnext(curr)
   end
 end
 
-local function d_get_hlist_char_last (hlist,prevchar,prevfont)
+local function d_get_hlist_char_last (hlist,c,f)
   local curr = d_nodetail(d_getlist(hlist))
   while curr do
     local currid = d_getid(curr)
     if currid == glyphnode then
-      local c,f = d_get_unicode_char(curr), d_getfont(curr)
-      if c and not is_unicode_vs(c) then return c,f end -- bypass VS
+      c, f = d_get_unicode_char(curr), d_getfont(curr)
+      if c and not is_unicode_vs(c) then break end -- bypass VS
     elseif currid == hlistnode or currid == vlistnode then
-      local c,f = d_get_hlist_char_last(curr)
-      if c then return c,f end
+      c, f = d_get_hlist_char_last(curr)
+      if c then break end
     elseif currid == gluenode then
-      if d_getglue(curr) ~= 0 then return end
+      if not d_node_zero_glue(curr) then break end
     end
     curr = d_getprev(curr)
   end
-  return prevchar, prevfont
+  return c, f
 end
 
 ----------------------------
