@@ -74,6 +74,7 @@ end
 local glue_type_space = 13
 local kern_type_itlc  = 3
 
+local discnode        = node.id("disc")
 local gluenode        = node.id("glue")
 local glyphnode       = node.id("glyph")
 local mathnode        = node.id("math")
@@ -87,6 +88,7 @@ local user_whatsit    = node.subtype("user_defined")
 local n_copy_list     = node.copy_list
 
 local nodedirect        = node.direct
+local d_getdisc         = nodedirect.getdisc
 local d_todirect        = nodedirect.todirect
 local d_tonode          = nodedirect.tonode
 local d_has_field       = nodedirect.has_field
@@ -1501,9 +1503,7 @@ local function font_substitute(head)
   local curr = head
   while curr do
     local currid = d_getid(curr)
-    if currid == mathnode and d_getsubtype(curr) == 0 then
-      curr = d_end_of_math(curr)
-    elseif currid == glyphnode then
+    if currid == glyphnode then
       local currchar, currfont = d_getchar(curr), d_getfont(curr)
       if currchar then
         if is_unicode_vs(currchar) then -- ideograph variation selectors
@@ -1589,6 +1589,15 @@ local function font_substitute(head)
           end
         end
       end
+    elseif currid == mathnode then
+      if d_getsubtype(curr) == 0 then
+        curr = d_end_of_math(curr)
+      end
+    elseif currid == discnode then
+      local pre, post, replace = d_getdisc(curr)
+      if pre     then font_substitute(pre)     end
+      if post    then font_substitute(post)    end
+      if replace then font_substitute(replace) end
     end
     curr = d_getnext(curr)
   end
