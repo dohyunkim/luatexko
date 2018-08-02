@@ -1,3 +1,10 @@
+2018-08-02      Dohyun Kim <nomos at ktug org>
+
+	Version 1.21
+
+	* luatexko.sty: adapt to the fontspec v2.6h
+	* luatexko.lua: font substitution for disc node as well
+
 2018-04-19      Dohyun Kim <nomos at ktug org>
 
 	Version 1.20
