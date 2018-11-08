@@ -13,8 +13,8 @@
 
 luatexbase.provides_module {
   name        = 'luatexko',
-  date        = '2018/04/19',
-  version     = '1.20',
+  date        = '2018/11/09',
+  version     = '1.22',
   description = 'Korean linebreaking and font-switching',
   author      = 'Dohyun Kim, Soojin Nam',
   license     = 'LPPL v1.3+',
@@ -1513,25 +1513,34 @@ local function font_substitute(head)
             d_setfield(curr, "font", prevfont) -- sync font
           end
         else
-          local myfontchar
+          local myfontchar, imhangul, imhanja
           local eng = currfont and get_font_table(currfont)
           if eng and eng.encodingbytes and eng.encodingbytes == 2 -- exclude type1
             and hangulpunctuations[currchar] and d_has_attribute(curr, hangulpunctsattr)
             and (d_has_attribute(curr, finemathattr) or 0) > 0 -- not ttfamily
             and not get_font_char(currfont, 0xAC00) then -- exclude hangul font
           else
-            myfontchar = get_font_char(currfont, currchar)
+            if luatexko.hangulfontforhangul or luatexko.hanjafontforhanja then
+              local uni = d_get_unicode_char(curr)
+              uni = uni and get_cjk_class(uni)
+              if uni then
+                if uni < 7 then
+                  imhanja = luatexko.hanjafontforhanja
+                elseif uni < 10 then
+                  imhangul = luatexko.hangulfontforhangul
+                end
+              end
+            end
+            if not imhangul and not imhanja then
+              myfontchar = get_font_char(currfont, currchar)
+            end
           end
           if not myfontchar then
             local hangul    = d_has_attribute(curr, hangulfntattr)
             local hanja     = d_has_attribute(curr, hanjafntattr)
             local fallback  = d_has_attribute(curr, fallbackfntattr)
             local ftable    = {hangul, hanja, fallback}
-            if luatexko.hanjafontforhanja then
-              local uni = d_get_unicode_char(curr)
-              uni = uni and get_cjk_class(uni)
-              if uni and uni < 7 then ftable = {hanja, hangul, fallback} end
-            end
+            if imhanja then ftable = {hanja, hangul, fallback} end
             local fid
             for i = 1,3 do
               fid = ftable[i]

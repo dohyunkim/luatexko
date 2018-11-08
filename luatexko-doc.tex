@@ -62,7 +62,7 @@
 \author{Dohyun Kim \normalsize |<nomos at ktug org>| \and
         Soojin Nam \normalsize |<jsunam at gmail com>| \and
   \normalsize <\url{http://github.com/dohyunkim/luatexko}>}
-\date{Version 1.21\quad 2018/08/02}
+\date{Version 1.22\quad 2018/11/09}
 \maketitle
 
 \begin{quote}\small
@@ -76,28 +76,30 @@
       불러야 한다.}
     \item[v1.3] ------
     \item \hyperref[sec:fontcmds]{fallbackfont 계열의 명령이 추가되었다.}
-    \item \hyperref[sec:fontswitch]{\cs{hangulpunctuations} 선언이 추가되고,
-      |[QuoteRaise]| 옵션이 없어졌다.}
+    \item \hyperref[sec:fontswitch]{\cs{hangulpunctuations} 선언 추가,
+      |[QuoteRaise]| 옵션 제거}
     \item \hyperref[sec:autojosa]{\cs{josaignoreparens=1}이 선언되면
       자동조사 결정시 괄호 부분을 무시한다.}
     \item[v1.5] ------
     \item \hyperref[sec:verttype]{세로쓰기를 지원하기 위한 실험적 코드가
       들어갔다.}
-    \item \hyperref[sec:actualtext]{\cs{actualtext} 명령이 추가되었다.}
+    \item \hyperref[sec:actualtext]{\cs{actualtext} 명령 추가}
     \item \hyperref[sec:fontswitch]{한글·한자 글꼴의 지정이 없으면
       나눔 Type1을 이용한다.}
-    \item \hyperref[sec:packageopt]{패키지 옵션 |[nofontspec]|이 추가되었다.}
+    \item \hyperref[sec:packageopt]{패키지 옵션 |[nofontspec]| 추가}
     \item[v1.6] ------
-    \item \hyperref[sec:fontoption]{글꼴 옵션 |[NoEmbedding]|이 추가되었다.}
+    \item \hyperref[sec:fontoption]{글꼴 옵션 |[NoEmbedding]| 추가}
     \item \hyperref[sec:fontcmds]{main/sans hangul/hanja/fallback 폰트의
       디폴트 옵션으로 |[Ligatures=TeX]|이 주어진다.}
     \item[v1.7] ------
     \item 패키지 옵션 |[unfonts]|를 더는 지원하지 않는다. 이 옵션을 사용한
       기존 문서는 기본 글꼴인 나눔 Type1으로 식자될 것이다.
     \item[v1.8] ------
-    \item \hyperref[sec:ruby]{\cs{xxruby} 명령이 추가되었다.}
+    \item \hyperref[sec:ruby]{\cs{xxruby} 명령 추가}
     \item[v1.9] ------
-    \item \hyperref[sec:verttype]{|horizontal| 환경이 추가되었다.}
+    \item \hyperref[sec:verttype]{|horizontal| 환경 추가}
+    \item[v1.22] ------
+    \item \hyperref[sec:fontswitch]{\cs{hangulbyhangulfont} 명령 추가}
   \end{itemize}
 \end{quote}
 
@@ -160,8 +162,10 @@ CP949 인코딩에 관해서는 제\ref{sec:uhcencoding}절 참조.
 폰트에서 글자를 찾아 찍는다. 세 가지 \hemph{모두 지정되지 않았다면 나눔 Type1
 폰트를} 이용한다. 기존 \kotex과는 글꼴 대체 방식이 다르므로 주의해야 한다.
 
-하지만 \cs{hanjabyhanjafont=1}을 선언하면 한자는 우선 한자글꼴로
-식자한다.  |0|을 선언하면 원래 방식으로 되돌아간다. 이 명령은 문단
+하지만 \cs{hangulbyhangulfont=1}을 선언하면 한글은 우선 한글폰트로
+식자한다. 또한
+\cs{hanjabyhanjafont=1}을 선언하면 한자는 우선 한자폰트로
+식자한다.  둘 다 |0|을 선언하면 원래 방식으로 되돌아간다. 이 명령들은 문단
 중간에서 사용하지 않도록 주의해야 한다. 문단 중에 사용되었다면
 그 문단의 처음부터 효력이 발생한다.
 

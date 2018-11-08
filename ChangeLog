@@ -1,3 +1,11 @@
+2018-11-09      Dohyun Kim <nomos at ktug org>
+
+	Version 1.22
+
+	* luatexko-core.sty, luatexko.lua: new command \hangulbyhangulfont.
+	This being declared, Hangul characters will be forcibly typeset
+	with Hangul font even when Latin font has Hangul glyphs.
+
 2018-08-02      Dohyun Kim <nomos at ktug org>
 
 	Version 1.21
