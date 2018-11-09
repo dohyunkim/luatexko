@@ -1513,7 +1513,7 @@ local function font_substitute(head)
             d_setfield(curr, "font", prevfont) -- sync font
           end
         else
-          local myfontchar, imhangul, imhanja
+          local myfontchar, forcehangul, forcehanja
           local eng = currfont and get_font_table(currfont)
           if eng and eng.encodingbytes and eng.encodingbytes == 2 -- exclude type1
             and hangulpunctuations[currchar] and d_has_attribute(curr, hangulpunctsattr)
@@ -1522,16 +1522,14 @@ local function font_substitute(head)
           else
             if luatexko.hangulfontforhangul or luatexko.hanjafontforhanja then
               local uni = d_get_unicode_char(curr)
-              uni = uni and get_cjk_class(uni)
-              if uni then
-                if uni < 7 then
-                  imhanja = luatexko.hanjafontforhanja
-                elseif uni < 10 then
-                  imhangul = luatexko.hangulfontforhangul
-                end
+              uni = uni and get_cjk_class(uni) or 10
+              if uni < 7 then
+                forcehanja = luatexko.hanjafontforhanja
+              elseif uni < 10 then
+                forcehangul = luatexko.hangulfontforhangul
               end
             end
-            if not imhangul and not imhanja then
+            if not forcehangul and not forcehanja then
               myfontchar = get_font_char(currfont, currchar)
             end
           end
@@ -1540,7 +1538,7 @@ local function font_substitute(head)
             local hanja     = d_has_attribute(curr, hanjafntattr)
             local fallback  = d_has_attribute(curr, fallbackfntattr)
             local ftable    = {hangul, hanja, fallback}
-            if imhanja then ftable = {hanja, hangul, fallback} end
+            if forcehanja then ftable = {hanja, hangul, fallback} end
             local fid
             for i = 1,3 do
               fid = ftable[i]
