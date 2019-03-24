@@ -1,3 +1,12 @@
+2019-03-24      Dohyun Kim <nomos at ktug org>
+
+	Version 1.23
+
+	* luatexko.lua: change post-linebreak callback from
+	'post_linebreak_filter' to 'hpack_filter' with groupcode restriction.
+	* luatex-core.sty: remove '\pdffontsize' and replace it with a
+	more suitable equivalent.
+
 2018-11-09      Dohyun Kim <nomos at ktug org>
 
 	Version 1.22

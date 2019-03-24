@@ -17,6 +17,7 @@
   AutoFakeSlant,
   Script=Hangul,
   Language=Korean,
+  LocalForms=On,
   UprightFont=* Light,
   BoldFont=* Bold,
   InterLatinCJK=.125em,
@@ -55,14 +56,16 @@
 \def\hemph#1{\textsf{\bfseries #1}}
 \def\cs#1{\texttt{\textbackslash\detokenize{#1}}}
 \def\ldots{$\dots$}
+\registerpunctuations{`-}
 \widowpenalty10000 \clubpenalty10000
+\automatichyphenmode=1 % for emdash in tl2019 pretest
 
 \begin{document}
 \title{\luatexko\ 간단 매뉴얼}
 \author{Dohyun Kim \normalsize |<nomos at ktug org>| \and
         Soojin Nam \normalsize |<jsunam at gmail com>| \and
   \normalsize <\url{http://github.com/dohyunkim/luatexko}>}
-\date{Version 1.22\quad 2018/11/09}
+\date{Version 1.23\quad 2019/03/24}
 \maketitle
 
 \begin{quote}\small
@@ -142,7 +145,7 @@ CP949 인코딩에 관해서는 제\ref{sec:uhcencoding}절 참조.
 \end{verbatim}
 \cs{adhochangulfont} \cs{adhochanjafont} \cs{addhocfallbackfont}는
 마지막 줄 명령들의 다른 이름들이다.
-첫 두 줄의 명령들, 즉 main/sans hangul/hanja/fallback 글꼴에는
+첫 두 줄, 즉 main/sans hangul/hanja/fallback 글꼴에는
 |Ligatures=TeX| 옵션이 자동으로 주어진다.
 \begin{itemize}\item[]
 플레인텍에서 한글 글꼴 설정은 영문 글꼴 지정하는 방식과 거의 같다.
@@ -445,15 +448,15 @@ ulem 패키지가 \luatexko와 궁합이 잘 맞지 않아{\small (줄바꿈에 
 명령을 따로 제공한다. 플레인텍에서도 쓸 수 있다.
 
 \bigskip
-\halign{\qquad#\hfil&\quad$\Rightarrow$\quad#\hfil\cr
-\cs{uline{밑줄을 그을 수 있다}}&\uline{밑줄을 그을 수 있다}\cr
-\cs{sout{취소선을 그을 수 있다}}&\sout{취소선을 그을 수 있다}\cr
-\cs{uuline{밑줄을 두 줄 긋는다}}&\uuline{밑줄을 두 줄 긋는다}\cr
-\cs{xout{빗금으로 취소할 수 있다}}&\xout{빗금으로 취소할 수 있다}\cr
-\cs{uwave{물결표로 밑줄을 삼는다}}&\uwave{물결표로 밑줄을 삼는다}\cr
-\cs{dashuline{대시로 밑줄을 삼는다}}&\dashuline{대시로 밑줄을 삼는다}\cr
-\cs{dotuline{밑줄을 점선으로 긋는다}}&\dotuline{밑줄을 점선으로 긋는다}\cr
-}
+\begin{tabular}{l@{\quad$\Rightarrow$\quad}l}
+\cs{uline{밑줄을 그을 수 있다}}&\uline{밑줄을 그을 수 있다}\\
+\cs{sout{취소선을 그을 수 있다}}&\sout{취소선을 그을 수 있다}\\
+\cs{uuline{밑줄을 두 줄 긋는다}}&\uuline{밑줄을 두 줄 긋는다}\\
+\cs{xout{빗금으로 취소할 수 있다}}&\xout{빗금으로 취소할 수 있다}\\
+\cs{uwave{물결표로 밑줄을 삼는다}}&\uwave{물결표로 밑줄을 삼는다}\\
+\cs{dashuline{대시로 밑줄을 삼는다}}&\dashuline{대시로 밑줄을 삼는다}\\
+\cs{dotuline{밑줄을 점선으로 긋는다}}&\dotuline{밑줄을 점선으로 긋는다}\\
+\end{tabular}
 \bigskip
 
 관련하여 다음 설정을 할 수 있다.

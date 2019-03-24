@@ -1,6 +1,6 @@
 -- luatexko.lua
 --
--- Copyright (c) 2013-2018  Dohyun Kim  <nomos at ktug org>
+-- Copyright (c) 2013-2019  Dohyun Kim  <nomos at ktug org>
 --                          Soojin Nam  <jsunam at gmail com>
 --
 -- This work may be distributed and/or modified under the
@@ -13,8 +13,8 @@
 
 luatexbase.provides_module {
   name        = 'luatexko',
-  date        = '2018/11/09',
-  version     = '1.22',
+  date        = '2019/03/24',
+  version     = '1.23',
   description = 'Korean linebreaking and font-switching',
   author      = 'Dohyun Kim, Soojin Nam',
   license     = 'LPPL v1.3+',
@@ -1866,6 +1866,7 @@ local function after_linebreak_underline(head,glueorder,glueset,gluesign,ulstart
           head = draw_underline(head,curr,glueset,gluesign,glueorder,ubox,start)
           ulstart[attr] = nil
         end
+        d_unset_attribute(curr,luakoulineattr)
       end
     end
   end
@@ -1893,13 +1894,16 @@ add_to_callback('vpack_filter', function(head)
   return d_tonode(head)
 end, 'luatexko.vpack_filter')
 
-add_to_callback("post_linebreak_filter", function(head)
-  head = d_todirect(head)
-  if texcount["luakodotemphcnt"]>0 then head = after_linebreak_dotemph(head) end
-  if texcount["luakorubyattrcnt"]>0 then after_linebreak_ruby(head) end
-  if texcount["luakoulineboxcnt"]>0 then head = after_linebreak_underline(head) end
-  return d_tonode(head)
-end, 'luatexko.post_linebreak_filter')
+add_to_callback('hpack_filter', function(head, groupcode)
+  if groupcode == "align_set" then
+    head = d_todirect(head)
+    if texcount["luakodotemphcnt"]>0 then head = after_linebreak_dotemph(head) end
+    if texcount["luakorubyattrcnt"]>0 then after_linebreak_ruby(head) end
+    if texcount["luakoulineboxcnt"]>0 then head = after_linebreak_underline(head) end
+    head = d_tonode(head)
+  end
+  return head
+end, 'luatexko.hpack_filter.postlinebreak')
 
 
 ------------------------------------
