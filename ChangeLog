@@ -1,3 +1,9 @@
+2019-04-06      Dohyun Kim <nomos at ktug org>
+
+	Version 1.24
+
+	* luatexko.lua: fix a bug regarding vertical typesetting
+
 2019-03-24      Dohyun Kim <nomos at ktug org>
 
 	Version 1.23

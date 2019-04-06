@@ -13,8 +13,8 @@
 
 luatexbase.provides_module {
   name        = 'luatexko',
-  date        = '2019/03/24',
-  version     = '1.23',
+  date        = '2019/04/06',
+  version     = '1.24',
   description = 'Korean linebreaking and font-switching',
   author      = 'Dohyun Kim, Soojin Nam',
   license     = 'LPPL v1.3+',
@@ -844,8 +844,8 @@ local function cjk_spacing_linebreak (head)
         d_set_attribute(curr, finemathattr, 1)
         cjk_insert_nodes(head,curr,0,nil,prevchar,prevfont,was_penalty)
         d_unset_attribute(curr,finemathattr)
+        prevchar,prevfont,prevfine = 0,nil,nil -- treat \verb as latin character.
       end
-      prevchar,prevfont,prevfine = 0,nil,nil -- treat \verb as latin character.
     end
     curr = d_getnext(curr)
   end
@@ -2048,18 +2048,16 @@ local function cjk_vertical_font (vf)
     return
   end
 
-  local id = fontdefine(table.copy(vf)) -- fastcopy takes time too long.
-
-  vf.type = 'virtual'
-  vf.fonts = {{ id = id }}
   local params    = vf.parameters   or {}
   local shared    = vf.shared       or {}
   local quad      = params.quad     or 655360
   local ascender  = params.ascender or quad*0.8
+  local descender = params.descender or quad*0.2
   local factor    = params.factor   or 655.36
   local xheight   = params.x_height or quad/2
   local goffset   = xheight/2 - quad/2
   local descriptions = shared.rawdata and shared.rawdata.descriptions
+  local spbp = 65536*(7227/7200)
   for i,v in pairs(vf.characters) do
     local dsc     = descriptions[i]
     local gl      = v.index
@@ -2070,19 +2068,18 @@ local function cjk_vertical_font (vf)
     local asc     = bb4 and tsb and (bb4+tsb)*factor or ascender
     local hw      = v.width or quad
     local offset  = hw/2 + goffset
-    local vh      = hw > 0 and hw/2 or nil
+    local vh      = hw > 0 and hw or 0
+    asc = asc/spbp; offset = offset/spbp
     v.commands = {
-      {'right',   asc}, -- bbox4 + top_side_bearing
-      {'down',    offset},
-      {'special', 'pdf: q 0 1 -1 0 0 0 cm'},
+      {'special', stringformat('pdf:q 0 1 -1 0 %.3f %.3f cm', asc, -offset)},
       {'push'},
       {'char',    i},
       {'pop'},
-      {'special', 'pdf: Q'},
+      {'special', 'pdf:Q'},
     }
     v.width   = vw
-    v.height  = vh
-    v.depth   = vh
+    v.height  = vh*(ascender/quad)
+    v.depth   = vh*(descender/quad)
     v.italic  = nil
   end
   --- vertical gpos
