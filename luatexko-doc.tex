@@ -12,7 +12,6 @@
 \documentclass[a4paper]{article}
 \usepackage[hmargin=3.8cm]{geometry}
 \usepackage[hangul]{luatexko}
-\usepackage{luamplib}
 \setmainhangulfont{Noto Serif CJK KR}[
   AutoFakeSlant,
   Script=Hangul,
@@ -39,6 +38,20 @@
   CharRaise=-.25ex,
   Color=191970, % MidnightBlue
 ]
+\setmathhangulfont{Noto Sans CJK KR}[
+  Script=Hangul,
+  Language=Korean,
+  SizeFeatures={
+    {Size=-6,  Font=* Medium},
+    {Size=6-8, Font=* Regular},
+    {Size=8-,  Font=* DemiLight},
+  },
+]
+\newhangulfontface\rubyfont{Noto Serif CJK KR Medium}[
+  Script=Hangul,
+  Language=Korean,
+  LocalForms=On,
+]
 \usepackage{hologo}
 \def\luatex{\hologo{LuaTeX}}
 \def\MP{\hologo{METAPOST}}
@@ -47,253 +60,283 @@
 
 \edef\verbatim{\unexpanded\expandafter{\verbatim\linespread{1.1}\selectfont}}
 \edef\itemize{\unexpanded\expandafter{\itemize\small}}
-\catcode`|=13 \def|{\verb|\let\\=\textbackslash} %|
+\catcode`|=13 \protected\def|{\verb|\let\\=\textbackslash} %|
+\protected\def\cs#1{\texttt{\language=1 \textbackslash\detokenize{#1}}}
 \def\logoko{\textsf{k}\kern-.0625em\textit{o}}
 \def\luatexko{\luatex-\logoko}
 \def\texlive{\TeX\ Live}
 \def\kotex{\logoko\kern-.1ex .\kern-.1667em \TeX}
-\edef\section#1{\unexpanded\expandafter{\section{\empty}\vskip-5pt\hrule\nobreak\vskip5pt}}
 \def\hemph#1{\textsf{\bfseries #1}}
-\def\cs#1{\texttt{\textbackslash\detokenize{#1}}}
 \def\ldots{$\dots$}
 \registerpunctuations{`-}
-\widowpenalty10000 \clubpenalty10000
-\automatichyphenmode=1 % for emdash in tl2019 pretest
+\automatichyphenmode=1 % for emdash in tl2019
 
 \begin{document}
 \title{\luatexko\ 간단 매뉴얼}
 \author{Dohyun Kim \normalsize |<nomos at ktug org>| \and
         Soojin Nam \normalsize |<jsunam at gmail com>| \and
   \normalsize <\url{http://github.com/dohyunkim/luatexko}>}
-\date{Version 1.24\quad 2019/04/06}
+\date{Version 2.0\quad 2019/05/01}
 \maketitle
 
 \begin{quote}\small
   For a summary introduction in English, please see |README| file.
 
 \begin{itemize}\linespread{1.1}\selectfont
-    \item[v1.0] ------
-    \item \hyperref[sec:loading]{플레인텍에서도 luatexko.sty을 불러야 한다.}
-    \item \hyperref[sec:fontoption]{글꼴 옵션값을 |<dimen>|으로 지시한다.}
-    \item \hyperref[sec:metapost]{\MP\ 코드를 넣으려면 luamplib 패키지를
-      불러야 한다.}
-    \item[v1.3] ------
-    \item \hyperref[sec:fontcmds]{fallbackfont 계열의 명령이 추가되었다.}
-    \item \hyperref[sec:fontswitch]{\cs{hangulpunctuations} 선언 추가,
-      |[QuoteRaise]| 옵션 제거}
-    \item \hyperref[sec:autojosa]{\cs{josaignoreparens=1}이 선언되면
-      자동조사 결정시 괄호 부분을 무시한다.}
-    \item[v1.5] ------
-    \item \hyperref[sec:verttype]{세로쓰기를 지원하기 위한 실험적 코드가
-      들어갔다.}
-    \item \hyperref[sec:actualtext]{\cs{actualtext} 명령 추가}
-    \item \hyperref[sec:fontswitch]{한글·한자 글꼴의 지정이 없으면
-      나눔 Type1을 이용한다.}
-    \item \hyperref[sec:packageopt]{패키지 옵션 |[nofontspec]| 추가}
-    \item[v1.6] ------
-    \item \hyperref[sec:fontoption]{글꼴 옵션 |[NoEmbedding]| 추가}
-    \item \hyperref[sec:fontcmds]{main/sans hangul/hanja/fallback 폰트의
-      디폴트 옵션으로 |[Ligatures=TeX]|이 주어진다.}
-    \item[v1.7] ------
-    \item 패키지 옵션 |[unfonts]|를 더는 지원하지 않는다. 이 옵션을 사용한
-      기존 문서는 기본 글꼴인 나눔 Type1으로 식자될 것이다.
-    \item[v1.8] ------
-    \item \hyperref[sec:ruby]{\cs{xxruby} 명령 추가}
-    \item[v1.9] ------
-    \item \hyperref[sec:verttype]{|horizontal| 환경 추가}
-    \item[v1.22] ------
-    \item \hyperref[sec:fontswitch]{\cs{hangulbyhangulfont} 명령 추가}
+    \item[v2.0] ------
+    \item \hyperref[sec:packageopt]{패키지 옵션 |nofontspec| 제거}
+    \item \hyperref[sec:fontoption]{글꼴옵션 |PunctRaise|, |NoEmbeding| 제거}
+    \item \hyperref[sec:mathhangul]{수식 한글 글꼴을 자동으로 잡아주지 않음}
+    \item \cs{actualtext} 명령 작동 않음. 대신, 옛한글 텍스트 추출 자동 지원%
+      \footnote{%
+        PDF 리더 어플리케이션이 ActualText 기능을 지원해야 가능하다.
+        어도비 리더는 확실히 가능할 것이다. }
+    \item \hyperref[sec:fontoption]{글꼴옵션 |CompressPunctuations|,
+      |RemoveClassicSpaces|, |InterCharacter| 추가}
+    \item \hyperref[sec:break]{\cs{registerbreakableafter},
+      \cs{registerbreakablebefore} 명령 추가}
   \end{itemize}
 \end{quote}
 
 \smallskip
 
-\section{}
-\hemph{\texlive\ 2016 이상}{\small (\luatex\ v0.95 이상)}을 사용해야 한다.
-아직 \luatex은 베타 상태로 개발 중에 있으므로 안정적인 동작을 보장하지 않는다.
+\section{부르기}\label{sec:loading}
+\hemph{\texlive\ 2019 이상}{ \small (\luatex\ v1.10 이상)}을 사용해야 한다.
 
-\section{}\label{sec:loading}
-\luatexko\ 로드하기: \cs{usepackage{luatexko}} 혹은 \cs{usepackage{kotex}}.
-플레인텍에서는 \cs{input luatexko.sty} 혹은 \cs{input kotex.sty}.
+\luatexko\ 부르기: \cs{usepackage{luatexko}} 혹은 \cs{usepackage{kotex}}.%
+\footnote{%
+  플레인텍에서는 \cs{input luatexko.sty} 혹은 \cs{input kotex.sty}. }
+
 입력은 원칙적으로 UTF-8으로 한다.
 BOM (Byte Order Mark)은 있어도 좋고 없어도 좋다.
 CP949 인코딩에 관해서는 제\ref{sec:uhcencoding}절 참조.
 
-\section{}\label{sec:packageopt}
+\section{패키지 옵션}\label{sec:packageopt}
 패키지 옵션으로 |[hangul]|과 |[hanja]|가 제공된다.  행간격 조정이 행해지며
-장 제목이나 표·그림 캡션 따위가 한글 또는 한자 방식으로 표시된다.  다만
+장 제목이나 표·그림 캡션 따위가 한글 또는 한자 방식으로 표시된다.
 장(chapter) 제목과 편(part) 제목에만 ``제(第)''가 붙어 ``제~1 편''
-``제~3 장''과 같은 방식으로 표시되며 절 제목 이하에는 붙지 않는다.
+``제~3 장''과 같은 방식으로 표시되며 절 제목 이하에는 붙지 않는다.%
+\footnote{%
+  |[nofontspec]| 옵션은 v2.0부터 더는 제공되지 않는다. }
 
-|[nofontspec]| 옵션을 주면 fontspec을 부르지 않는다.
-따라서 아래 \ref{sec:fontcmds}, \ref{sec:fontswitch}, \ref{sec:fontoption},
-\ref{sec:verttype}, \ref{sec:mathhangul}절의 유니코드 한국어 글꼴 설정
-명령들도 사용할 수 없다.
+\section{글꼴명령}\label{sec:fontcmds}
+\luatexko를 로드하면 fontspec 패키지를 자동으로 불러온다. 글꼴 설정에
+대해서는 fontspec 문서를 참조.
 
-\section{}\label{sec:fontcmds}
-\luatexko를 로드하면 fontspec 패키지를 자동으로 불러온다.  글꼴 설정에
-대해서는 fontspec 문서를 참조하라.
-
-한국어 글꼴을 위해 새로 마련한 명령은 다음과 같다.
+한국어 글꼴을 위해 새로 마련한 명령은 다음과 같다.%
+\footnote{%
+  \cs{adhochangulfont} \cs{adhochanjafont} \cs{addhocfallbackfont}는
+  마지막 줄 명령들의 다른 이름들이다. }\,%
+\footnote{%
+  플레인텍에서 한글 글꼴 설정은 다음과 같이 한다:\par
+  \leftskip=3em\noindent
+  \cs{hangulfont=UnDotum\relax}\\
+  \cs{hanjafont=UnDotum at 14pt}\\
+  \cs{fallbackfont=HanaMinB at 12pt} }
 \begin{verbatim}
   \setmainhangulfont     \setmainhanjafont    \setmainfallbackfont
   \setsanshangulfont     \setsanshanjafont    \setsansfallbackfont
   \setmonohangulfont     \setmonohanjafont    \setmonofallbackfont
   \newhangulfontfamily   \newhanjafontfamily  \newfallbackfontfamily
+  \newhangulfontface     \newhanjafontface    \newfallbackfontface
   \addhangulfontfeature  \addhanjafontfeature \addfallbackfontfeature
   \hangulfontspec        \hanjafontspec       \fallbackfontspec
 \end{verbatim}
-\cs{adhochangulfont} \cs{adhochanjafont} \cs{addhocfallbackfont}는
-마지막 줄 명령들의 다른 이름들이다.
 첫 두 줄, 즉 main/sans hangul/hanja/fallback 글꼴에는
 |Ligatures=TeX| 옵션이 자동으로 주어진다.
-\begin{itemize}\item[]
-플레인텍에서 한글 글꼴 설정은 영문 글꼴 지정하는 방식과 거의 같다.
-\begin{verbatim}
-  \hangulfont=UnDotum\relax
-  \hanjafont=UnDotum at 14pt
-  \fallbackfont=HanaMinB at 12pt
-  \hangulfont=UnDotum scaled 2000
-  \hanjafont="HCR Batang LVT"\relax
-  \hangulfont={HCR Batang LVT:script=hang;+dlig} at 12pt
-\end{verbatim}
-\end{itemize}
 
-\section{}\label{sec:fontswitch}
+\section{글꼴 대체}\label{sec:fontswitch}
 원칙적으로 \luatexko는 지시된 글자가 영문폰트에 없으면 한글폰트에서,
 한글폰트에도 없으면 한자폰트에서, 한자폰트에도 없으면 fallback
-폰트에서 글자를 찾아 찍는다. 세 가지 \hemph{모두 지정되지 않았다면 나눔 Type1
-폰트를} 이용한다. 기존 \kotex과는 글꼴 대체 방식이 다르므로 주의해야 한다.
+폰트에서 글자를 찾아 찍는다.
+한글폰트가 지정되지 않았고 기본폰트에 한글 글리프가 없다면
+\hemph{은바탕, 은돋움 트루타입}을 자동으로 불러온다.%
+\footnote{%
+  은글꼴 트루타입은 \texlive에 포함되어 있다. }
 
 하지만 \cs{hangulbyhangulfont=1}을 선언하면 한글은 우선 한글폰트로
-식자한다. 또한
-\cs{hanjabyhanjafont=1}을 선언하면 한자는 우선 한자폰트로
-식자한다.  둘 다 |0|을 선언하면 원래 방식으로 되돌아간다. 이 명령들은 문단
-중간에서 사용하지 않도록 주의해야 한다. 문단 중에 사용되었다면
-그 문단의 처음부터 효력이 발생한다.
+식자한다. 또한 \cs{hanjabyhanjafont=1}을 선언하면 한자는 우선 한자폰트로
+식자한다. 두 경우 모두 |0|을 선언하면 원래 방식으로 되돌아간다.
+문단 중간에서 사용해도 동작한다. 그러나 루아코드가 실행되므로
+텍의 그룹에 의해 영향받지 않는 전역적 효과를 가진다.
 
-\cs{hangulpunctuations=1}을 선언하면 영문 \hemph{문장부호들을 한글 폰트로}
-식자한다. |0|을 지시하면 원래 상태로 되돌린다.
-|[hangul]| 옵션을 주면 \cs{hangulpunctuations=1}이 자동으로
-선언된다.\footnote{나눔 Type1 상태면 그러하지 아니하다.}
-이 선언에 의해 영향 받는 문장부호들을 다음처럼 지정할 수 있다.
+나아가 일정한 영문 문장부호들은 한글 폰트로 식자된다.
+즉, \cs{hangulpunctuations=1}이 기본으로 작동하고,
+|0|을 지시해야 이 기능이 비로소 꺼진다.
+verbatim 코드를 식자할 때는 이 기능이 작동하지 않는다.%
+\footnote{%
+  좀 더 정확히 말하면 \cs{language=1} 상황에서는 작동하지 않는다.
+  부연하건대, \cs{language=1}인 상황에서 작동하지 않는 그밖의 기능들은
+  다음과 같다: 줄바꿈 허용, InterCharacter, InterHangul, InterLatinCJK,
+  CompressPunctuations, RemoveClassicSpaces,
+  한글^^b7한자 폰트 문자 다음에 오는 공백의 크기 조정 등. }\,%
+\footnote{%
+  또한 플레인텍에서는 영문글꼴을 트루타입/오픈타입으로 지정해야만 작동한다. }
+영향 받는 문장부호들의 기본값은 다음과 같다:
+\begin{verbatim}
+  [0x21]    !    [0x27]    '   [0x28]    (   [0x29]    )
+  [0x2C]    ,    [0x2E]    .   [0x3A]    :   [0x3B]    ;
+  [0x3F]    ?    [0x60]    `   [0xB7]    ·   [0x2014]  —
+  [0x2015]  ―   [0x2018]  ‘   [0x2019]  ’   [0x201C]  “
+  [0x201D]  ”    [0x2026]  …   [0x203B]  ※
+\end{verbatim}
+다음과 같은 명령으로 이 목록에 문자를 추가하거나 제거할 수 있다.
 인자는 콤마로 분리된 숫자 형식으로서 유니코드 코드포인트를 뜻한다.
 \begin{verbatim}
   \registerpunctuations{45, "2D, `-}
   \unregisterpunctuations{"2D, "2015}
 \end{verbatim}
-이들 두 명령은 항상 전역적 효과를 가진다.
+이들 명령은 문단 중간에서도 쓸 수 있지만, 전역적 효과를 가진다.
 
+\section{줄바꿈 허용}\label{sec:break}
+어떤 글자 앞이나 뒤에서 줄바꿈을 허용하고 싶을 때 아래와 같이 명령을 준다.
+\begin{verbatim}
+\registerbreakableafter{"2460, "2461}
+\registerbreakablebefore{"2460, "2461}
+\end{verbatim}
+\luatexko는 다분히 보수적으로 줄바꿈을 허용하고 있다.
+예시한 유니코드는 `①'과 `②'인데 기본적으로
+이들 문자 앞뒤 모두에서 줄바꿈이 되지 않는다.
 
-\section{}\label{sec:fontoption}
-fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이
-있다.\footnote{ 옛한글 식자를 위해서는
-  |[Script=Hangul]| 옵션을 사용하는 것으로 충분하다.
-  플레인텍이라면 |script=hang|.}
+\section{글꼴 옵션}\label{sec:fontoption}
+fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있다.%
+\footnote{%
+  옛한글 식자를 위해서는 적어도 |Script=Hangul|
+  (플레인텍이라면 |script=hang|)을 주어야 한다.
+  옛한글이 아니더라도 한글을 쓴다면 이 옵션은 주는 것이 좋다.
+  또한 폰트가 지원한다면 |LocalForms=On| (플레인텍이라면 |+locl|)과
+  함께 쓰는 것이 권장된다. }\,%
+\footnote{%
+  |PunctRaise|, |NoEmbedding| 옵션은 v2.0부터 더는 제공하지 않는다. }
+
+\def\hunmintxt{%
+  \noindent\textbf{%
+  世솅〮宗조ᇰ御ᅌᅥᆼ〮製졩〮訓훈〮民민正져ᇰ〮音ᅙᅳᆷ
+  }\par
+  製졩〮ᄂᆞᆫ〮글〮지ᅀᅳᆯ〮씨〮니〮御ᅌᅥᆼ〮製졩〮ᄂᆞᆫ〮님〯금〮지〯ᅀᅳ샨〮그〮리라〮訓훈〮은〮ᄀᆞᄅᆞ칠〮씨〮오〮民%
+  민ᄋᆞᆫ〮百ᄇᆡᆨ〮姓셔ᇰ〮이〮오〮音ᅙᅳᆷ은〮소리〮니〮訓훈〮民%
+  민正져ᇰ〮音ᅙᅳᆷ은〮百ᄇᆡᆨ〮姓셔ᇰ〮ᄀᆞᄅᆞ치〮시논〮正져ᇰ〮ᄒᆞᆫ소리〮라〮
+  \par\medskip
+  \noindent\textbf{%
+  國귁〮之징語ᅌᅥᆼ〯音ᅙᅳᆷ이〮
+  }\par
+  國귁〮ᄋᆞᆫ〮나라〮히라〮之징ᄂᆞᆫ〮입〮겨〮지라〮語ᅌᅥᆼ〯는말〯ᄊᆞ미라〮
+  \par
+  나랏〮말〯ᄊᆞ미〮
+  \par\medskip
+  \noindent\textbf{%
+  異잉〮乎ᅘᅩᆼ中듀ᇰ國귁〮ᄒᆞ〮야〮
+  }\par
+  異잉〮ᄂᆞᆫ〮다ᄅᆞᆯ씨라乎ᅘᅩᆼᄂᆞᆫ〮아〯모〮그ᅌᅦᄒᆞ〮논겨〮체ᄡᅳ〮는字ᄍᆞᆼ〮ㅣ라〮中듀ᇰ國귁〮ᄋᆞᆫ〮%
+  皇ᅘᅪᇰ帝뎽〮겨〯신나라〮히니〮우〮리〮나랏〮常쌰ᇰ談땀애〮江가ᇰ南남이〮라〮ᄒᆞ〮ᄂᆞ〮니라〮
+  \par
+  中듀ᇰ國귁〮에〮달아〮
+}
 
 \begin{figure}
   \fboxsep=1em
-  \fbox{\parbox{\dimexpr\linewidth-2.1em\relax}{%
-      \sffamily \leftskip2.5cm
-뎨 가ᄂᆞᆫ 뎌 각시 본 듯도 ᄒᆞᆫ뎌이고.\\
-天텬上상白ᄇᆡᆨ玉옥京경을 엇디ᄒᆞ야 離니別별ᄒᆞ고\\
-ᄒᆡ 다 져믄 날의 눌을 보라 가시ᄂᆞᆫ고
-
-\medskip
-
-어와 네여이고 내 ᄉᆞ셜 드러보오.\\
-내 얼굴 이 거동이 님 괴얌즉 ᄒᆞᆫ가마ᄂᆞᆫ\\
-엇딘디 날 보시고 네로다 녀기실ᄉᆡ\\
-나도 님을 미더 군 ᄠᅥ디 전혀 업서\\
-이ᄅᆡ야 교ᄐᆡ야 어ᄌᆞ러이 구돗ᄯᅥᆫ디\\
-반기시ᄂᆞᆫ ᄂᆞᆺ비치 녜와 엇디 다ᄅᆞ신고.%\\
-%누어 ᄉᆡᆼ각ᄒᆞ고 니러 안자 혜여ᄒᆞ니\\
-%내 몸의 지은 죄 뫼ᄀᆞ티 ᄡᅡ혀시니\\
-%하ᄂᆞᆯ히라 원망ᄒᆞ고 사ᄅᆞᆷ이라 허믈ᄒᆞ랴\\
-%셜워 플텨 혜니 造조物믈의 타시로다.
+  \fbox{\parbox{\dimexpr\linewidth-2.1em\relax}{\sffamily
+  \parindent1em
+  \hunmintxt
 }}
 \caption{옛한글 조판 보기}\label{fig:yethangul}
 \end{figure}
 
-그러나 \cs{defaulthangulfontfeatures} 따위 명령은 따로 구현돼 있지 않으며,
-설혹 사용하더라도 fontspec의 \cs{defaultfontfeatures}와 같은 효과를 가진다.
-다시 말해 한글 폰트 옵션과 라틴 폰트 옵션에 차이는 없다.
-
 \begin{description}
   \item[InterHangul] {\addhangulfontfeature{InterHangul=.5ex}한글 글자
-    사이의 자간}.  아래는 $-0.04$em 만큼 한글
-  자간을 지시한다. 플레인텍에서는 |interhangul|.
+    사이의 자간}.  아래는 $-0.04$em 만큼 한글 자간을 지시한다.%
+    \footnote{%
+      플레인텍에서는 |interhangul=<dimen>|. }
 \begin{verbatim}
   [InterHangul=-0.04em]
 \end{verbatim}
 
-\item[InterLatinCJK] 한글 또는 한자와 라틴 문자 사이의 자간을
-  설정한다. 플레인텍에서는 |interlatincjk|.
+\item[InterLatinCJK] 한글 또는 한자와 Latin문자 사이의 자간을 설정한다.%
+    \footnote{%
+      플레인텍에서는 |interlatincjk=<dimen>|. }
+    한글 한자 다음에 라틴 문자가 오는 경우 원래는 줄바꿈이 되지 않지만
+    이 옵션을 주면 줄바꿈이 가능해진다.
 \begin{verbatim}
   [InterLatinCJK=0.125em]
 \end{verbatim}
 
+\item[InterCharacter] 줄바꿈이 허용되는 곳의 자간을 지시한다.%
+  \footnote{%
+    플레인텍에서는 |intercharacter=<dimen>|. }
+  fontspec의 |LetterSpace| 옵션과 기능이 유사하지만, 옛한글을 깨뜨리는 등의
+  오작동을 하지 않는다. 전술한 자간 옵션들보다 후순위로 동작한다.
+\begin{verbatim}
+  [InterCharacter=.25em]
+\end{verbatim}
+
 \item[CharRaise] 글자의 세로 위치를
   {\addhangulfontfeature{CharRaise=.3em} 조절}할 수 있는 기능이다.
-  이로써 주변에 식자되는 다른 글꼴과 조화를 이루게 한다.
-  따라서 영문폰트에는 작동하지 않는다.
-  플레인텍에서는 |charraise|.
+  이로써 주변에 식자되는 다른 글꼴과 조화를 이루게 한다.%
+  \footnote{%
+    플레인텍에서는 |charraise=<dimen>|. }
 \begin{verbatim}
-  [CharRaise=0.1em]
+  [CharRaise=2pt]
 \end{verbatim}
-
-\item[PunctRaise] 한글 또는 한자 다음에 라틴 구두점---마침표에
-  한한다---이 왔을 때 그 세로 위치를 조절할 수 있다.
-  \cs{hangulpunctuations}로 인해 거의 쓸 일이 없게 되었다.
-  플레인텍에서는 |punctraise|.
-\begin{verbatim}
-  [PunctRaise=-0.125em]
-\end{verbatim}
-
-\item[NoEmbedding] |NoEmbed|와 동의어.
-  폰트를 내장하지 않으므로 결과물의 크기가 대폭 줄어든다.
-  하지만 대외적 배포에 적합하지 않음에 유의.\footnote{%
-    Adobe Reader에 번들된 폰트를 쓴다면 대외적 배포도 대체로 무난하다.}
-  플레인텍에서는 |embedding=no|.
-\begin{verbatim}
-  [NoEmbedding]
-\end{verbatim}
+  세로쓰기에서는 모든 글자들을 지정한 값만큼 오른쪽으로 이동시킨다.
+  세로쓰기에서 이 옵션 값을 고정길이{\small(가령 |pt| 단위)}로 주면
+  크기가 다른 폰트들간에 중앙정렬이 이루어진다.
+  세로쓰기에서 이 옵션을 주지 않으면 |0.5ex|가 기본값으로 동작한다.
 
 \item[Protrusion] 특정 글자가 행 끌에 왔을 때 판면 바깥으로 끌어내는
-  기능이다.  Lua\LaTeX의 기본값은 구두점들만 완전히 글자내밀기 한다. 즉
-  hanging punctuation이 작동한다.
-\begin{verbatim}
-  [Protrusion]
-\end{verbatim}
-  이는 |Protrusion=default|와 같은 뜻이다.
-  플레인텍에서는 |protrusion=default|.
-  마이크로타입에 관심 있으면 자신만의 설정을 만들어 지정할 수 있다.\footnote{%
+  기능이다. Lua\TeX은 기본값으로 온점 반점 등을 완전 글자내밀기 한다.
+  |Protrusion|은 |Protrusion=default|와 같은 뜻이다.%
+  \footnote{%
+    플레인텍에서는 |protrusion=default|. }
+  자신만의 설정을 만들어 지정할 수 있다.%
+  \footnote{%
     default 설정을 고치는 방법은 이를테면 다음과 같다:\par
-    \cs{directlua{ fonts.protrusions.setups.default[0x201C] = { 1, 0 } }}
-  }
+    \leftskip=3em\noindent
+    \cs{directlua{ fonts.protrusions.setups.default[0x201C] = { 1, 0 } }} }
 
 \item[Expansion] 판면의 균일한 조판을 위해 글자들을 미세하게 늘이거나
-  줄이는 기능이다.
-\begin{verbatim}
-  [Expansion]
-\end{verbatim}
-  이는 |Expansion=default|와 마찬가지 뜻이다.
-  플레인텍에서는 |expansion=default|.
+  줄이는 기능이다. |Expansion|은 |Expansion=default|와 마찬가지 뜻이다.%
+  \footnote{%
+    플레인텍에서는 |expansion=default|. }
 
+\item[RemoveClassicSpaces] 고문헌 조판시에 CJK 글자들 사이의 공백을 없애준다.%
+  \footnote{%
+    플레인텍에서는 |+removeclassicspaces|. }
+
+\item[CompressPunctuations] CJK 구두점 {\small (낫표 따위)}의 글자폭을
+  반각으로 만든다. v2.0부터는 사용자가 지시하지 않는 한 자동으로 글자폭을
+  줄여주지 않는다.%
+  \footnote{%
+    플레인텍에서는 |+compresspunctuations|. }
+  이 옵션은 |CharacterWidth=AlternateHalf| 내지 {\small (세로쓰기의 경우)}
+  |Vertical=HalfMetrics|와 거의 같은 기능을 한다.%
+  \footnote{%
+    플레인텍에서는 각각 |+halt| 및 |+vhal|이다. }
 \end{description}
 
-\section{}
-고문헌·일본어·중국어 조판을 위해 japanese, Schinese, Tchinese 환경을
-제공한다.  chinese는 Schinese의 다른 이름이다.  korean 환경도
-마련했는데 이들 환경 안에서 잠깐 한국어를 조판하는 데 사용한다.
-일반적으로 우리 고문헌 조판에는 japanese 환경을 이용하면 무난하다.
-그림~\ref{fig:ancientdoc} 참조.
-플레인텍에서는 {\small(문서 전체에 적용하지 않는다면 그룹을 열고)}
-\cs{chinese} \cs{japanese} 따위를 사용한다.
+\section{고문헌}\label{sec:classic}
+고문헌 조판을 위해 |typesetclassic| 환경을 제공한다.%
+\footnote{%
+  플레인텍에서는 (문서 전체에 적용하지 않는다면 그룹 안에서)
+  \cs{typesetclassic}을 사용한다.
+  |japanese|, |chinese|, |Schinese|, |Tchinese|, |korean| 따위의 환경은
+  지난 버전과의 호환성을 위해 당분간 제공되고 있을 뿐이다. }
+그림~\ref{fig:gomun} 참조.
+
+v2.0부터는 고문헌 조판에서 한글 한자와 영문자가 붙어 나오더라도 자동으로
+간격을 잡아주지 않으므로 이런 경우 사용자가 |InterLatinCJK| 옵션을
+지정해야 한다.
+또한 불필요한 공백이 오더라도 자동으로 제거해주지 않으므로 이런 경우
+사용자가 |RemoveClassicSpaces| 옵션을 주어야 한다.
+
+|typesetmodern|은 고문헌 조판 중에 잠깐 현대 한국어를 조판하는 데 사용한다.%
+\footnote{%
+  플레인텍에서는 (문서 전체에 적용하지 않는다면 그룹 안에서)
+  \cs{typesetmodern}을 사용한다. }
 
 \begin{figure}
   \centering
-  \fbox{\parbox{37em}{\japanese\sffamily
+  \fbox{\parbox{37em}{\typesetclassic\sffamily
+  \addhangulfontfeature{CompressPunctuations}
 子曰：「學而時習之，不亦說乎？有朋自遠方來，不亦樂乎？人不知而不慍，
 不亦君子乎？」\par
 有子曰：「其爲人也孝弟，而好犯上者，鮮矣！不好犯上，而好作亂者，未之有也！
@@ -304,50 +347,67 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이
 子曰：「道千乘之國，敬事而信，節用而愛人，使民以時。」\par
 子曰：「弟子入則孝，出則弟；謹而信，汎愛衆；而親仁，行有餘力，則以學文。」
   }}
-\caption{고문헌 조판 보기. japanese 환경을 이용했다.}\label{fig:ancientdoc}
+\caption{고문헌 조판 보기. typesetclassic 환경을 이용했다.}\label{fig:gomun}
 \end{figure}
 
-일본어·중국어라도 글꼴 설정은 \cs{newhangulfontfamily}
-\cs{newhanjafontfamily} 따위를 이용한다.
+고문헌 조판 중 \luatexko가 글자 사이에 삽입하는 미세간격을
+사용자가 영{\small(zero)}으로 강제하기 위해선 \cs{inhibitglue} 명령을 이용한다.
 
-\luatexko가 글자 사이에 삽입하는 미세간격을 사용자가 영(zero)으로
-강제하기 위해선 \cs{inhibitglue} 명령을 이용한다.
-대체로 일본어·중국어 환경에서만 문제된다.
-
-\section{}\label{sec:verttype}
+\section{세로쓰기}\label{sec:verttype}
 세로쓰기는 폰트의 고급 오픈타입 속성을 이용하므로 폰트가 이를 지원해야
-가능한 일이다. 폰트에 |Vertical=RotatedGlyphs| 옵션을 준다.  이는
-플레인텍에서 |vertical;+vrt2| 옵션을 주는 것과 같다.\footnote{|vmtx| 정보를
-  가지고 있지 않은 글꼴은 세로쓰기에 적합치 않은 글꼴이다.
-  |otfinfo -t <파일>| 명령으로 글꼴에 들어있는 테이블 정보를 알 수 있다.}
+가능한 일이다. 폰트에 |Vertical=Alternates|와 |RawFeature=+vertical| 옵션을
+준다.%
+\footnote{%
+  이는 플레인텍에서 |+vertical;+vert| 옵션을 주는 것과 같다.
+  사실 |+vertical|을 선언하면 |vert|는 자동으로 켜지도록 해 두었다. }\,%
+\footnote{%
+  |vmtx| 정보를 가지고 있지 않은 글꼴은 세로쓰기에 적합치 않은 글꼴이다.
+  |otfinfo -t <파일>| 명령으로 글꼴에 들어있는 테이블 정보를 알 수 있다. }
+세로쓰기에서 |CharRaise| 옵션의 효과에 대해서는 제\ref{sec:fontoption}절을
+참조할 것.
+
+세로쓰기에서는 \cs{typesetclassic}의 아종인 \cs{typesetvertical}이
+기본으로 셋팅되어 있다. 일종의 고문헌 조판으로 보는 것이다.
 
 문서의 일부를 세로쓰기하려면 \cs{begin{vertical}{<dimen>}} \ldots\ \cs{end{vertical}}
-환경을 이용하라. |<dimen>|으로 세로쓰기 박스의 높이를 지시한다.
-그림~\ref{fig:vertical} 참조.
-플레인텍에서는 \cs{vertical{<dimen>}} \ldots\ \cs{endvertical}.
+환경을 이용한다. |<dimen>|으로 세로쓰기 박스의 높이를 지시한다.%
+\footnote{%
+  플레인텍에서는 \cs{vertical{<dimen>}} \ldots\ \cs{endvertical}. }
+그림~\ref{fig:vertical} 및 그림~\ref{fig:vertical2} 참조.
 
 \begin{figure}
-\framebox[\linewidth]{\begin{vertical}{17em}
-    \sffamily
-    \addhangulfontfeature{Vertical=RotatedGlyphs,
-      RawFeature=vertical,
-      CharacterWidth=Full, CharRaise=0.1ex, }
-\parindent-1em\leftskip1em \linespread{1.5}\selectfont
-\noindent 님의 침묵(The Silent Beloved)
-\smallbreak
-\hfil\hfil 한 용 운\hfil
-\bigbreak
-님은 갓슴니다 아아 사랑하는나의님은 갓슴니다\par
-푸른산빗을깨치고 단풍나무숩을향하야난 적은길을 거러서 참어떨치고
-갓슴니다\par
-黃金의꽃가티 굿고빗나든 옛盟誓는 차듸찬띠끌이되야서 한숨의 微風에
-나러갓슴니다\par
-날카로은 첫〈키쓰〉의追憶은 나의運命의指針을 돌너노코 뒷거름처서 사러젓슴니다\par
-\hellipsis\par
-아아 님은갓지마는 나는 님을보내지 아니하얏슴니다\par
-제곡조를못이기는 사랑의노래는 님의沈默을 휩싸고돔니다\par
+\framebox[\linewidth]{\begin{vertical}{20em}\sffamily
+  \addhangulfontfeature{Vertical=Alternates, RawFeature=+vertical}
+  \linespread{1.5}\selectfont
+  \hunmintxt
 \end{vertical}}
-\caption{세로쓰기의 예. 박스 높이 \texttt{17em}을 지시했다.}\label{fig:vertical}
+\caption{세로쓰기의 예. 박스 높이 |20em|을 지시했다.}\label{fig:vertical}
+\end{figure}
+
+\begin{figure}
+\framebox[\linewidth]{\begin{vertical}{17em}\sffamily
+  \addhangulfontfeature{Vertical=Alternates, CharRaise=3.2pt,
+  CompressPunctuations, CharacterWidth=Full, RawFeature=+vertical}
+  \parindent-1em\leftskip1em \linespread{1.5}\selectfont
+  \spaceskip=.5em plus.25em minus.125em
+  \noindent 님의 침묵(The Silent Beloved)
+  \smallbreak
+  \hfil\hfil 한 용 운\hfil
+  \bigbreak
+  님은 갓슴니다 아아 사랑하는나의님은 갓슴니다\par
+  푸른산빗을깨치고 단풍나무숩을향하야난 적은길을 거러서 참어떨치고
+  갓슴니다\par
+  黃金의꽃가티 굿고빗나든 옛盟誓는 차듸찬띠끌이되야서 한숨의 微風에
+  나러갓슴니다\par
+  날카로은 첫〈키쓰〉의追憶은 나의運命의指針을 돌너노코 뒷거름처서 사러젓슴니다\par
+  \hellipsis\par
+  아아 님은갓지마는 나는 님을보내지 아니하얏슴니다\par
+  제곡조를못이기는 사랑의노래는 님의沈默을 휩싸고돔니다\par
+\end{vertical}}
+\caption{세로쓰기의 또 다른 예.  박스 높이 |17em|을 지시했다.
+  Noto Sans CJK 글꼴의 세로쓰기 공백은 원래 |1em|,
+  즉 전각크기로 매우 크기 때문에, 여기서는 \cs{spaceskip} 명령을 이용하여
+  반각 크기로 강제했다.}\label{fig:vertical2}
 \end{figure}
 
 문서 전체를 세로쓰기한다면 이 환경을 쓰는 대신
@@ -356,49 +416,33 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이
 
 세로쓰기 도중에 문서의 일부를 가로쓰기하려면
 \cs{begin{horizontal}{<dimen>}} \ldots\ \cs{end{horizontal}}
-환경을 이용하라. |<dimen>|은 가로쓰기 박스의 너비를 지시한다.
-플레인텍에서는 \cs{horizontal{<dimen>}} \ldots\ \cs{endhorizontal}.
+환경을 이용한다. |<dimen>|은 가로쓰기 박스의 너비를 지시한다.%
+\footnote{%
+  플레인텍에서는 \cs{horizontal{<dimen>}} \ldots\ \cs{endhorizontal}. }
 가로쓰기 영역의 폰트 설정은 사용자의 몫이다.
 
-\section{}\label{sec:metapost}
-전처리부에서 \cs{usepackage{luamplib}}을 선언하면 \MP\ 코드를 문서 중간에
-삽입할 수 있다.  한글이나 수식은 |btex| \ldots\ |etex| 안에 넣어야 한다.
-그림~\ref{fig:mplib} 참조. 상세한 것은 luamplib 패키지 문서를 참조하라.
-
-\begin{figure}
-\setbox0\vbox{\kern10pt
-\begin{verbatim}
-  \usepackage{luamplib}
-  ...
-  \begin{mplibcode}
-    beginfig(1);
-      draw fullcircle scaled 2cm;
-      dotlabel.bot(btex \TeX etex, origin);
-      dotlabel.rt(btex 루아 etex, dir45*1cm);
-    endfig;
-  \end{mplibcode}
-\end{verbatim}}
-\begin{mplibcode}
-beginfig(1);
-  draw btex \copy0 etex shifted (-\mpdim{\textwidth-3cm},-\mpdim{.5\ht0});
-  draw fullcircle scaled 2cm;
-  dotlabel.bot(btex\TeX etex, origin);
-  dotlabel.rt(btex 루아 etex, dir 45*1cm);
-  bboxmargin:=0; draw bbox currentpicture;
-endfig;
-\end{mplibcode}
-\caption{mplib 용례}\label{fig:mplib}
-\end{figure}
-
-\section{}\label{sec:mathhangul}
+\section{수식 한글}\label{sec:mathhangul}
 \begin{quote}
   |$가^{나^다}$|\quad$\Rightarrow\quad가^{나^다}$
 \end{quote}
-수식 모드에서도 한글을 {\small(hbox로 감싸지 않고)} 직접 입력할 수
-있다.  문서의 기본 한글 글꼴이 자동으로 수식 한글에도 적용되므로 따로
-설정할 것이 없지만 굳이 한다면 다음처럼 지시한다.
+수식 한글 폰트를 설정하면 수식 모드에서도 한글을 {\small(hbox로 감싸지 않고)}
+직접 입력할 수 있다.%
+\footnote{%
+  플레인텍에서는 \cs{mathhangulfont=UnBatang}과 같이 설정한다.
+  또는 좀 더 그럴듯하게 하려면:\par
+  \leftskip=3em\noindent
+  |\\font\\texthangul="Noto Sans CJK KR DemiLight" at 10pt|\\
+  |\\font\\scripthangul="Noto Sans CJK KR Regular" at 7pt|\\
+  |\\font\\scriptscripthangul="Noto Sans CJK KR Medium" at 5pt|\\
+  |\\setmathhangulfonts\\texthangul\\scripthangul\\scriptscripthangul| }
+v2.0부터는 자동으로 수식 한글을 잡아주지 않는다.
 \begin{verbatim}
-  \setmathhangulfont{HCRBatang}
+  \setmathhangulfont{Noto Sans CJK KR}[
+    SizeFeatures={
+      {Size=-6,  Font=* Medium},
+      {Size=6-8, Font=* Regular},
+      {Size=8-,  Font=* DemiLight},
+    } ]
 \end{verbatim}
 현재 한글만 쓸 수 있게 설정되어 있다.
 한자도 수식에 직접 입력하려면 사용자는
@@ -407,31 +451,40 @@ endfig;
 \end{verbatim}
 명령으로 유니코드 블럭을 추가 지정해야 한다.
 
-\section{}
+\section{드러냄표}\label{sec:dotemph}
 \cs{dotemph} 명령으로 \dotemph{드러냄표}%
 를 이용한 강조를 할 수 있다.  기본은 글자 위에 점을 찍는 형태이나
 다음과 같이 명령을 주어 개인적으로 선호하는 기호를 드러냄표로 쓸 수
 있다.
 
+\medskip
 ①~|\def\dotemphraise{0.4em }|: 드러냄표를 피강조 글자 위로 끌어올리는 길이
 
 ②~|\def\dotemphchar{\bfseries ^^^^02d9}|: 드러냄표 기호 자체를 정의.
-|^^^^02d9|는 유니코드 코드포인트를 뜻하는 16진수이고 소문자로만 써야 한다.
-숫자 대신 직접 문자를 입력해도 된다. 플레인텍에서도 쓸 수 있다.
 
-\section{}\label{sec:ruby}
+\section{루비}\label{sec:ruby}
 루비를 달 수 있다. ruby 패키지가 이미 존재하지만 \luatexko와 궁합이 잘
-맞지 않아 새로 매크로를 제공한다.  플레인텍도 지원한다.
+맞지 않아 새로 매크로를 제공한다.
 \begin{quote}
   \cs{ruby{漢字}{한자}}\quad$\Rightarrow$\quad\ruby{漢字}{한자}
 \end{quote}
 이처럼 글자별로 따로 루비를 달 필요가 없다.  관련 설정은 다음처럼
 한다.
 
-①~\cs{rubyfont}: 루비를 식자할 폰트를 지시해 둔다. 기본값은 현재 폰트.
+\medskip
+①~\cs{rubyfont}: 루비를 식자할 폰트를 지시해 둔다. 기본값은 현재 폰트%
+\footnote{%
+  루비는 글자 크기가 작기 때문에 본문 폰트보다 약간 굵은 폰트로
+  지정하는 것이 좋다. }
 
 ②~|\def\rubysize{0.6}|: 루비 글자 크기를 본문 글자 크기에 대한 비율로
-지정
+지정%
+\footnote{%
+  플레인텍에서는 루비의 글꼴크기를 따로 조정해주지 않는다.
+  사용자가 \cs{rubyfont}를 설정할 때 크기도 함께 지시하도록 한다.
+  가령:\par
+  \leftskip=3em\noindent
+  |\\font\\rubyfont=UnBatang at \\rubysize em| }
 
 ③~|\def\rubysep{0.2ex}|: 루비와 본문 글자 사이의 간격을 지정
 
@@ -439,36 +492,37 @@ endfig;
 글자들 위로 삐져나가지 못하게 한다. 본문 글자의 흐름을 중시하여
 \cs{rubyoverlap}을 기본값으로 하였으므로 이는 따로 선언할 필요가 없다.
 
+\medskip
 한편, 연속된 본문 글자들에 각각 한 글자씩 루비를 달고자 한다면
-|\xxruby{...}{...}| 명령을 사용하라. 글자들 사이에 줄바꿈이 허용된다.
-다만 두 인자의 글자 수가 동일해야 한다.
+\cs{xxruby{...}{...}} 명령을 사용한다. 글자들 사이에 줄바꿈이 허용된다.
+두 인자의 글자 수가 동일해야 한다.
 
-\section{}
+\section{밑줄긋기}\label{sec:uline}
 ulem 패키지가 \luatexko와 궁합이 잘 맞지 않아{\small (줄바꿈에 문제가 있음)}
-명령을 따로 제공한다. 플레인텍에서도 쓸 수 있다.
+명령을 따로 제공한다.
 
-\bigskip
-\begin{tabular}{l@{\quad$\Rightarrow$\quad}l}
-\cs{uline{밑줄을 그을 수 있다}}&\uline{밑줄을 그을 수 있다}\\
-\cs{sout{취소선을 그을 수 있다}}&\sout{취소선을 그을 수 있다}\\
-\cs{uuline{밑줄을 두 줄 긋는다}}&\uuline{밑줄을 두 줄 긋는다}\\
-\cs{xout{빗금으로 취소할 수 있다}}&\xout{빗금으로 취소할 수 있다}\\
-\cs{uwave{물결표로 밑줄을 삼는다}}&\uwave{물결표로 밑줄을 삼는다}\\
-\cs{dashuline{대시로 밑줄을 삼는다}}&\dashuline{대시로 밑줄을 삼는다}\\
-\cs{dotuline{밑줄을 점선으로 긋는다}}&\dotuline{밑줄을 점선으로 긋는다}\\
-\end{tabular}
-\bigskip
+\def\RA{\>$\Rightarrow$\>}
+\begin{tabbing}
+\cs{dotuline{밑줄을 점선으로 긋는다}}\quad\=$\Rightarrow$\quad\= \kill
+\cs{uline{밑줄을 그을 수 있다}}\RA\uline{밑줄을 그을 수 있다}\\
+\cs{sout{취소선을 그을 수 있다}}\RA\sout{취소선을 그을 수 있다}\\
+\cs{uuline{밑줄을 두 줄 긋는다}}\RA\uuline{밑줄을 두 줄 긋는다}\\
+\cs{xout{빗금으로 취소할 수 있다}}\RA\xout{빗금으로 취소할 수 있다}\\
+\cs{uwave{물결표로 밑줄을 삼는다}}\RA\uwave{물결표로 밑줄을 삼는다}\\
+\cs{dashuline{대시로 밑줄을 삼는다}}\RA\dashuline{대시로 밑줄을 삼는다}\\
+\cs{dotuline{밑줄을 점선으로 긋는다}}\RA\dotuline{밑줄을 점선으로 긋는다}
+\end{tabbing}
 
 관련하여 다음 설정을 할 수 있다.
 
-①~|\def\ulinedown{0.24em}|: 밑줄을 베이스라인 아래로 끌어내리는 정도
+\medskip
+①~|\def\ulinedown{0.5ex}|: 밑줄을 베이스라인 아래로 끌어내리는 정도
 
 ②~|\def\ulinewidth{0.04em}|: 밑줄의 굵기
 
-\section{}\label{sec:autojosa}
+\section{자동조사}\label{sec:autojosa}
 자동조사는 \kotex 과 동일하게 \cs{은} \cs{는} \cs{이} \cs{가} \cs{을} \cs{를}
 \cs{와} \cs{과} \cs{로} \cs{으로} \cs{라} \cs{이라} 따위를 사용한다.
-문장 중에서도 작동할 뿐만 아니라 플레인텍도 지원한다.
 버전 1.3부터는 \cs{josaignoreparens=1}이 선언되어 있으면 자동조사는
 \hemph{괄호 부분을 건너뛰고} 그 앞 글자에 매칭한다.
 |0|이 선언되면 원래 방식으로 돌아간다.
@@ -481,39 +535,32 @@ ulem 패키지가 \luatexko와 궁합이 잘 맞지 않아{\small (줄바꿈에 
   |홍길동(2001)\로|\quad$\Rightarrow$\quad 홍길동(2001)\로
 \end{quote}
 
-\section{}
-항목 번호를 한국어 기호로 붙일 수 있다. \kotex과 동일하게 \cs{jaso} \cs{gana}
-\cs{ojaso} \cs{ogana} \cs{pjaso} \cs{pgana} \cs{onum} \cs{pnum} \cs{oeng}
-\cs{peng} \cs{hnum} \cs{Hnum} \cs{hroman} \cs{hRoman} \cs{hNum} \cs{hanjanum}
-따위를 사용한다.
+\section{한국어 항목 번호}\label{sec:hangulnums}
+\kotex과 동일하게 항목 번호를 한국어 기호로 붙일 수 있다.%
+\footnote{%
+  \cs{jaso} \cs{gana} \cs{ojaso} \cs{ogana} \cs{pjaso} \cs{pgana}
+  \cs{onum} \cs{pnum} \cs{oeng} \cs{peng} \cs{hnum} \cs{Hnum}
+  \cs{hroman} \cs{hRoman} \cs{hNum} \cs{hanjanum} 따위를 사용한다. }
 
-\section{}\label{sec:actualtext}
-\cs{actualtext{...}} 명령은 인자를 식자함과 동시에, \hemph{입력한 문자 그대로}
-PDF에서 텍스트로 추출할 수 있게 해준다. 인자가 두 페이지에 나눠지지 않도록
-유의한다.  모든 PDF 리더가 이를 지원하는 것은 아니다. 예:
-$\actualtext{\sqrt 2}$,
-{\sffamily \actualtext{ᄆᆞᄎᆞᆷ〮내〯}}.
-인자가 글자 없이 그림으로만 돼있다면 \cs{actualtext*{...}} 방식을 이용한다.
-
-\section{}
+\section{입력 변환}\label{sec:noramlize}
 \cs{luatexhangulnormalize=1}이라 지시하면 첫가끝 자모를 완성형 음절로,
 |2|라면 완성형 음절을 첫가끝 자모로 인코딩 변환한다. |0|이 할당되면
 인코딩 변환 기능이 꺼진다. \XeTeX의 \cs{XeTeXinputnormalization} 명령과
-유사하나 오직 한글과 일부 한자에 대해서만 정규화가 작동하는 점에서
-\XeTeX의 그것에 비해 기능이 한참 모자란다.
+유사하나, 오직 한글과 일부 한자에 대해서만 정규화가 작동할 뿐이다.
 
-\section{}\label{sec:uhcencoding}
-권장하지 않지만 불가피하게 입력 인코딩이 UHC (Unified Hangul Code)\footnote{%
-  CP949라고도 하며 EUC-KR을 포함한다}로 되어 있는 파일을 처리할 때는
+\section{UHC 입력 인코딩}\label{sec:uhcencoding}
+권장하지 않지만 불가피하게 입력 인코딩이 UHC (Unified Hangul Code)%
+\footnote{%
+  CP949라고도 하며 EUC-KR을 포함한다. }%
+로 되어 있는 파일을 처리할 때는
 \cs{luatexuhcinputencoding=1}을 선언한다.
 |0|을 할당하면 다시 UTF-8 입력으로 간주한다.
-\XeTeX의 \cs{XeTeXinputencoding} 명령과 유사하나 오직 한국어 문자만 처리할 수
-있어 \XeTeX의 그것에 비해 기능이 한참 모자란다.
-
-\section{}
-마찬가지로 바람직하지는 않지만 불가피하게 파일 이름이 UHC로 인코딩되어
-있다면 \cs{luatexuhcfilenames=1}을 선언한다. |0|을 할당하면 다시 UTF-8
-이름으로 간주한다.  윈도 계열 운영체제에서만 문제될 것이다.
+\XeTeX의 \cs{XeTeXinputencoding} 명령과 유사하나, 오직 한국어 문자만 처리할 수
+있다.%
+\footnote{%
+  윈도 운영체제에서의 한글 파일이름 불러오기 기능은 v2.0부터는 제공하지 않는다.
+  대신 |luatex -cmdx ...|, |lualatex -cmdx ...|와 같이 컴파일시 명령행에
+  |-cmdx| 옵션을 주면 된다고 하니 테스트해 보시기 바란다. }
 \hfill \fboxsep=-\fboxrule \fbox{\vbox to 1em{\hbox to 1em{\hss}\vss}}
 
 \end{document}

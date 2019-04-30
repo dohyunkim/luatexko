@@ -1,3 +1,14 @@
+2019-05-01      Dohyun Kim <nomos at ktug org>
+
+	Version 2.0
+
+	* luatexko-core.sty: removed.
+	* luatexko.lua: totally rewritten.
+	* luatexko.sty: Package option `nofontspec' removed.
+	Font options `CompressPunctuations' `RemoveClassicSpaces'
+	and `InterCharacter' added.
+	`\registerbreakablebefore' and `\registerbreakableafter' added.
+
 2019-04-06      Dohyun Kim <nomos at ktug org>
 
 	Version 1.24

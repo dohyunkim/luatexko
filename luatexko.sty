@@ -1,7 +1,7 @@
 % luatexko.sty
 %
-% Copyright (c) 2013-2019 Dohyun Kim  <nomos at ktug org>
-%                         Soojin Nam  <jsunam at gmail com>
+% Copyright (c) 2013-2019 Dohyun Kim <nomos at ktug org>
+%                         Soojin Nam <jsunam at gmail com>
 %
 % This work may be distributed and/or modified under the
 % conditions of the LaTeX Project Public License, either version 1.3c
@@ -11,450 +11,707 @@
 % and version 1.3c or later is part of all distributions of LaTeX
 % version 2006/05/20 or later.
 
-\ifx\luatexkocatcodeofatchar\undefined\else\endinput\fi % no multiple loading
-
-\begingroup\expandafter\expandafter\expandafter\endgroup
-\expandafter\ifx\csname selectfont\endcsname\relax % plain tex
-  \edef\luatexkocatcodeofatchar{\catcode`@=\the\catcode`@}
-  \input luatexko-core.sty
-  %\hangulfont{name:NanumGothic:interlatincjk=0.125em} at 10pt
-  %\setmathhangulfont{NanumGothic}
-  \luatexkocatcodeofatchar
-  \expandafter\endinput
+\ifdefined\luatexkohangulfontattr \endinput\fi
+\ifdefined\selectfont
+  \ProvidesPackage{luatexko}[2019/05/01 v2.0 typesetting Korean with LuaTeX]
+  \RequirePackage{luatexbase}
+  \RequirePackage{fontspec}
+\else
+  \input luatexbase.sty
+  \input luaotfload.sty
+  \chardef\luatexkoatcatcode=\catcode`\@
+  \catcode`\@=11
 \fi
-
-\ProvidesPackage{luatexko}[2019/04/06 v1.24 Typesetting Korean with LuaLaTeX]
-
-\ifdefined\adjustspacing\else % luatex < 0.87
-  \let\adjustspacing\pdfadjustspacing
-  \let\protrudechars\pdfprotrudechars
+\protected\def\pdfliteral{\pdfextension literal}
+\newattribute\luatexkohangulfontattr
+\newattribute\luatexkohanjafontattr
+\newattribute\luatexkofallbackfontattr
+\newattribute\luatexkoautojosaattr
+\newattribute\luatexkoclassicattr
+\newattribute\luatexkodotemphattr
+\newattribute\luatexkorubyattr \chardef\luatexkorubyalloc\allocationnumber
+\directlua{ require"luatexko.lua" }
+% classic
+\protected\def\typesetclassic{\luatexkoclassicattr\z@\parindent1em }
+\protected\def\typesetvertical{\luatexkoclassicattr\@ne\parindent1em }
+\protected\def\typesetmodern{\unsetattribute\luatexkoclassicattr}
+\protected\def\inhibitglue{\hskip\z@skip}
+\protected\def\Schinese{\luatexkoclassicattr\tw@\parindent2em }
+\protected\def\Tchinese{\luatexkoclassicattr\thr@@\parindent2em } % +halt
+\let\korean\typesetmodern \let\japanese\typesetclassic \let\chinese\Schinese
+% josa
+\count@"AC00
+\loop
+  \catcode\count@ 12
+  \ifnum\count@<"D7A3 \advance\count@\@ne \repeat
+\newcount\josaignoreparens
+\def\luatexkojosaactivate{%
+  \ifx\luatexkojosaactive\relax
+  \else
+    \directlua{ luatexko.activate("autojosa") }%
+    \global\let\luatexkojosaactive\relax
+  \fi
+  \luatexkoautojosaattr\josaignoreparens }
+\protected\def\은{\begingroup\luatexkojosaactivate 은\endgroup}
+\let\는\은
+\protected\def\을{\begingroup\luatexkojosaactivate 을\endgroup}
+\let\를\을
+\protected\def\와{\begingroup\luatexkojosaactivate 와\endgroup}
+\let\과\와
+\protected\def\가{\begingroup\luatexkojosaactivate 가\endgroup}
+\protected\def\이{\begingroup\luatexkojosaactivate 이\endgroup}
+\protected\def\라{\이라}
+\protected\def\으{\begingroup\luatexkojosaactivate 으\endgroup}
+\protected\def\로{\으로}
+% force hangul font
+\def\luatexkotoks@appendchars#1,{%
+  \ifx\empty#1\empty
+    \expandafter\luatexkotoks@appendchars
+  \else
+    \ifx*#1\else
+      \expandafter\ifx\expandafter\empty\the\toks@\empty
+        \etoksapp0{\number#1}%
+      \else
+        \etoksapp0{,\number#1}%
+      \fi
+      \expandafter\expandafter\expandafter\luatexkotoks@appendchars
+    \fi
+  \fi }
+\def\luatexkodoluacode#1{\directlua{
+  \ifhmode luatexko.updateforcehangul(function() \fi
+  #1
+  \ifhmode end) \fi }}
+\protected\def\registerpunctuations#1{%
+  \toks@{}\luatexkotoks@appendchars#1,*,\luatexkodoluacode{
+    local t = luatexko.forcehangulchars
+    for _,v in ipairs{\the\toks@} do t[v]=true end }}
+\let\registerhangulpunctuations\registerpunctuations
+\protected\def\unregisterpunctuations#1{%
+  \toks@{}\luatexkotoks@appendchars#1,*,\luatexkodoluacode{
+    local t = luatexko.forcehangulchars
+    for _,v in ipairs{\the\toks@} do t[v]=nil end }}
+\let\unregisterhangulpunctuations\unregisterpunctuations
+\protected\def\hangulpunctuations{%
+  \afterassignment\luatexkohangulpunctuations\count@ }
+\def\luatexkohangulpunctuations{\luatexkodoluacode{
+  local t = luatexko.forcehangulchars
+  for i in pairs(t) do t[i]=\ifcase\count@ false \else true \fi end }}
+\protected\def\registerbreakableafter#1{%
+  \toks@{}\luatexkotoks@appendchars#1,*,\luatexkodoluacode{
+    local t = luatexko.breakableafter
+    for _,v in ipairs{\the\toks@} do t[v]=true end }}
+\protected\def\registerbreakablebefore#1{%
+  \toks@{}\luatexkotoks@appendchars#1,*,\luatexkodoluacode{
+    local t = luatexko.breakablebefore
+    for _,v in ipairs{\the\toks@} do t[v]=true end }}
+\protected\def\hangulbyhangulfont{%
+  \afterassignment\luatexkohangulbyhangulfont\count@ }
+\def\luatexkohangulbyhangulfont{\luatexkodoluacode{
+  luatexko.hangulbyhangulfont=\ifcase\count@ false \else true \fi }}
+\protected\def\hanjabyhanjafont{%
+  \afterassignment\luatexkohanjabyhanjafont\count@ }
+\def\luatexkohanjabyhanjafont{\luatexkodoluacode{
+  luatexko.hanjabyhanjafont=\ifcase\count@ false \else true \fi }}
+% dotemph
+\newcount\luatexkodotemphcount
+\def\dotemphraise{1ex }
+\unless\ifdefined\bfseries\let\bfseries\bf\fi
+\def\dotemphchar{\bfseries\char"02D9 }
+\protected\def\dotemph#1{%
+  \global\advance\luatexkodotemphcount\@ne
+  \begingroup
+  \setbox\z@\hbox{\raise\dotemphraise\hbox{\dotemphchar}}%
+  \directlua{
+    if \the\luatexkodotemphcount == 1 then luatexko.activate("dotemph") end
+    luatexko.dotemphbox[\the\luatexkodotemphcount] = node.copy(tex.box[0].list)
+  }\luatexkodotemphattr\luatexkodotemphcount #1%
+  \endgroup }
+% uline
+\newcount\luatexkoulinecount
+\def\ulinedown{0.5ex }\def\ulinewidth{0.04em }
+\protected\def\markoverwith#1#2{%
+  \global\advance\luatexkoulinecount\@ne
+  \begingroup
+  \count@\luatexkoulinecount
+  \ifx\luatexkoulinerunning\relax
+    \edef\ulinedown{\the\dimexpr\ulinedown+\ulinewidth+.15ex\relax}\fi
+  \let\luatexkoulinerunning\relax
+  \leavevmode
+  \setbox\z@\hbox{#1}%
+  \directlua{
+    if \the\luatexkoulinecount == 1 then luatexko.activate("uline") end
+    luatexko.ulboundary(\the\count@, tex.box[0].list)
+  }#2\directlua{
+    luatexko.ulboundary(\the\count@)
+  }\endgroup }
+\protected\def\uline{\markoverwith{%
+  \vrule width\z@ height-\ulinedown depth\dimexpr\ulinedown+\ulinewidth\relax }}
+\protected\def\dashuline{\markoverwith{%
+  \hbox{\kern.125em
+    \vrule width.3em height-\ulinedown depth\dimexpr\ulinedown+\ulinewidth\relax
+    \kern.125em }}}
+\protected\def\dotuline{\markoverwith{%
+  \lower\dimexpr\ulinedown+.1ex\relax\hbox{\kern.07em .\kern.07em }}}
+\protected\def\uuline#1{\uline{\uline{#1}}}
+\protected\def\sout#1{\begingroup
+  \def\ulinedown{-.5\dimexpr\ulinewidth+1ex\relax}%
+  \uline{#1}\endgroup}
+\protected\def\xout{\markoverwith{\hbox to.4em{\hss/\hss}}}
+\protected\def\uwave{\font\luatexkofontsixly=lasy6\relax
+  \markoverwith{\lower4\p@\hbox{\luatexkofontsixly\char58}}}
+% ruby
+\def\rubysize{0.6}  % size of ruby compared to base chars
+\def\rubysep{0.2ex} % distance between base chars and ruby
+\def\luatexkostretchfactor{.0125} % .5em/20/2 is hard coded.
+\newif\ifruby@overlap
+\let\rubyoverlap\ruby@overlaptrue
+\let\rubynooverlap\ruby@overlapfalse
+\rubyoverlap % ruby may hangover neighboring chars
+\newcount\luatexkorubycount
+\def\luatexkorubybasehbox{\hbox attr\luatexkorubyalloc=\luatexkorubycount}
+\protected\def\ruby#1#2{%
+  \global\advance\luatexkorubycount\@ne
+  \begingroup
+  \leavevmode
+  \setbox\z@\luatexkorubybasehbox{% base
+    \vrule width\z@ height 2ex depth\z@ #1}%
+  \setbox\tw@\hbox{% ruby
+    \ifdefined\rubyfont \rubyfont \fi
+    \ifdefined\selectfont % <- latex
+      \dimen@\dimexpr\rubysize em\relax
+      \fontsize\dimen@\dimen@\selectfont
+    \fi
+    #2}%
+  \hbadness\@M % supress underfull warning
+  \dimen@ii\dimexpr\rubysize em\relax % ruby font size
+  \ifdim\wd\z@ < \wd\tw@ % ruby is wider
+    \ifruby@overlap
+      \dimen@\dimexpr\wd\tw@-\wd\z@-\dimen@ii\relax % overhang .5 rubysize
+      \ifdim\dimen@ > \z@
+        \setbox\z@\luatexkorubybasehbox spread\dimen@{%
+          \hskip\z@ plus \luatexkostretchfactor em\relax
+          \unhbox\z@
+          \hskip\z@ plus \luatexkostretchfactor em\relax }%
+      \fi
+    \else
+      \setbox\z@\luatexkorubybasehbox to\wd\tw@{%
+        \hskip\z@ plus \luatexkostretchfactor em\relax
+        \unhbox\z@
+        \hskip\z@ plus \luatexkostretchfactor em\relax }%
+    \fi
+  \else
+    \ifdim\rubysize\wd\z@ > 2\wd\tw@ % ruby is far shorter
+      \setbox\tw@\hbox to\wd\z@{%
+        \hskip\dimen@ii\relax
+        \unhbox\tw@
+        \hskip\dimen@ii\relax }%
+    \else
+      \setbox\tw@\hbox to\wd\z@{%
+        \hskip\z@ plus \luatexkostretchfactor \dimen@ii\relax
+        \unhbox\tw@
+        \hskip\z@ plus \luatexkostretchfactor \dimen@ii\relax }%
+    \fi
+  \fi
+  \directlua{
+    if \the\luatexkorubycount == 1 then luatexko.activate("ruby") end
+    luatexko.rubybox[\the\luatexkorubycount] = {
+      node.copy(tex.box[2]),
+      \number\numexpr\dimexpr\rubysep\relax\relax,
+      \ifruby@overlap true\else false\fi, }}%
+  \box\z@
+  \endgroup }
+\protected\def\xxruby#1#2{%
+  \begingroup\def\basestr{#1}\def\rubystr{#2}\luatexkoxxruby\endgroup }
+\def\luatexkoxxruby{%
+  \ifx\empty\basestr\else
+    \expandafter\luatexkogetrubybasechar\basestr\end
+    \expandafter\luatexkogetrubyrubychar\rubystr\end
+    \ruby\basechar\rubychar
+    \expandafter\luatexkoxxruby
+  \fi }
+\def\luatexkogetrubybasechar#1#2\end{\def\basechar{#1}\def\basestr{#2}}
+\def\luatexkogetrubyrubychar#1#2\end{\def\rubychar{#1}\def\rubystr{#2}}
+% vertical writing
+\protected\def\vertical#1{%
+  \leavevmode
+  \setbox\z@\vbox\bgroup
+    \hsize#1\relax
+    \typesetvertical }
+\protected\def\endvertical{%
+  \egroup
+  \luatexkorotatebox\z@
+  \box\z@ }
+\protected\def\luatexkorotatebox#1{%
+  \setbox#1\hbox to\dimexpr\ht#1+\dp#1{%
+    \hfil
+    \vbox to\wd#1{%
+      \wd#1\z@ \ht#1\z@ \dp#1\z@
+      \pdfliteral{q 0 -1 1 0 0 0 cm}\box#1\pdfliteral{Q}%
+      \vfil }}}
+% horizontal box inside vertical writing
+\protected\def\horizontal#1{%
+  \leavevmode
+  \setbox\z@\vbox\bgroup
+    \hsize#1\relax
+    \typesetmodern }
+\protected\def\endhorizontal{%
+  \egroup
+  \luatexkounrotatebox\z@
+  \box\z@ }
+\protected\def\luatexkounrotatebox#1{%
+  \setbox#1\hbox to\dimexpr\ht#1+\dp#1{%
+    \vbox to\wd#1{%
+      \vfil
+      \wd#1\z@ \ht#1\z@ \dp#1\z@
+      \pdfliteral{q 0 1 -1 0 0 0 cm}\box#1\pdfliteral{Q}}%
+    \hfil }}
+% do not veticalize headline/footline
+\ifdefined\selectfont
+  \def\verticaltypesetting{%
+    \maxdepth\z@ \typesetvertical
+    \dimen@\textwidth \textwidth\textheight \textheight\dimen@
+    \edef\@outputpage{\unexpanded{\luatexkorotatebox\@outputbox
+    \textwidth\textheight}\unexpanded\expandafter{\@outputpage}}}
+\else
+  \def\verticaltypesetting{%
+    \dimen@\hsize \hsize\vsize \vsize\dimen@
+    \edef\plainoutput{\unexpanded{\dimen@\hsize \hsize\vsize \vsize\dimen@}%
+      \unexpanded\expandafter{\plainoutput}}%
+    \def\pagebody{\setbox\z@\vbox to\hsize{\boxmaxdepth=\maxdepth
+      \pagecontents}\luatexkorotatebox\z@\box\z@}%
+    \maxdepth\z@ \typesetvertical }
 \fi
-
-%% package options
-\newif\if@hangul
-\newif\if@hanja
-\newif\if@luatexko@loadfontspec\@luatexko@loadfontspectrue
-\DeclareOption{hangul}{\@hangultrue}
-\DeclareOption{hanja}{\@hangultrue\@hanjatrue}
-\DeclareOption{unfonts}{}
-\DeclareOption{nofontspec}{\@luatexko@loadfontspecfalse}
-\ProcessOptions\relax
-
-\if@luatexko@loadfontspec
-  \RequirePackage{fontspec}[2018/07/30]
-\fi
-
-\RequirePackage{luatexko-core}
-
-\if@luatexko@loadfontspec
-  %% fontspec Korean options
-  \newfontfeature{YetHangul}{script=hang}
-  \newfontfeature{InterHangul}{interhangul=#1}
-  \newfontfeature{InterLatinCJK}{interlatincjk=#1}
-  \newfontfeature{PunctRaise}{punctraise=#1}
-  \newfontfeature{CharRaise}{charraise=#1}
-  \newfontfeature{NoEmbed}{embedding=no}
-  \aliasfontfeature{NoEmbed}{NoEmbedding}
-  \newfontfeature{protrusion}{protrusion=#1}
-  \newfontfeature{expansion}{expansion=#1}
-  \ExplSyntaxOn
-  \DeclareDocumentCommand \newhangulfontfeature {mmmm}
-    {
-      \keys_define:nn { fontspec }
-        {
-          #1 .code:n =
-            {
-              \keys_set:nn { fontspec } { #2 = {##1} } #4
-            },
-          #1 .default:n = {#3}
-        }
-    }
-  \newhangulfontfeature{Protrusion}{protrusion}{default}
-    {\aftergroup\protrudechars\aftergroup\tw@}
-  \newhangulfontfeature{Expansion}{expansion}{default}
-    {\aftergroup\adjustspacing\aftergroup\tw@}
-  %% default font features
-  \cs_set_eq:NN \defaulthangulfontfeatures    \defaultfontfeatures
-  \cs_set_eq:NN \defaulthanjafontfeatures     \defaultfontfeatures
-  \cs_set_eq:NN \defaultfallbackfontfeatures  \defaultfontfeatures
-  \defaultfontfeatures
-    [
-      \serifhangul@font, \serifhanja@font, \seriffallback@font,
-      \sanshangul@font,  \sanshanja@font,  \sansfallback@font,
-    ]
-    {Ligatures=TeX}
-  %% macros for Korean fonts
-  \DeclareDocumentCommand \setmainhangulfont { O{} m O{} }
-    {
-      \setfontfamily \serifhangul@font [#1,#3] {#2}
-      \str_if_eq_x:nnT \familydefault \rmdefault
-        {
-          \cs_set_eq:NN \hangul@font \serifhangul@font
-          \luatexko@hangul@selectfont
-        }
-      \ignorespaces
-    }
-  \DeclareDocumentCommand \setmainhanjafont { O{} m O{} }
-    {
-      \setfontfamily \serifhanja@font [#1,#3] {#2}
-      \str_if_eq_x:nnT \familydefault \rmdefault
-        {
-          \cs_set_eq:NN \hanja@font \serifhanja@font
-          \luatexko@hanja@selectfont
-        }
-      \ignorespaces
-    }
-  \DeclareDocumentCommand \setmainfallbackfont { O{} m O{} }
-    {
-      \setfontfamily \seriffallback@font [#1,#3] {#2}
-      \str_if_eq_x:nnT \familydefault \rmdefault
-        {
-          \cs_set_eq:NN \fallback@font \seriffallback@font
-          \luatexko@fallback@selectfont
-        }
-      \ignorespaces
-    }
-  \DeclareDocumentCommand \setsanshangulfont { O{} m O{} }
-    {
-      \setfontfamily \sanshangul@font [#1,#3] {#2}
-      \str_if_eq_x:nnT \familydefault \sfdefault
-        {
-          \cs_set_eq:NN \hangul@font \sanshangul@font
-          \luatexko@hangul@selectfont
-        }
-      \ignorespaces
-    }
-  \DeclareDocumentCommand \setsanshanjafont { O{} m O{} }
-    {
-      \setfontfamily \sanshanja@font [#1,#3] {#2}
-      \str_if_eq_x:nnT \familydefault \sfdefault
-        {
-          \cs_set_eq:NN \hanja@font \sanshanja@font
-          \luatexko@hanja@selectfont
-        }
-      \ignorespaces
-    }
-  \DeclareDocumentCommand \setsansfallbackfont { O{} m O{} }
-    {
-      \setfontfamily \sansfallback@font [#1,#3] {#2}
-      \str_if_eq_x:nnT \familydefault \sfdefault
-        {
-          \cs_set_eq:NN \fallback@font \sansfallback@font
-          \luatexko@fallback@selectfont
-        }
-      \ignorespaces
-    }
-  \DeclareDocumentCommand \setmonohangulfont { O{} m O{} }
-    {
-      \setfontfamily \monohangul@font [#1,#3] {#2}
-      \str_if_eq_x:nnT \familydefault \ttdefault
-        {
-          \cs_set_eq:NN \hangul@font \monohangul@font
-          \luatexko@hangul@selectfont
-        }
-      \ignorespaces
-    }
-  \DeclareDocumentCommand \setmonohanjafont { O{} m O{} }
-    {
-      \setfontfamily \monohanja@font [#1,#3] {#2}
-      \str_if_eq_x:nnT \familydefault \ttdefault
-        {
-          \cs_set_eq:NN \hanja@font \monohanja@font
-          \luatexko@hanja@selectfont
-        }
-      \ignorespaces
-    }
-  \DeclareDocumentCommand \setmonofallbackfont { O{} m O{} }
-    {
-      \setfontfamily \monofallback@font [#1,#3] {#2}
-      \str_if_eq_x:nnT \familydefault \ttdefault
-        {
-          \cs_set_eq:NN \fallback@font \monofallback@font
-          \luatexko@fallback@selectfont
-        }
-      \ignorespaces
-    }
-  \DeclareDocumentCommand \newhangulfontfamily { m O{} m O{} }
-    {
-      \exp_args:Nc \setfontfamily { luatexkofont@ \token_to_str:N #1 } [#2,#4] {#3}
-      \DeclareRobustCommand #1
-        {
-          \cs_set_eq:Nc \hangul@font { luatexkofont@ \token_to_str:N #1 }
-          \luatexko@hangul@selectfont
-        }
-    }
-  \DeclareDocumentCommand \newhanjafontfamily { m O{} m O{} }
-    {
-      \exp_args:Nc \setfontfamily { luatexkofont@ \token_to_str:N #1 } [#2,#4] {#3}
-      \DeclareRobustCommand #1
-        {
-          \cs_set_eq:Nc \hanja@font { luatexkofont@ \token_to_str:N #1 }
-          \luatexko@hanja@selectfont
-        }
-    }
-  \DeclareDocumentCommand \newfallbackfontfamily { m O{} m O{} }
-    {
-      \exp_args:Nc \setfontfamily { luatexkofont@ \token_to_str:N #1 } [#2,#4] {#3}
-      \DeclareRobustCommand #1
-        {
-          \cs_set_eq:Nc \fallback@font { luatexkofont@ \token_to_str:N #1 }
-          \luatexko@fallback@selectfont
-        }
-    }
-  \DeclareDocumentCommand \newhangulfontface { m O{} m O{} }
-    {
-      \exp_args:Nc \newfontface { luatexkofont@ \token_to_str:N #1 } [#2,#4] {#3}
-      \DeclareRobustCommand #1
-        {
-          \cs_set_eq:Nc \hangul@font { luatexkofont@ \token_to_str:N #1 }
-          \luatexko@hangul@selectfont
-        }
-    }
-  \DeclareDocumentCommand \newhanjafontface { m O{} m O{} }
-    {
-      \exp_args:Nc \newfontface { luatexkofont@ \token_to_str:N #1 } [#2,#4] {#3}
-      \DeclareRobustCommand #1
-        {
-          \cs_set_eq:Nc \hanja@font { luatexkofont@ \token_to_str:N #1 }
-          \luatexko@hanja@selectfont
-        }
-    }
-  \DeclareDocumentCommand \newfallbackfontface { m O{} m O{} }
-    {
-      \exp_args:Nc \newfontface { luatexkofont@ \token_to_str:N #1 } [#2,#4] {#3}
-      \DeclareRobustCommand #1
-        {
-          \cs_set_eq:Nc \fallback@font { luatexkofont@ \token_to_str:N #1 }
-          \luatexko@fallback@selectfont
-        }
-    }
-  \DeclareDocumentCommand \hangulfontspec { O{} m O{} }
-    {
-      \setfontfamily \hangul@font [#1,#3] {#2}
-      \luatexko@hangul@selectfont
-      \ignorespaces
-    }
-  \cs_set_eq:NN \adhochangulfont \hangulfontspec
-  \DeclareDocumentCommand \hanjafontspec { O{} m O{} }
-    {
-      \setfontfamily \hanja@font [#1,#3] {#2}
-      \luatexko@hanja@selectfont
-      \ignorespaces
-    }
-  \cs_set_eq:NN \adhochanjafont \hanjafontspec
-  \DeclareDocumentCommand \fallbackfontspec { O{} m O{} }
-    {
-      \setfontfamily \fallback@font [#1,#3] {#2}
-      \luatexko@fallback@selectfont
-      \ignorespaces
-    }
-  \cs_set_eq:NN \adhocfallbackfont \fallbackfontspec
-  \DeclareDocumentCommand \addhangulfontfeature { m }
-    {
-      \group_begin:
-      \cs_if_exist:NT \hangul@font { \hangul@font }
-      \addfontfeature {#1}
-      \use:x
-        {
-          \group_end:
-          \exp_not:N \tl_set:Nn \exp_not:N \hangul@font
-            {
-              \exp_not:N \fontfamily { \f@family } \exp_not:N \selectfont
-            }
-        }
-      \luatexko@hangul@selectfont
-      \ignorespaces
-    }
-  \cs_set_eq:NN \addhangulfontfeatures \addhangulfontfeature
-  \DeclareDocumentCommand \addhanjafontfeature { m }
-    {
-      \group_begin:
-      \cs_if_exist:NT \hanja@font { \hanja@font }
-      \addfontfeature {#1}
-      \use:x
-        {
-          \group_end:
-          \exp_not:N \tl_set:Nn \exp_not:N \hanja@font
-            {
-              \exp_not:N \fontfamily { \f@family } \exp_not:N \selectfont
-            }
-        }
-      \luatexko@hanja@selectfont
-      \ignorespaces
-    }
-  \cs_set_eq:NN \addhanjafontfeatures \addhanjafontfeature
-  \DeclareDocumentCommand \addfallbackfontfeature { m }
-    {
-      \group_begin:
-      \cs_if_exist:NT \fallback@font { \fallback@font }
-      \addfontfeature {#1}
-      \use:x
-        {
-          \group_end:
-          \exp_not:N \tl_set:Nn \exp_not:N \fallback@font
-            {
-              \exp_not:N \fontfamily { \f@family } \exp_not:N \selectfont
-            }
-        }
-      \luatexko@fallback@selectfont
-      \ignorespaces
-    }
-  \cs_set_eq:NN \addfallbackfontfeatures \addfallbackfontfeature
-  % hangul math font command
-  \DeclareDocumentCommand \setmathhangulfont { O{} m O{} }
-    {
-      \fontspec_set_family:Nnn \luatexko@math@hangul@family {#1,#3} {#2}
-    }
-%% fontspec 2018
-\RenewDocumentCommand \setmainfont { O{} m O{} }
-  {
-    \__fontspec_main_setmainfont:nn {#1,#3} {#2}
-    \protected\edef\rmfamily{
-      \unexpanded{\luatexko@serif@fonts}
-      \unexpanded\expandafter{\rmfamily}
-    }
-    \ignorespaces
-  }
-\RenewDocumentCommand \setsansfont { O{} m O{} }
-  {
-    \__fontspec_main_setsansfont:nn {#1,#3} {#2}
-    \protected\edef\sffamily{
-      \unexpanded{\luatexko@sans@fonts}
-      \unexpanded\expandafter{\sffamily}
-    }
-    \ignorespaces
-  }
-\RenewDocumentCommand \setmonofont { O{} m O{} }
-  {
-    \__fontspec_main_setmonofont:nn {#1,#3} {#2}
-    \protected\edef\ttfamily{
-      \unexpanded{\luatexko@mono@fonts}
-      \unexpanded\expandafter{\ttfamily}
-    }
-    \ignorespaces
-  }
-\cs_set_eq:NN \setromanfont \setmainfont
-  \ExplSyntaxOff
-\fi
-
+% hangul normalize
+\def\luatexhangulnormalize{%
+  \directlua{require"luatexko-normalize"}%
+  \afterassignment\luatexkohangulnormalize\count@}
+\def\luatexkohangulnormalize{%
+  \ifcase\count@ \directlua{ luatexkonormalize.unload() }% 0: none
+  \or \directlua{ luatexkonormalize.compose() }% 1: nfc
+  \else \directlua{ luatexkonormalize.decompose() }% 2: nfd
+  \fi }
+% convert uhc to utf8
+\def\luatexuhcinputencoding{%
+  \directlua{require"luatexko-uhc2utf8"}%
+  \afterassignment\luatexkouhcinputencoding\count@}
+\def\luatexkouhcinputencoding{%
+  \ifcase\count@ \directlua{ luatexkouhc2utf8.stopconvert() }%
+  \else \directlua{ luatexkouhc2utf8.startconvert() }%
+  \fi}
+% actualtext not provided
+\protected\def\actualtext#1#{\luatexkoactualtext}
+\def\luatexkoactualtext#1{#1}
+% math hangul
+\def\setmathhangulblock#1#2{%
+  \count@="#1
+  \loop
+    \Umathcode\count@ = 7 \symmathhangul\count@
+    \ifnum\count@<"#2 \advance\count@\@ne \repeat}
+% font fallback
+\newif\ifluatexkoselectfontrunning
+\def\luatexkohangulselectfont{%
+  \ifluatexkoselectfontrunning \else
+    \ifdefined\luatexkohangulfont
+      \begingroup
+      \luatexkoselectfontrunningtrue
+      \luatexkohangulfont
+      \expandafter\expandafter\expandafter\endgroup
+      \expandafter\luatexkohangulfontattr\fontid\font\relax
+    \fi
+  \fi }
+\def\luatexkohanjaselectfont{%
+  \ifluatexkoselectfontrunning \else
+    \ifdefined\luatexkohanjafont
+      \begingroup
+      \luatexkoselectfontrunningtrue
+      \luatexkohanjafont
+      \expandafter\expandafter\expandafter\endgroup
+      \expandafter\luatexkohanjafontattr\fontid\font\relax
+    \fi
+  \fi }
+\def\luatexkofallbackselectfont{%
+  \ifluatexkoselectfontrunning \else
+    \ifdefined\luatexkofallbackfont
+      \begingroup
+      \luatexkoselectfontrunningtrue
+      \luatexkofallbackfont
+      \expandafter\expandafter\expandafter\endgroup
+      \expandafter\luatexkofallbackfontattr\fontid\font\relax
+    \fi
+  \fi }
+% plain
+\ifdefined\selectfont\else
+  \protected\def\hangulfont{%
+    \afterassignment\luatexkohangulselectfont\font\luatexkohangulfont}
+  \protected\def\hanjafont{%
+    \afterassignment\luatexkohanjaselectfont\font\luatexkohanjafont}
+  \protected\def\fallbackfont{%
+    \afterassignment\luatexkofallbackselectfont\font\luatexkofallbackfont}
+  \newfam\symmathhangul
+  \protected\def\setmathhangulfonts#1#2#3{% font identifiers
+    \ifnum\Umathcharfam"AC00=\symmathhangul\else
+      \setmathhangulblock{AC00}{D7A3}%
+    \fi
+    \textfont\symmathhangul=#1\relax
+    \scriptfont\symmathhangul=#2\relax
+    \scriptscriptfont\symmathhangul=#3\relax }
+  \protected\def\mathhangulfont{%
+    \afterassignment\luatexkosetmathhangulfonts\font\textmathhangul}
+  \def\luatexkosetmathhangulfonts{%
+    \toks@\expandafter{\directlua{
+      local n = string.gsub("\fontname\textmathhangul", " at .+", "")
+      tex.sprint(n) }}%
+    \dimen@\fontdimen 6 \textmathhangul
+    \font\scriptmathhangul= {\the\toks@} at .7\dimen@
+    \font\scriptscriptmathhangul = {\the\toks@} at .5\dimen@
+    \setmathhangulfonts\textmathhangul\scriptmathhangul\scriptscriptmathhangul}
+  \catcode`\@=\luatexkoatcatcode
+\endinput\fi
+% latex
 \RequirePackage{everysel}
 \EverySelectfont{%
-  \luatexko@hangul@selectfont
-  \luatexko@hanja@selectfont
-  \luatexko@fallback@selectfont
+  \ifx\f@encoding\UTFencname
+    \luatexkohangulselectfont
+    \luatexkohanjaselectfont
+    \luatexkofallbackselectfont
+  \fi }
+\protected\def\fontfamily#1{\edef\f@family{#1}% redefine \fontfamily
+  \ifx\f@encoding\UTFencname
+  \ifluatexkoselectfontrunning \else
+    \ifx\f@family\rmdefault
+      \let\luatexkohangulfont\luatexkomainhangulfont
+      \let\luatexkohanjafont\luatexkomainhanjafont
+      \let\luatexkofallbackfont\luatexkomainfallbackfont
+    \else\ifx\f@family\sfdefault
+      \let\luatexkohangulfont\luatexkosanshangulfont
+      \let\luatexkohanjafont\luatexkosanshanjafont
+      \let\luatexkofallbackfont\luatexkosansfallbackfont
+    \else\ifx\f@family\ttdefault
+      \let\luatexkohangulfont\luatexkomonohangulfont
+      \let\luatexkohanjafont\luatexkomonohanjafont
+      \let\luatexkofallbackfont\luatexkomonofallbackfont
+    \fi\fi\fi
+  \fi\fi }
+% fontspec-like
+\ExplSyntaxOn
+\DeclareDocumentCommand \setmainhangulfont { O{} m O{} }
+{
+  \fontspec_set_family:Nnn \luatexkomainhangulfamily { Ligatures=TeX, #1, #3 } { #2 }
+  \DeclareRobustCommand \luatexkomainhangulfont
+  {
+    \fontfamily \luatexkomainhangulfamily \selectfont
+  }
+  \str_if_eq_x:nnT \familydefault \rmdefault
+  {
+    \cs_set_eq:NN \luatexkohangulfont \luatexkomainhangulfont
+    \luatexkohangulselectfont
+  }
+  \ignorespaces
+}
+\DeclareDocumentCommand \setsanshangulfont { O{} m O{} }
+{
+  \fontspec_set_family:Nnn \luatexkosanshangulfamily { Ligatures=TeX, #1, #3 } { #2 }
+  \DeclareRobustCommand \luatexkosanshangulfont
+  {
+    \fontfamily \luatexkosanshangulfamily \selectfont
+  }
+  \str_if_eq_x:nnT \familydefault \sfdefault
+  {
+    \cs_set_eq:NN \luatexkohangulfont \luatexkosanshangulfont
+    \luatexkohangulselectfont
+  }
+  \ignorespaces
+}
+\DeclareDocumentCommand \setmonohangulfont { O{} m O{} }
+{
+  \fontspec_set_family:Nnn \luatexkomonohangulfamily { #1, #3 } { #2 }
+  \DeclareRobustCommand \luatexkomonohangulfont
+  {
+    \fontfamily \luatexkomonohangulfamily \selectfont
+  }
+  \str_if_eq_x:nnT \familydefault \ttdefault
+  {
+    \cs_set_eq:NN \luatexkohangulfont \luatexkomonohangulfont
+    \luatexkohangulselectfont
+  }
+  \ignorespaces
+}
+\DeclareDocumentCommand \newhangulfontfamily { m O{} m O{} }
+{
+  \fontspec_set_family:cnn { luatexko_user_family_ \cs_to_str:N #1 } { #2, #4 } { #3 }
+  \DeclareRobustCommand #1
+  {
+    \tl_set:Nn \luatexkohangulfont
+    {
+      \exp_args:Nc \fontfamily { luatexko_user_family_ \cs_to_str:N #1 } \selectfont
+    }
+    \luatexkohangulselectfont
+  }
+  \ignorespaces
+}
+\DeclareDocumentCommand \newhangulfontface { m O{} m O{} }
+{
+  \newhangulfontfamily #1 { #3 } [ BoldFont={}, ItalicFont={}, SmallCapsFont={}, #2, #4 ]
+}
+\DeclareDocumentCommand \hangulfontspec { O{} m O{} }
+{
+  \fontspec_set_family:Nnn \luatexkohangulfontfamily { #1, #3 } { #2 }
+  \tl_set:Nn \luatexkohangulfont
+  {
+    \fontfamily \luatexkohangulfontfamily \selectfont
+  }
+  \luatexkohangulselectfont
+  \ignorespaces
+}
+\DeclareDocumentCommand \setmainhanjafont { O{} m O{} }
+{
+  \fontspec_set_family:Nnn \luatexkomainhanjafamily { Ligatures=TeX, #1, #3 } { #2 }
+  \DeclareRobustCommand \luatexkomainhanjafont
+  {
+    \fontfamily \luatexkomainhanjafamily \selectfont
+  }
+  \str_if_eq_x:nnT \familydefault \rmdefault
+  {
+    \cs_set_eq:NN \luatexkohanjafont \luatexkomainhanjafont
+    \luatexkohanjaselectfont
+  }
+  \ignorespaces
+}
+\DeclareDocumentCommand \setsanshanjafont { O{} m O{} }
+{
+  \fontspec_set_family:Nnn \luatexkosanshanjafamily { Ligatures=TeX, #1, #3 } { #2 }
+  \DeclareRobustCommand \luatexkosanshanjafont
+  {
+    \fontfamily \luatexkosanshanjafamily \selectfont
+  }
+  \str_if_eq_x:nnT \familydefault \sfdefault
+  {
+    \cs_set_eq:NN \luatexkohanjafont \luatexkosanshanjafont
+    \luatexkohanjaselectfont
+  }
+  \ignorespaces
+}
+\DeclareDocumentCommand \setmonohanjafont { O{} m O{} }
+{
+  \fontspec_set_family:Nnn \luatexkomonohanjafamily { #1, #3 } { #2 }
+  \DeclareRobustCommand \luatexkomonohanjafont
+  {
+    \fontfamily \luatexkomonohanjafamily \selectfont
+  }
+  \str_if_eq_x:nnT \familydefault \ttdefault
+  {
+    \cs_set_eq:NN \luatexkohanjafont \luatexkomonohanjafont
+    \luatexkohanjaselectfont
+  }
+  \ignorespaces
+}
+\DeclareDocumentCommand \newhanjafontfamily { m O{} m O{} }
+{
+  \fontspec_set_family:cnn { luatexko_user_family_ \cs_to_str:N #1 } { #2, #4 } { #3 }
+  \DeclareRobustCommand #1
+  {
+    \tl_set:Nn \luatexkohanjafont
+    {
+      \exp_args:Nc \fontfamily { luatexko_user_family_ \cs_to_str:N #1 } \selectfont
+    }
+    \luatexkohanjaselectfont
+  }
+  \ignorespaces
+}
+\DeclareDocumentCommand \newhanjafontface { m O{} m O{} }
+{
+  \newhanjafontfamily #1 { #3 } [ BoldFont={}, ItalicFont={}, SmallCapsFont={}, #2, #4 ]
+}
+\DeclareDocumentCommand \hanjafontspec { O{} m O{} }
+{
+  \fontspec_set_family:Nnn \luatexkohanjafontfamily { #1, #3 } { #2 }
+  \tl_set:Nn \luatexkohanjafont
+  {
+    \fontfamily \luatexkohanjafontfamily \selectfont
+  }
+  \luatexkohanjaselectfont
+  \ignorespaces
 }
 
-% serif    : finemathattr = 2
-% sans     : finemathattr = 1
-% tt       : finemathattr = 0
-% verbatim : finemathattr = nil
-\def\luatexko@serif@fonts{%
-  \let\hangul@font\serifhangul@font
-  \let\hanja@font\serifhanja@font
-  \let\fallback@font\seriffallback@font
-  \finemathattr\tw@
+\DeclareDocumentCommand \setmainfallbackfont { O{} m O{} }
+{
+  \fontspec_set_family:Nnn \luatexkomainfallbackfamily { Ligatures=TeX, #1, #3 } { #2 }
+  \DeclareRobustCommand \luatexkomainfallbackfont
+  {
+    \fontfamily \luatexkomainfallbackfamily \selectfont
+  }
+  \str_if_eq_x:nnT \familydefault \rmdefault
+  {
+    \cs_set_eq:NN \luatexkofallbackfont \luatexkomainfallbackfont
+    \luatexkofallbackselectfont
+  }
+  \ignorespaces
 }
-\def\luatexko@sans@fonts{%
-  \let\hangul@font\sanshangul@font
-  \let\hanja@font\sanshanja@font
-  \let\fallback@font\sansfallback@font
-  \finemathattr\@ne
+\DeclareDocumentCommand \setsansfallbackfont { O{} m O{} }
+{
+  \fontspec_set_family:Nnn \luatexkosansfallbackfamily { Ligatures=TeX, #1, #3 } { #2 }
+  \DeclareRobustCommand \luatexkosansfallbackfont
+  {
+    \fontfamily \luatexkosansfallbackfamily \selectfont
+  }
+  \str_if_eq_x:nnT \familydefault \sfdefault
+  {
+    \cs_set_eq:NN \luatexkofallbackfont \luatexkosansfallbackfont
+    \luatexkofallbackselectfont
+  }
+  \ignorespaces
 }
-\def\luatexko@mono@fonts{%
-  \let\hangul@font\monohangul@font
-  \let\hanja@font\monohanja@font
-  \let\fallback@font\monofallback@font
-  \finemathattr\z@
+\DeclareDocumentCommand \setmonofallbackfont { O{} m O{} }
+{
+  \fontspec_set_family:Nnn \luatexkomonofallbackfamily { #1, #3 } { #2 }
+  \DeclareRobustCommand \luatexkomonofallbackfont
+  {
+    \fontfamily \luatexkomonofallbackfamily \selectfont
+  }
+  \str_if_eq_x:nnT \familydefault \ttdefault
+  {
+    \cs_set_eq:NN \luatexkofallbackfont \luatexkomonofallbackfont
+    \luatexkofallbackselectfont
+  }
+  \ignorespaces
 }
-
-\protected\edef\rmfamily{%
-  \unexpanded{\luatexko@serif@fonts}\unexpanded\expandafter{\rmfamily}}
-\protected\edef\sffamily{%
-  \unexpanded{\luatexko@sans@fonts}\unexpanded\expandafter{\sffamily}}
-\protected\edef\ttfamily{%
-  \unexpanded{\luatexko@mono@fonts}\unexpanded\expandafter{\ttfamily}}
-\edef\verbatim@font{\unexpanded\expandafter{\verbatim@font
-  \unsetattribute\finemathattr}}
-
-\AtBeginDocument{
-\unless\ifdefined\serifhangul@font\let\serifhangul@font\sanshangul@font\fi
-\unless\ifdefined\sanshangul@font \let\sanshangul@font\serifhangul@font\fi
-\unless\ifdefined\monohangul@font \let\monohangul@font\sanshangul@font \fi
-\unless\ifdefined\serifhangul@font\unless\ifdefined\sanshangul@font
-  \hangulpunctuations=0 % nanumtype1
-\fi\fi
-% don't forget to redefine \normalfont
-\expandafter\ifx\familydefault\rmdefault
-  \protected\edef\normalfont{%
-    \unexpanded{\luatexko@serif@fonts}\unexpanded\expandafter{\normalfont}}
-  % and current hangul font
-  \luatexko@serif@fonts
-\else\expandafter\ifx\familydefault\sfdefault
-  \protected\edef\normalfont{%
-    \unexpanded{\luatexko@sans@fonts}\unexpanded\expandafter{\normalfont}}
-  \luatexko@sans@fonts
-\else
-  \protected\edef\normalfont{%
-    \unexpanded{\luatexko@mono@fonts}\unexpanded\expandafter{\normalfont}}
-  \luatexko@mono@fonts
-\fi\fi
-\let\reset@font\normalfont
-% reset hangul font
-\selectfont
-% for hyperref
-\@ifpackageloaded{hyperref}{\pdfstringdefDisableCommands{%
-  \let\dotemph\@firstofone
-  \let\ruby\@firstoftwo
-  \let\uline\@firstofone
-  \let\sout\@firstofone
-  \let\uuline\@firstofone
-  \let\xout\@firstofone
-  \let\uwave\@firstofone
-  \let\dashuline\@firstofone
-  \let\dotuline\@firstofone
-  \let\actualtext\@firstofone
-  \let\inhibitglue\empty
-  \def\는{는}%
-  \def\은{은}%
-  \def\을{을}%
-  \def\를{를}%
-  \def\와{와}%
-  \def\과{과}%
-  \def\가{가}%
-  \def\이{이}%
-  \def\라{라}%
-  \def\으{으}%
-  \def\로{로}%
-  }}{}
+\DeclareDocumentCommand \newfallbackfontfamily { m O{} m O{} }
+{
+  \fontspec_set_family:cnn { luatexko_user_family_ \cs_to_str:N #1 } { #2, #4 } { #3 }
+  \DeclareRobustCommand #1
+  {
+    \tl_set:Nn \luatexkofallbackfont
+    {
+      \exp_args:Nc \fontfamily { luatexko_user_family_ \cs_to_str:N #1 } \selectfont
+    }
+    \luatexkofallbackselectfont
+  }
+  \ignorespaces
 }
-
-\if@luatexko@loadfontspec
-  %% hangul in math --- latex
-  \AtBeginDocument{
-    \begingroup
-      \unless\ifdefined\luatexko@math@hangul@family
-        \ifdefined\hangul@font \hangul@font \fi
-        \xdef\luatexko@math@hangul@family{\f@family}%
-      \fi
-    \endgroup
-    \DeclareSymbolFont{mathhangul}%
-      \f@encoding\luatexko@math@hangul@family\mddefault\updefault
-    \ifcsname\f@encoding/\luatexko@math@hangul@family/\bfdefault/\updefault\endcsname
-      \SetSymbolFont{mathhangul}{bold}%
-        \f@encoding\luatexko@math@hangul@family\bfdefault\updefault
-    \fi
+\DeclareDocumentCommand \newfallbackfontface { m O{} m O{} }
+{
+  \newfallbackfontfamily #1 { #3 } [ BoldFont={}, ItalicFont={}, SmallCapsFont={}, #2, #4 ]
+}
+\DeclareDocumentCommand \fallbackfontspec { O{} m O{} }
+{
+  \fontspec_set_family:Nnn \luatexkofallbackfontfamily { #1, #3 } { #2 }
+  \tl_set:Nn \luatexkofallbackfont
+  {
+    \fontfamily \luatexkofallbackfontfamily \selectfont
+  }
+  \luatexkofallbackselectfont
+  \ignorespaces
+}
+\DeclareDocumentCommand \setmathhangulfont { O{} m O{} }
+{
+  \fontspec_set_family:Nnn \luatexkomathhangulfamily { #1, #3 } { #2 }
+  \DeclareSymbolFont { mathhangul }
+    \g_fontspec_encoding_tl \luatexkomathhangulfamily \mddefault \updefault
+  \int_compare:nNnF { \Umathcharfam"AC00 } = { \symmathhangul }
+  {
     \setmathhangulblock{AC00}{D7A3}
   }
-\fi
-
+  \ignorespaces
+}
+\ExplSyntaxOff
+\let\adhochangulfont\hangulfontspec
+\let\adhochanjafont\hanjafontspec
+\let\adhocfallbackfont\fallbackfontspec
+% interhangul, interlatincjk, charraise
+\protected\def\addhangulfontfeature#1{%
+  \begingroup
+  \ifdefined\luatexkohangulfont \luatexkohangulfont \fi
+  \addfontfeature{#1}%
+  \edef\x{\endgroup
+    \def\noexpand\luatexkohangulfont{%
+      \noexpand\fontfamily{\f@family}\noexpand\selectfont}}\x
+  \luatexkohangulselectfont
+  \ignorespaces}
+\let\addhangulfontfeatures\addhangulfontfeature
+\protected\def\addhanjafontfeature#1{%
+  \begingroup
+  \ifdefined\luatexkohanjafont \luatexkohanjafont \fi
+  \addfontfeature{#1}%
+  \edef\x{\endgroup
+    \def\noexpand\luatexkohanjafont{%
+      \noexpand\fontfamily{\f@family}\noexpand\selectfont}}\x
+  \luatexkohanjaselectfont
+  \ignorespaces}
+\let\addhanjafontfeatures\addhanjafontfeature
+\protected\def\addfallbackfontfeature#1{%
+  \begingroup
+  \ifdefined\luatexkofallbackfont \luatexkofallbackfont \fi
+  \addfontfeature{#1}%
+  \edef\x{\endgroup
+    \def\noexpand\luatexkofallbackfont{%
+      \noexpand\fontfamily{\f@family}\noexpand\selectfont}}\x
+  \luatexkofallbackselectfont
+  \ignorespaces}
+\let\addfallbackfontfeatures\addfallbackfontfeature
+\newfontfeature{InterHangul}{interhangul=#1}
+\newfontfeature{InterLatinCJK}{interlatincjk=#1}
+\newfontfeature{CharRaise}{charraise=#1}
+\newfontfeature{RemoveClassicSpaces}{+removeclassicspaces}
+\newfontfeature{CompressPunctuations}{+compresspunctuations}
+\newfontfeature{Expansion}{expansion=\ifx\empty#1\empty default\else #1\fi }
+\newfontfeature{Protrusion}{protrusion=\ifx\empty#1\empty default\else #1\fi }
+\newfontfeature{InterCharacter}{intercharacter=#1}
+% italic correction
+\def\nocorrlist{,.^^^^3001^^^^3002^^^^ff0c^^^^ff0e^^^^ff61^^^^ff64}
+% package options
+\newif\if@hangul
+\newif\if@hanja
+\DeclareOption{hangul}{\@hangultrue}
+\DeclareOption{hanja}{\@hangultrue\@hanjatrue}
+\ProcessOptions\relax
+% default hangul font
+\AtBeginDocument{
+  \ifdefined\luatexkomainhangulfont\else
+    \begingroup\rmfamily
+    \directlua{ luatexko.currenthashangulchars(255) }\expandafter\endgroup
+    \ifnum\count@=\z@
+      \setmainhangulfont{UnBatang}[Script=Hangul,Language=Korean]\fi\fi
+  \ifdefined\luatexkosanshangulfont\else
+    \begingroup\sffamily
+    \directlua{ luatexko.currenthashangulchars(255) }\expandafter\endgroup
+    \ifnum\count@=\z@
+      \setsanshangulfont{UnDotum}\fi\fi
+  \ifdefined\luatexkomonohangulfont\else
+    \begingroup\ttfamily
+    \directlua{ luatexko.currenthashangulchars(255) }\expandafter\endgroup
+    \ifnum\count@=\z@
+      \let\luatexkomonohangulfont\luatexkosanshangulfont\fi\fi
+  \@ifpackageloaded{hyperref}{\pdfstringdefDisableCommands{%
+    \let\ruby\@firstoftwo \let\xxruby\@firstoftwo
+    \let\dotemph\@firstofone
+    \let\markoverwith\@secondoftwo
+    \let\uline\@firstofone \let\sout\@firstofone
+    \let\uuline\@firstofone \let\xout\@firstofone
+    \let\uwave\@firstofone \let\dashuline\@firstofone
+    \let\dotuline\@firstofone
+    \let\typesetclassic\empty \let\typesetmodern\empty
+    \let\inhibitglue\empty
+    \let\hangulpunctuations\count@
+    \let\registerpunctuations\@gobble \let\unregisterpunctuations\@gobble
+    \let\registerhangulpunctuations\@gobble
+    \let\unregisterhangulpunctuations\@gobble
+    \let\registerbreakableafter\@gobble \let\registerbreakablebefore\@gobble
+    \let\hangulbyhangulfont\count@ \let\hanjabyhanjafont\count@
+    \let\addhangulfontfeature\@gobble \let\addhangulfontfeatures\@gobble
+    \let\addhanjafontfeature\@gobble \let\addhanjafontfeatures\@gobble
+    \let\addfallbackfontfeature\@gobble \let\addfallbackfontfeatures\@gobble
+    \def\는{는}\def\은{은}\def\을{을}\def\를{를}\def\와{와}\def\과{과}%
+    \def\가{가}\def\이{이}\def\라{라}\def\으{으}\def\로{로}%
+    \def\hellipsis{...}}}{}
+  \if@hangul \RequirePackage{konames-utf}\fi
+}
+% misc
 \RequirePackage{kolabels-utf}
+\protected\def\hellipsis{\char"2026\char"2026 }
 \if@hangul
-  \AtBeginDocument{\RequirePackage{konames-utf}}
   \linespread{1.3888}
   \footnotesep=1.3888\footnotesep
   \skip\footins=\glueexpr\skip\footins/72*100\relax
-  \hangulpunctuations=1
   \frenchspacing
 \fi
-
 \endinput

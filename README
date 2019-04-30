@@ -1,17 +1,16 @@
-LuaTeX-ko Package version 1.24 (2019/04/06)
+LuaTeX-ko Package version 2.0 (2019/05/01)
 ===========================================
 
 This is a Lua(La)TeX macro package that supports typesetting Korean
 documents including Old Hangul texts. As LuaTeX has opened up access to
 almost all the hidden routines of TeX engine, users can obtain more
-beautiful outcome using this package rather than other Hangul macros
+beautiful outcome using this package rather than other Hangul packages
 operating on other engines.
 
-LuaTeX version 0.95+ and luaotfload package version 2.7+ are required for
+LuaTeX version 1.10+ and luaotfload package version 2.96+ are required for
 this package to run.
 
-This package also requires both cjk-ko and xetexko packages for its full
-functionality.
+This package also requires both cjk-ko package for its full functionality.
 
 
 License
@@ -40,7 +39,6 @@ Files
 TeXinputs
 
     luatexko.sty            -> tex/luatex/luatexko/
-    luatexko-core.sty       -> tex/luatex/luatexko/
     luatexko.lua            -> tex/luatex/luatexko/
     luatexko-normalize.lua  -> tex/luatex/luatexko/
     luatexko-uhc2utf8.lua   -> tex/luatex/luatexko/
@@ -80,10 +78,6 @@ interline spacing. Declares \hangulpunctuations=1 as well.
     [hanja]
 Load Hanja captions. Also apply other settings as [hangul] option does.
 
-    [nofontspec]
-Prevents loading of fontspec package. Entire document will be typeset
-with Type1 fonts.
-
 
 Hangul Font Commands
 --------------------
@@ -114,8 +108,8 @@ In like manner, these commands are available as well:
     \hanjafontspec    \newhanjafontfamily    \addhanjafontfeature
     \fallbackfontspec \newfallbackfontfamily \addfallbackfontfeature
 
-If any of these CJK fonts are not specified, Nanum Type1 fonts from
-nanumtype1 package will be used for typesetting CJK characters.
+If any of these CJK fonts are not specified, UnBatang/UnDotum TrueType
+fonts will be used for typesetting CJK characters.
 
 
 Hangul Font Options
@@ -134,13 +128,9 @@ Raise CJK characters by <dimen>.
 Other User Commands
 -------------------
 
-    \luatexuhcinputencoding=<number>
-When <number> is 1 or greater, UHC (aka. Windows CP949) input encoding
-is allowed. <number> 0 restores UTF-8, the default input encoding.
-
     \hangulpunctuations=<number>
-When <number> is 1 or greater, latin punctuations will be typeset with
-hangul fonts.
+When <number> is 1 or greater (being default value), latin punctuations
+will be typeset with hangul fonts.
 
     \dotemph{...}
 Emphasise Hangul or Hanja by putting dot above.

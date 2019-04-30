@@ -13,8 +13,8 @@
 
 luatexbase.provides_module({
   name        = "luatexko-uhc2utf8",
-  version     = "1.23",
-  date        = "2019/03/24",
+  version     = "2.0",
+  date        = "2019/05/01",
   author      = "Dohyun Kim, Soojin Nam",
   description = "UHC (CP949) input encoding",
   license     = "LPPL v1.3+",
@@ -24,12 +24,12 @@ luatexkouhc2utf8 = luatexkouhc2utf8 or {}
 local luatexkouhc2utf8 = luatexkouhc2utf8
 
 local format = string.format
+local utf8len = utf8.len
 require "unicode"
 local unicodeutf8 = unicode.utf8
 local ugsub = unicodeutf8.gsub
 local ubyte = unicodeutf8.byte
 local uchar = unicodeutf8.char
-local floor = math.floor
 local kpse_find_file = kpse.find_file
 local add_to_callback = luatexbase.add_to_callback
 local remove_from_callback = luatexbase.remove_from_callback
@@ -58,38 +58,10 @@ end
 
 local t_uhc2ucs = t_uhc2ucs or get_uhc_uni_table()
 
-local function not_utf8lowbyte(t)
-  for _,v in ipairs(t) do
-    -- rough checking
-    if v < 0x80 or v > 0xBF then return true end
-  end
-  return false
-end
-
 local uhc_to_utf8 = function(buffer)
   if not buffer then return end
-  -- check if buffer is already utf-8; better solution?
-  local i, buflen = 1, buffer:len()+1
-  while i < buflen do
-    local a = buffer:byte(i)
-    if a < 0x80 then
-      i = i + 1
-    elseif a < 0xC2 then
-      break
-    elseif a < 0xE0 then
-      if not_utf8lowbyte({buffer:byte(i+1)}) then break end
-      i = i + 2
-    elseif a < 0xF0 then
-      if not_utf8lowbyte({buffer:byte(i+1,i+2)}) then break end
-      i = i + 3
-    elseif a < 0xF5 then
-      if not_utf8lowbyte({buffer:byte(i+1,i+3)}) then break end
-      i = i + 4
-    else
-      break
-    end
-  end
-  if i == buflen then return nil end
+  -- check if buffer is already utf-8
+  if utf8len(buffer) then return nil end
   -- now convert to utf8
   buffer = buffer:gsub("([\129-\253])([\65-\254])",
   function(a, b)
@@ -128,7 +100,7 @@ local function utf8_to_uhc (name)
   function(u)
     local c = t_ucs2uhc[ubyte(u)]
     if c then
-      return format("%c%c", floor(c/256), c%256)
+      return format("%c%c", c//256, c%256)
     end
   end)
   return name
