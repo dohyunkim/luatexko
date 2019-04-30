@@ -10,7 +10,7 @@ operating on other engines.
 LuaTeX version 1.10+ and luaotfload package version 2.96+ are required for
 this package to run.
 
-This package also requires both cjk-ko package for its full functionality.
+This package also requires cjk-ko package for its full functionality.
 
 
 License
