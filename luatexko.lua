@@ -75,27 +75,27 @@ local function warning (...)
   return module_warning("luatexko", stringformat(...))
 end
 
-local glyphid   = nodeid"glyph"
-local glueid    = nodeid"glue"
-local penaltyid = nodeid"penalty"
-local discid    = nodeid"disc"
-local mathid    = nodeid"math"
-local hlistid   = nodeid"hlist"
-local vlistid   = nodeid"vlist"
-local ruleid    = nodeid"rule"
 local dirid     = nodeid"dir"
+local discid    = nodeid"disc"
+local glueid    = nodeid"glue"
+local glyphid   = nodeid"glyph"
+local hlistid   = nodeid"hlist"
 local kernid    = nodeid"kern"
+local mathid    = nodeid"math"
+local penaltyid = nodeid"penalty"
+local ruleid    = nodeid"rule"
+local vlistid   = nodeid"vlist"
 local whatsitid = nodeid"whatsit"
-local user_whatsit    = nodesubtype"user_defined"
 local literal_whatsit = nodesubtype"pdf_literal"
-local spaceskip  = 13
-local xleaders   = 102
+local user_whatsit    = nodesubtype"user_defined"
+local directmode = 2
 local fontkern   = 0
 local userkern   = 1
 local italcorr   = 3
-local lua_value  = 108
 local lua_number = 100
-local directmode = 2
+local lua_value  = 108
+local spaceskip  = 13
+local xleaders   = 102
 local nohyphen = registernumber"l@nohyphenation" or -1 -- verbatim
 
 local hangulfontattr   = attributes.luatexkohangulfontattr
@@ -1062,9 +1062,11 @@ end
 local function draw_uline (head, curr, parent, t, final)
   local start, list = t.start or head, t.list
   start = skip_white_nodes(start, true)
+  nodeslide(start) -- to get correct getprev.
   curr  = skip_white_nodes(curr)
-  local len = parent and rangedimensions(parent, start, getnext(curr))
-                     or  dimensions(start, getnext(curr)) -- it works?!
+  if getnext(curr) then curr = getnext(curr) end
+  local len = parent and rangedimensions(parent, start, curr)
+                     or  dimensions(start, curr) -- it works?!
   if len and len ~= 0 then
     local g = nodenew(glueid)
     setglue(g, len)
