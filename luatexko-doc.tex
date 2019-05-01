@@ -35,7 +35,7 @@
 \setmonohangulfont{Noto Sans CJK KR}[
   UprightFont=* DemiLight,
   BoldFont=* Bold,
-  CharRaise=-.25ex,
+  CharRaise=-.2ex,
   Color=191970, % MidnightBlue
 ]
 \setmathhangulfont{Noto Sans CJK KR}[
@@ -43,18 +43,16 @@
   Language=Korean,
   SizeFeatures={
     {Size=-6,  Font=* Medium},
-    {Size=6-8, Font=* Regular},
-    {Size=8-,  Font=* DemiLight},
+    {Size=6-9, Font=* Regular},
+    {Size=9-,  Font=* DemiLight},
   },
 ]
 \newhangulfontface\rubyfont{Noto Serif CJK KR Medium}[
   Script=Hangul,
   Language=Korean,
-  LocalForms=On,
 ]
 \usepackage{hologo}
 \def\luatex{\hologo{LuaTeX}}
-\def\MP{\hologo{METAPOST}}
 \def\XeTeX{\hologo{XeTeX}}
 \usepackage[pdfencoding=auto,bookmarksnumbered,hidelinks]{hyperref}
 
@@ -112,12 +110,13 @@ BOM (Byte Order Mark)은 있어도 좋고 없어도 좋다.
 CP949 인코딩에 관해서는 제\ref{sec:uhcencoding}절 참조.
 
 \section{패키지 옵션}\label{sec:packageopt}
-패키지 옵션으로 |[hangul]|과 |[hanja]|가 제공된다.  행간격 조정이 행해지며
-장 제목이나 표·그림 캡션 따위가 한글 또는 한자 방식으로 표시된다.
-장(chapter) 제목과 편(part) 제목에만 ``제(第)''가 붙어 ``제~1 편''
-``제~3 장''과 같은 방식으로 표시되며 절 제목 이하에는 붙지 않는다.%
+패키지 옵션으로 |[hangul]|과 |[hanja]|가 제공된다.%
 \footnote{%
   |[nofontspec]| 옵션은 v2.0부터 더는 제공되지 않는다. }
+행간격 조정이 행해지며
+장 제목이나 표·그림 캡션 따위가 한글 또는 한자 방식으로 표시된다.
+장(chapter) 제목과 편(part) 제목에만 ``제(第)''가 붙어 ``제~1 편''
+``제~3 장''과 같은 방식으로 표시되며 절 제목 이하에는 붙지 않는다.
 
 \section{글꼴명령}\label{sec:fontcmds}
 \luatexko를 로드하면 fontspec 패키지를 자동으로 불러온다. 글꼴 설정에
@@ -254,7 +253,7 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
 \item[InterLatinCJK] 한글 또는 한자와 Latin문자 사이의 자간을 설정한다.%
     \footnote{%
       플레인텍에서는 |interlatincjk=<dimen>|. }
-    한글 한자 다음에 라틴 문자가 오는 경우 원래는 줄바꿈이 되지 않지만
+    한글^^b7한자 다음에 라틴 문자가 오는 경우 원래는 줄바꿈이 되지 않지만
     이 옵션을 주면 줄바꿈이 가능해진다.
 \begin{verbatim}
   [InterLatinCJK=0.125em]
@@ -322,7 +321,7 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
   지난 버전과의 호환성을 위해 당분간 제공되고 있을 뿐이다. }
 그림~\ref{fig:gomun} 참조.
 
-v2.0부터는 고문헌 조판에서 한글 한자와 영문자가 붙어 나오더라도 자동으로
+v2.0부터는 고문헌 조판에서 한글^^b7한자와 영문자가 붙어 나오더라도 자동으로
 간격을 잡아주지 않으므로 이런 경우 사용자가 |InterLatinCJK| 옵션을
 지정해야 한다.
 또한 불필요한 공백이 오더라도 자동으로 제거해주지 않으므로 이런 경우
@@ -440,8 +439,8 @@ v2.0부터는 자동으로 수식 한글을 잡아주지 않는다.
   \setmathhangulfont{Noto Sans CJK KR}[
     SizeFeatures={
       {Size=-6,  Font=* Medium},
-      {Size=6-8, Font=* Regular},
-      {Size=8-,  Font=* DemiLight},
+      {Size=6-9, Font=* Regular},
+      {Size=9-,  Font=* DemiLight},
     } ]
 \end{verbatim}
 현재 한글만 쓸 수 있게 설정되어 있다.
