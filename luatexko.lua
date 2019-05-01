@@ -1695,16 +1695,16 @@ add_to_callback("luaotfload.patch_font", process_patch_font,
 local auxiliary_procs = {
   dotemph = {
     hpack_filter = process_dotemph,
-    vpack_filter = process_dotemph,
+    post_linebreak_filter = process_dotemph,
   },
   uline   = {
     hpack_filter = process_uline,
-    vpack_filter = process_uline,
+    post_linebreak_filter = process_uline,
   },
   ruby    = {
     pre_linebreak_filter = process_ruby_pre_linebreak,
     hpack_filter         = process_ruby_post_linebreak,
-    vpack_filter         = process_ruby_post_linebreak,
+    post_linebreak_filter = process_ruby_post_linebreak,
   },
   autojosa = {
     luatexko_pre_hpack        = process_josa,
@@ -1721,7 +1721,9 @@ local function activate (name)
     local fun
     if cbnam == "hpack_filter" then
       fun = function(h, gc)
-        if gc == "align_set" then h = cbfun(h) end
+        if gc == "adjusted_hbox" or gc == "align_set" then
+          h = cbfun(h)
+        end
         return h
       end
     else
