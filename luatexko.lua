@@ -1063,9 +1063,11 @@ end
 local function draw_uline (head, curr, parent, t, final)
   local start, list = t.start or head, t.list
   start = skip_white_nodes(start, true)
-  nodeslide(start) -- to get correct getprev.
+  if final then
+    nodeslide(start) -- to get correct getprev.
+  end
   curr  = skip_white_nodes(curr)
-  if getnext(curr) then curr = getnext(curr) end
+  curr  = getnext(curr) or curr
   local len = parent and rangedimensions(parent, start, curr)
                      or  dimensions(start, curr) -- it works?!
   if len and len ~= 0 then
