@@ -422,8 +422,8 @@ local SC_charclass = setmetatable({
 }, { __index = function(_,c) return charclass[c] end })
 
 local vert_charclass = setmetatable({
-  [0xFF1A] = 0, -- 0xFE13
-  [0xFF1B] = 0, -- 0xFE14
+  [0xFF1A] = 5, -- 0xFE13
+  [0xFF1B] = 5, -- 0xFE14
 }, { __index = function(_,c) return charclass[c] end })
 
 local function get_char_class (c, classic)
@@ -578,13 +578,14 @@ local function insert_glue_before (head, curr, par, br, brb, classic, ict, dim)
     pn.penalty = 50
   end
 
+  dim = dim or 0
   local gl = nodenew(glueid)
   local en = get_en_size(curr.font)
   if ict then
     en = classic and en or en/4
-    setglue(gl, en * ict[1], nil, en * ict[2])
+    setglue(gl, en * ict[1] + dim, nil, en * ict[2])
   else
-    setglue(gl, dim or 0, en * stretch_f, en * shrink_f)
+    setglue(gl, dim, en * stretch_f, en * shrink_f)
   end
 
   head = insert_before(head, curr, pn)
@@ -597,8 +598,8 @@ local function maybe_linebreak (head, curr, pc, pcl, cc, gomun, fid, par)
     local ict = intercharclass[pcl][ccl]
     local brb = breakable_before[cc]
     local br  = brb and breakable_after[pc]
-    if ict or br then
-      local dim = get_font_opt_dimen(fid, "intercharacter")
+    local dim = get_font_opt_dimen(fid, "intercharacter")
+    if ict or br or dim and (pcl >= 1 or ccl >= 1) then
       head = insert_glue_before(head, curr, par, br, brb, gomun, ict, dim)
     end
   end
@@ -931,7 +932,7 @@ local function prevjosacode (n, parenlevel)
         josacode = josa_code[c]
         if josacode then break end
       end
-    elseif (id == hlistid or id == vlistid) then
+    elseif id == hlistid or id == vlistid then
       local list = n.list
       if list then
         josacode, parenlevel = prevjosacode(nodeslide(list), parenlevel)

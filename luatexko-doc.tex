@@ -256,16 +256,16 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
     한글^^b7한자 다음에 라틴 문자가 오는 경우 원래는 줄바꿈이 되지 않지만
     이 옵션을 주면 줄바꿈이 가능해진다.
 \begin{verbatim}
-  [InterLatinCJK=0.125em]
+  [InterLatinCJK=0.25em]
 \end{verbatim}
 
-\item[InterCharacter] 줄바꿈이 허용되는 곳의 자간을 지시한다.%
+\item[InterCharacter] CJK 글자들 사이의 자간을 지시한다.%
   \footnote{%
     플레인텍에서는 |intercharacter=<dimen>|. }
   fontspec의 |LetterSpace| 옵션과 기능이 유사하지만, 옛한글을 깨뜨리는 등의
   오작동을 하지 않는다. 전술한 자간 옵션들보다 후순위로 동작한다.
 \begin{verbatim}
-  [InterCharacter=.25em]
+  [InterCharacter=.125em]
 \end{verbatim}
 
 \item[CharRaise] 글자의 세로 위치를
