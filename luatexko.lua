@@ -95,7 +95,6 @@ local italcorr   = 3
 local lua_number = 100
 local lua_value  = 108
 local spaceskip  = 13
-local xleaders   = 102
 local nohyphen = registernumber"l@nohyphenation" or -1 -- verbatim
 
 local hangulfontattr   = attributes.luatexkohangulfontattr
@@ -139,7 +138,7 @@ local hangul_tonemark = {
   [0x302E] = true, [0x302F] = true,
 }
 
-local function is_unicode_vs (c)
+local function is_unicode_var_sel (c)
   return (c >= 0xFE00  and c <= 0xFE0F)
   or     (c >= 0xE0100 and c <= 0xE01EF)
 end
@@ -148,7 +147,7 @@ local function is_cjk_combining (c)
   return (c >= 0x302A and c <= 0x302F)
   or     (c >= 0x3099 and c <= 0x309C)
   or     (c >= 0xFF9E and c <= 0xFF9F)
-  or     is_unicode_vs(c)
+  or     is_unicode_var_sel(c)
 end
 
 local function is_noncjkletter (c)
@@ -316,13 +315,12 @@ local function process_fonts (head)
 
         local c = curr.char
 
-        if is_unicode_vs(c) then
+        if is_unicode_var_sel(c) then
           local p = getprev(curr)
           if p.id == glyphid and curr.font ~= p.font then
             hangul_space_skip(curr, p.font)
             curr.font = p.font
           end
-
         else
           local hf  = has_attribute(curr, hangulfontattr) or false
           local hjf = has_attribute(curr, hanjafontattr)  or false
@@ -551,17 +549,13 @@ local function fontdata_opt_dim (fd, optname)
   end
 end
 
-local function get_font_opt_dimen (fontid, option_name)
-  local fop_t = char_font_options[option_name]
-  local dim = fop_t and fop_t[fontid]
+local function get_font_opt_dimen (fontid, optionname)
+  local t = char_font_options[optionname]
+  local dim = t and t[fontid]
   if dim == nil then
     local fd = get_font_data(fontid)
-    dim = fontdata_opt_dim(fd, option_name)
-    if dim then
-      fop_t[fontid] = dim -- cache
-    else
-      fop_t[fontid] = false
-    end
+    dim = fontdata_opt_dim(fd, optionname)
+    t[fontid] = dim or false -- cache
   end
   return dim
 end
@@ -592,15 +586,15 @@ local function insert_glue_before (head, curr, par, br, brb, classic, ict, dim)
   return insert_before(head, curr, gl)
 end
 
-local function maybe_linebreak (head, curr, pc, pcl, cc, gomun, fid, par)
-  local ccl = get_char_class(cc, gomun)
+local function maybe_linebreak (head, curr, pc, pcl, cc, old, fid, par)
+  local ccl = get_char_class(cc, old)
   if pc and cc and curr.lang ~= nohyphen then
     local ict = intercharclass[pcl][ccl]
     local brb = breakable_before[cc]
     local br  = brb and breakable_after[pc]
     local dim = get_font_opt_dimen(fid, "intercharacter")
     if ict or br or dim and (pcl >= 1 or ccl >= 1) then
-      head = insert_glue_before(head, curr, par, br, brb, gomun, ict, dim)
+      head = insert_glue_before(head, curr, par, br, brb, old, ict, dim)
     end
   end
   return head, cc, ccl
@@ -612,20 +606,19 @@ local function process_linebreak (head, par)
     local id = curr.id
     if id == glyphid then
       local cc = my_node_props(curr).unicode or curr.char
-      local gomun = has_attribute(curr, classicattr)
-
-      head, pc, pcl = maybe_linebreak(head, curr, pc, pcl, cc, gomun, curr.font, par)
+      local old = has_attribute(curr, classicattr)
+      head, pc, pcl = maybe_linebreak(head, curr, pc, pcl, cc, old, curr.font, par)
 
     elseif id == hlistid and has_attribute(curr, rubyattr) then
       local cc, fi = ruby_char_font(curr) -- rubybase
-      local gomun = has_attribute(curr, classicattr)
-      head, pc, pcl = maybe_linebreak(head, curr, pc, pcl, cc, gomun, fi, par)
+      local old = has_attribute(curr, classicattr)
+      head, pc, pcl = maybe_linebreak(head, curr, pc, pcl, cc, old, fi, par)
 
     elseif id == whatsitid and curr.mode == directmode then
       local glyf, cc, fin = get_actualtext(curr)
       if cc and fin and glyf then
-        local gomun = has_attribute(glyf, classicattr)
-        head = maybe_linebreak(head, curr, pc, pcl, cc, gomun, glyf.font, par)
+        local old = has_attribute(glyf, classicattr)
+        head = maybe_linebreak(head, curr, pc, pcl, cc, old, glyf.font, par)
         pc, pcl, curr = fin, 0, goto_end_actualtext(curr)
       end
 
@@ -652,17 +645,12 @@ local function process_glyph_width (head)
         and option_in_font(curr.font, "compresspunctuations") then
 
         local cc = my_node_props(curr).unicode or curr.char
-        local gomun = has_attribute(curr, classicattr)
-        local class = get_char_class(cc, gomun)
-        if (gomun or cc < 0x2000 or cc > 0x202F) -- exclude general puncts
-          and class >= 1 and class <= 4 then
+        local old = has_attribute(curr, classicattr)
+        local class = get_char_class(cc, old)
+        if class >= 1 and class <= 4 and
+          (old or cc < 0x2000 or cc > 0x202F) then -- exclude general puncts
 
-          local gpos
-          if class ~= 1 then
-            gpos = getnext(curr)
-          else
-            gpos = getprev(curr)
-          end
+          local gpos = class == 1 and getprev(curr) or getnext(curr)
           gpos = gpos and gpos.id == kernid and gpos.subtype == fontkern
 
           if not gpos then
@@ -1031,11 +1019,11 @@ end
 local uline_f, uline_id = new_user_whatsit("uline","luatexko")
 local no_uline_id = new_user_whatsit_id("no_uline","luatexko")
 
-local function ulboundary (i, n)
+local function ulboundary (i, n, subtype)
   local what = uline_f()
   if n then
     what.type  = lua_value -- table
-    what.value = { i, nodecopy(n) }
+    what.value = { i, nodecopy(n), subtype }
   else
     what.type  = lua_number
     what.value = i
@@ -1061,7 +1049,7 @@ function skip_white_nodes (n, ltr)
 end
 
 local function draw_uline (head, curr, parent, t, final)
-  local start, list = t.start or head, t.list
+  local start, list, subtype = t.start or head, t.list, t.subtype
   start = skip_white_nodes(start, true)
   if final then
     nodeslide(start) -- to get correct getprev.
@@ -1073,7 +1061,7 @@ local function draw_uline (head, curr, parent, t, final)
   if len and len ~= 0 then
     local g = nodenew(glueid)
     setglue(g, len)
-    g.subtype = xleaders
+    g.subtype = subtype
     g.leader = final and list or nodecopy(list)
     local k = nodenew(kernid)
     k.kern = -len
@@ -1083,8 +1071,8 @@ local function draw_uline (head, curr, parent, t, final)
   return head
 end
 
-local function process_uline (head, parent, ulitems, level)
-  local curr, ulitems, level = head, ulitems or {}, level or 0
+local function process_uline (head, parent, items, level)
+  local curr, items, level = head, items or {}, level or 0
   while curr do
     local id = curr.id
     if id == whatsitid
@@ -1093,31 +1081,36 @@ local function process_uline (head, parent, ulitems, level)
 
       local value = curr.value
       if curr.type == lua_value then
-        local count, list = value[1], value[2]
-        ulitems[count] = { start = curr, list = list, level = level }
-      elseif ulitems[value] then
-        head = draw_uline(head, curr, parent, ulitems[value], true)
-        ulitems[value] = nil
+        local count, list, subtype = value[1], value[2], value[3]
+        items[count] = {
+          start   = curr,
+          list    = list,
+          subtype = subtype,
+          level   = level,
+        }
+      elseif items[value] then
+        head = draw_uline(head, curr, parent, items[value], true)
+        items[value] = nil
       end
 
       curr.user_id = no_uline_id -- avoid multiple run
     elseif id == hlistid then
       local list = curr.list
       if list then
-        curr.list, ulitems = process_uline(list, curr, ulitems, level+1)
+        curr.list, items = process_uline(list, curr, items, level+1)
       end
     end
     curr = getnext(curr)
   end
 
   curr = nodeslide(head)
-  for i, t in pairs(ulitems) do
+  for i, t in pairs(items) do
     if level == t.level then
       head = draw_uline(head, curr, parent, t)
       t.start = nil
     end
   end
-  return head, ulitems
+  return head, items
 end
 
 -- ruby
@@ -1748,3 +1741,17 @@ local function current_has_hangul_chars (cnt)
   texcount[cnt] = char_in_font(fontcurrent(), 0xAC00) and 1 or 0
 end
 luatexko.currenthashangulchars = current_has_hangul_chars
+
+-- aux functions
+
+local function get_charslot_of_gid (fd, gid)
+  if type(fd) == "number" then
+    fd = get_font_data(fd)
+  end
+  for i, v in pairs(fd.characters) do
+    if v.index == gid then
+      return i
+    end
+  end
+end
+luatexko.get_charslot_of_gid = get_charslot_of_gid

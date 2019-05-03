@@ -129,7 +129,14 @@
 % uline
 \newcount\luatexkoulinecount
 \def\ulinedown{0.5ex }\def\ulinewidth{0.04em }
-\protected\def\markoverwith#1#2{%
+\protected\def\markoverwith#1#{%
+  \ifx\empty#1\empty
+    \def\luatexkoleaderstype{101}% cleaders
+  \else
+    \def\luatexkoleaderstype{102}% xleaders
+  \fi
+  \luatexkomarkoverwith }
+\def\luatexkomarkoverwith#1#2{%
   \global\advance\luatexkoulinecount\@ne
   \begingroup
   \count@\luatexkoulinecount
@@ -140,17 +147,17 @@
   \setbox\z@\hbox{#1}%
   \directlua{
     if \the\luatexkoulinecount == 1 then luatexko.activate("uline") end
-    luatexko.ulboundary(\the\count@, tex.box[0].list)
+    luatexko.ulboundary(\the\count@, tex.box[0].list, \luatexkoleaderstype)
   }#2\directlua{
     luatexko.ulboundary(\the\count@)
   }\endgroup }
 \protected\def\uline{\markoverwith{%
   \vrule width\z@ height-\ulinedown depth\dimexpr\ulinedown+\ulinewidth\relax }}
-\protected\def\dashuline{\markoverwith{%
+\protected\def\dashuline{\markoverwith*{%
   \hbox{\kern.125em
     \vrule width.3em height-\ulinedown depth\dimexpr\ulinedown+\ulinewidth\relax
     \kern.125em }}}
-\protected\def\dotuline{\markoverwith{%
+\protected\def\dotuline{\markoverwith*{%
   \lower\dimexpr\ulinedown+.1ex\relax\hbox{\kern.07em .\kern.07em }}}
 \protected\def\uuline#1{\uline{\uline{#1}}}
 \protected\def\sout#1{\begingroup
@@ -158,7 +165,7 @@
   \uline{#1}\endgroup}
 \protected\def\xout{\markoverwith{\hbox to.4em{\hss/\hss}}}
 \protected\def\uwave{\font\luatexkofontsixly=lasy6\relax
-  \markoverwith{\lower4\p@\hbox{\luatexkofontsixly\char58}}}
+  \markoverwith*{\lower4\p@\hbox{\luatexkofontsixly\char58}}}
 % ruby
 \def\rubysize{0.6}  % size of ruby compared to base chars
 \def\rubysep{0.2ex} % distance between base chars and ruby

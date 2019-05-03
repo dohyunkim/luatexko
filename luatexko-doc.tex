@@ -11,6 +11,7 @@
 %\RequirePackage{luatex85}
 \documentclass[a4paper]{article}
 \usepackage[hmargin=3.8cm]{geometry}
+\usepackage[svgnames]{xcolor}
 \usepackage[hangul]{luatexko}
 \setmainhangulfont{Noto Serif CJK KR}[
   AutoFakeSlant,
@@ -30,13 +31,13 @@
   InterLatinCJK=.125em,
 ]
 \setmonofont{Inconsolatazi4}[
-  Color=191970, % MidnightBlue
+  Color=MidnightBlue,
 ]
 \setmonohangulfont{Noto Sans CJK KR}[
   UprightFont=* DemiLight,
   BoldFont=* Bold,
   CharRaise=-.2ex,
-  Color=191970, % MidnightBlue
+  Color=MidnightBlue,
 ]
 \setmathhangulfont{Noto Sans CJK KR}[
   Script=Hangul,
@@ -502,14 +503,14 @@ ulem 패키지가 \luatexko와 궁합이 잘 맞지 않아{\small (줄바꿈에 
 
 \def\RA{\>$\Rightarrow$\>}
 \begin{tabbing}
-\cs{dotuline{밑줄을 점선으로 긋는다}}\quad\=$\Rightarrow$\quad\= \kill
-\cs{uline{밑줄을 그을 수 있다}}\RA\uline{밑줄을 그을 수 있다}\\
-\cs{sout{취소선을 그을 수 있다}}\RA\sout{취소선을 그을 수 있다}\\
-\cs{uuline{밑줄을 두 줄 긋는다}}\RA\uuline{밑줄을 두 줄 긋는다}\\
-\cs{xout{빗금으로 취소할 수 있다}}\RA\xout{빗금으로 취소할 수 있다}\\
-\cs{uwave{물결표로 밑줄을 삼는다}}\RA\uwave{물결표로 밑줄을 삼는다}\\
-\cs{dashuline{대시로 밑줄을 삼는다}}\RA\dashuline{대시로 밑줄을 삼는다}\\
-\cs{dotuline{밑줄을 점선으로 긋는다}}\RA\dotuline{밑줄을 점선으로 긋는다}
+  \cs{dotuline{밑줄을 점선으로 긋는다}}\quad\=$\Rightarrow$\quad\= \kill
+  \cs{uline{밑줄을 그을 수 있다}}\RA\uline{밑줄을 그을 수 있다}\\
+  \cs{sout{취소선을 그을 수 있다}}\RA\sout{취소선을 그을 수 있다}\\
+  \cs{uuline{밑줄을 두 줄 긋는다}}\RA\uuline{밑줄을 두 줄 긋는다}\\
+  \cs{xout{빗금으로 취소할 수 있다}}\RA\xout{빗금으로 취소할 수 있다}\\
+  \cs{uwave{물결표로 밑줄을 삼는다}}\RA\uwave{물결표로 밑줄을 삼는다}\\
+  \cs{dashuline{대시로 밑줄을 삼는다}}\RA\dashuline{대시로 밑줄을 삼는다}\\
+  \cs{dotuline{밑줄을 점선으로 긋는다}}\RA\dotuline{밑줄을 점선으로 긋는다}
 \end{tabbing}
 
 관련하여 다음 설정을 할 수 있다.
@@ -518,6 +519,29 @@ ulem 패키지가 \luatexko와 궁합이 잘 맞지 않아{\small (줄바꿈에 
 ①~|\def\ulinedown{0.5ex}|: 밑줄을 베이스라인 아래로 끌어내리는 정도
 
 ②~|\def\ulinewidth{0.04em}|: 밑줄의 굵기
+
+\medskip
+사실 위 밑줄 양식들을 만드는 데는 예외없이 \cs{markoverwith} 명령이 사용되었다.
+따라서 사용자는 이를 이용해 원하는 양식을 만들 수 있다.
+가령 노란색 마커펜을 흉내내려면,%
+\footnote{%
+  이 명령의 인자로 들어갈 수 있는 것은 box와 rule에 국한된다.
+  예시에서는 박스를 넣었다.}\,%
+\footnote{%
+  별표 붙은 명령 \cs{markoverwith*}는 \cs{xleaders}를 실행하고,
+  예시처럼 별표가 없으면 \cs{cleaders}를 실행한다. }
+\begin{verbatim}
+   \def\ymarker{%
+     \markoverwith{%
+       \hbox{{\color{yellow!50}\vrule width 1pt height 9pt depth 2pt}}%
+   }}
+\end{verbatim}
+
+\def\ymarker{\markoverwith{%
+  \hbox{{\color{yellow!50}\vrule width 1pt height 9pt depth 2pt}}}}
+
+\cs{ymarker{노란색을 칠해서 강조한다}}\quad$\Rightarrow$\quad
+\ymarker{노란색을 칠해서 강조한다}.
 
 \section{자동조사}\label{sec:autojosa}
 자동조사는 \kotex 과 동일하게 \cs{은} \cs{는} \cs{이} \cs{가} \cs{을} \cs{를}
