@@ -481,8 +481,8 @@ local function compose_hanguldecompose (buffer) -- string -> table
 end
 
 -- L, V, [T & ^OT]? -> LV | LVT
-local function flush_syllable (t, s, c)
-  if #s >= 2 and not (c and is_old_jong(c)) then
+local function flush_syllable (t, s)
+  if #s == 2 or #s == 3 and is_modern_jong( s[3] ) then
     table.insert(t, jamo2syllable(s))
   else
     table.append(t, s)
@@ -493,10 +493,10 @@ end
 local function compose_modern_hangul (ot)
   local t, s = {}, {}
   for _, c in ipairs(ot) do
-    if #s == 1 and is_modern_jung(c) or #s == 2 and is_modern_jong(c) then
+    if #s == 1 and is_modern_jung(c) or #s >= 2 and is_jongsong(c) then
       table.insert(s, c)
     else
-      t, s = flush_syllable(t, s, c)
+      t, s = flush_syllable(t, s)
       table.insert(is_modern_cho(c) and s or t, c)
     end
   end
@@ -529,8 +529,8 @@ local function compose_jamo_chosong (ot)
 end
 
 -- LF, V, ^T -> CV, ^T
-local function flush_cjamojung (t, s, c)
-  if #s == 2 and not (c and is_jongsong(c)) then
+local function flush_cjamojung (t, s)
+  if #s == 2 then
     table.insert(t, jamotocjamo.cjung[ s[2] ])
   else
     table.append(t, s)
@@ -541,10 +541,10 @@ end
 local function compose_jamo_jungsong (ot)
   local t, s = {}, {}
   for _, c in ipairs(ot) do
-    if #s == 1 and jamotocjamo.cjung[c] then
+    if #s == 1 and jamotocjamo.cjung[c] or #s == 2 and is_jongsong(c) then
       table.insert(s, c)
     else
-      t, s = flush_cjamojung(t, s, c)
+      t, s = flush_cjamojung(t, s)
       table.insert(c == 0x115F and s or t, c)
     end
   end
