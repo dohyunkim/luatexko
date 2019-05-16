@@ -447,7 +447,7 @@ local function hanguldecompose (buffer)
   local t = {}
   for _, c in utf8.codes(buffer) do
     if is_hangul(c) then
-      t = table.append(t, syllable2jamo(c))
+      table.append(t, syllable2jamo(c))
     else
       table.insert(t, c)
     end
@@ -458,10 +458,10 @@ end
 -- LV | LVT, T  -> L, V, T+
 local function flush_syllable_jong (t, s)
   if #s == 2 then
-    t = table.append(t, syllable2jamo( s[1] ))
+    table.append(t, syllable2jamo( s[1] ))
     table.insert(t, s[2])
   else
-    t = table.append(t, s)
+    table.append(t, s)
   end
   return t, {}
 end
@@ -485,7 +485,7 @@ local function flush_syllable (t, s, c)
   if #s >= 2 and not (c and is_old_jong(c)) then
     table.insert(t, jamo2syllable(s))
   else
-    t = table.append(t, s)
+    table.append(t, s)
   end
   return t, {}
 end
@@ -509,7 +509,7 @@ local function flush_cjamocho (t, s)
   if #s == 2 then
     table.insert(t, jamotocjamo.ccho[ s[1] ])
   else
-    t = table.append(t, s)
+    table.append(t, s)
   end
   return t, {}
 end
@@ -533,7 +533,7 @@ local function flush_cjamojung (t, s, c)
   if #s == 2 and not (c and is_jongsong(c)) then
     table.insert(t, jamotocjamo.cjung[ s[2] ])
   else
-    t = table.append(t, s)
+    table.append(t, s)
   end
   return t, {}
 end
@@ -555,9 +555,9 @@ end
 -- CHJ -> HJ, VS
 local function flush_compat_hanja (t, s)
   if #s == 1 then
-    t = table.append(t, chanjatohanja[ s[1] ])
+    table.append(t, chanjatohanja[ s[1] ])
   else
-    t = table.append(t, s)
+    table.append(t, s)
   end
   return t, {}
 end

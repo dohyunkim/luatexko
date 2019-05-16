@@ -1744,14 +1744,25 @@ luatexko.currenthashangulchars = current_has_hangul_chars
 
 -- aux functions
 
-local function get_charslot_of_gid (fd, gid)
+local function get_gid_of_charslot (fd, slot)
   if type(fd) == "number" then
     fd = get_font_data(fd)
   end
+  local character = fd.characters[slot]
+  return character and character.index
+end
+luatexko.get_gid_of_charslot = get_gid_of_charslot
+
+local function get_charslots_of_gid (fd, gid)
+  if type(fd) == "number" then
+    fd = get_font_data(fd)
+  end
+  local t = {}
   for i, v in pairs(fd.characters) do
     if v.index == gid then
-      return i
+      table.insert(t, i)
     end
   end
+  return t
 end
-luatexko.get_charslot_of_gid = get_charslot_of_gid
+luatexko.get_charslots_of_gid = get_charslots_of_gid
