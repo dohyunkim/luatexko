@@ -13,8 +13,8 @@
 
 luatexbase.provides_module({
   name        = "luatexko-uhc2utf8",
-  version     = "2.0",
-  date        = "2019/05/01",
+  version     = "2.01",
+  date        = "2019/05/16",
   author      = "Dohyun Kim, Soojin Nam",
   description = "UHC (CP949) input encoding",
   license     = "LPPL v1.3+",
@@ -23,13 +23,6 @@ luatexbase.provides_module({
 luatexkouhc2utf8 = luatexkouhc2utf8 or {}
 local luatexkouhc2utf8 = luatexkouhc2utf8
 
-local format = string.format
-local utf8len = utf8.len
-require "unicode"
-local unicodeutf8 = unicode.utf8
-local ugsub = unicodeutf8.gsub
-local ubyte = unicodeutf8.byte
-local uchar = unicodeutf8.char
 local kpse_find_file = kpse.find_file
 local add_to_callback = luatexbase.add_to_callback
 local remove_from_callback = luatexbase.remove_from_callback
@@ -58,15 +51,14 @@ end
 
 local t_uhc2ucs = t_uhc2ucs or get_uhc_uni_table()
 
-local uhc_to_utf8 = function(buffer)
+local function uhc_to_utf8 (buffer)
   if not buffer then return end
-  -- check if buffer is already utf-8
-  if utf8len(buffer) then return nil end
-  -- now convert to utf8
-  buffer = buffer:gsub("([\129-\253])([\65-\254])",
-  function(a, b)
-    local utf = t_uhc2ucs[a:byte() * 256 + b:byte()]
-    if utf then return uchar(utf) end
+  if utf8.len(buffer) then return end -- check if buffer is already utf-8
+  buffer = buffer:gsub("([\129-\253])([\65-\254])", function(a, b)
+    local u = t_uhc2ucs[a:byte() * 256 + b:byte()]
+    if u then
+      return utf8.char(u)
+    end
   end)
   return buffer
 end
@@ -96,14 +88,21 @@ local t_ucs2uhc = t_ucs2uhc or get_uni_uhc_table()
 
 local function utf8_to_uhc (name)
   if not name then return end
-  name = ugsub(name, "[\161-\239\191\166]", -- 00A1..FFE6
-  function(u)
-    local c = t_ucs2uhc[ubyte(u)]
-    if c then
-      return format("%c%c", c//256, c%256)
+  local t = {}
+  for _, u in utf8.codes(name) do
+    if u >= 0xA1 and u <= 0xFFE6 then
+      local c = t_ucs2uhc[u]
+      if c then
+        table.insert(t, c // 256)
+        table.insert(t, c %  256)
+      else
+        table.insert(t, u)
+      end
+    else
+      table.insert(t, u)
     end
-  end)
-  return name
+  end
+  return string.char(table.unpack(t))
 end
 
 local function uhc_find_file (file, ...)
