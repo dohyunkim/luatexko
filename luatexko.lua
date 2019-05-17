@@ -13,8 +13,8 @@
 
 luatexbase.provides_module {
   name        = 'luatexko',
-  date        = '2019/05/01',
-  version     = '2.0',
+  date        = '2019/05/17',
+  version     = '2.01',
   description = 'typesetting Korean with LuaTeX',
   author      = 'Dohyun Kim, Soojin Nam',
   license     = 'LPPL v1.3+',
@@ -356,6 +356,10 @@ local function process_fonts (head)
 
         props.unicode = c
       end
+    elseif id == discid then
+      curr.pre     = process_fonts(curr.pre)
+      curr.post    = process_fonts(curr.post)
+      curr.replace = process_fonts(curr.replace)
     elseif id == mathid then
       curr = end_of_math(curr)
     elseif id == whatsitid
