@@ -8,7 +8,6 @@
 %%
 %% public domain
 
-%\RequirePackage{luatex85}
 \documentclass[a4paper]{article}
 \usepackage[hmargin=3.8cm]{geometry}
 \usepackage[svgnames]{xcolor}
@@ -59,7 +58,7 @@
 
 \edef\verbatim{\unexpanded\expandafter{\verbatim\linespread{1.1}\selectfont}}
 \edef\itemize{\unexpanded\expandafter{\itemize\small}}
-\catcode`|=13 \protected\def|{\verb|\let\\=\textbackslash} %|
+\catcode`|=13 \protected\def|{\verb|\let\\=\textbackslash}
 \protected\def\cs#1{\texttt{\language=1 \textbackslash\detokenize{#1}}}
 \def\logoko{\textsf{k}\kern-.0625em\textit{o}}
 \def\luatexko{\luatex-\logoko}
@@ -67,8 +66,6 @@
 \def\kotex{\logoko\kern-.1ex .\kern-.1667em \TeX}
 \def\hemph#1{\textsf{\bfseries #1}}
 \def\ldots{$\dots$}
-\registerpunctuations{`-}
-\automatichyphenmode=1 % for emdash in tl2019
 
 \begin{document}
 \title{\luatexko\ 간단 매뉴얼}
@@ -310,7 +307,8 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
   이 옵션은 |CharacterWidth=AlternateHalf| 내지 {\small (세로쓰기의 경우)}
   |Vertical=HalfMetrics|와 거의 같은 기능을 한다.%
   \footnote{%
-    플레인텍에서는 각각 |+halt| 및 |+vhal|이다. }
+    플레인텍에서는 각각 |+halt| 및 |+vhal|이다. 이들과 완전 동일하진
+    않다. 가령 U+3002 (\char"3002) 처리의 경우.}
 \end{description}
 
 \section{고문헌}\label{sec:classic}

@@ -61,6 +61,7 @@ local stringformat = string.format
 
 local tableconcat = table.concat
 local tableinsert = table.insert
+local tableunpack = table.unpack
 
 local add_to_callback     = luatexbase.add_to_callback
 local attributes          = luatexbase.attributes
@@ -109,29 +110,29 @@ local vert_classic = 1
 local SC_classic   = 2
 
 local function is_hanja (c)
-  return (c >= 0x3400 and c <= 0xA4C6)
-  or     (c >= 0xF900 and c <= 0xFAD9)
-  or     (c >= 0x20000 and c <= 0x2FFFD)
-  or     (c >= 0x2E81 and c <= 0x2FD5)
+  return c >= 0x3400 and c <= 0xA4C6
+  or     c >= 0xF900 and c <= 0xFAD9
+  or     c >= 0x20000 and c <= 0x2FFFD
+  or     c >= 0x2E81 and c <= 0x2FD5
 end
 
 local function is_hangul (c)
-  return (c >= 0xAC00 and c <= 0xD7A3)
+  return c >= 0xAC00 and c <= 0xD7A3
 end
 
 local function is_chosong (c)
-  return (c >= 0x1100 and c <= 0x115F)
-  or     (c >= 0xA960 and c <= 0xA97C)
+  return c >= 0x1100 and c <= 0x115F
+  or     c >= 0xA960 and c <= 0xA97C
 end
 
 local function is_jungsong (c)
-  return (c >= 0x1160 and c <= 0x11A7)
-  or     (c >= 0xD7B0 and c <= 0xD7C6)
+  return c >= 0x1160 and c <= 0x11A7
+  or     c >= 0xD7B0 and c <= 0xD7C6
 end
 
 local function is_jongsong (c)
-  return (c >= 0x11A8 and c <= 0x11FF)
-  or     (c >= 0xD7CB and c <= 0xD7FB)
+  return c >= 0x11A8 and c <= 0x11FF
+  or     c >= 0xD7CB and c <= 0xD7FB
 end
 
 local hangul_tonemark = {
@@ -139,39 +140,39 @@ local hangul_tonemark = {
 }
 
 local function is_unicode_var_sel (c)
-  return (c >= 0xFE00  and c <= 0xFE0F)
-  or     (c >= 0xE0100 and c <= 0xE01EF)
+  return c >= 0xFE00  and c <= 0xFE0F
+  or     c >= 0xE0100 and c <= 0xE01EF
 end
 
 local function is_cjk_combining (c)
-  return (c >= 0x302A and c <= 0x302F)
-  or     (c >= 0x3099 and c <= 0x309C)
-  or     (c >= 0xFF9E and c <= 0xFF9F)
+  return c >= 0x302A and c <= 0x302F
+  or     c >= 0x3099 and c <= 0x309C
+  or     c >= 0xFF9E and c <= 0xFF9F
   or     is_unicode_var_sel(c)
 end
 
 local function is_noncjkletter (c)
-  return (c >= 0x30 and c <= 0x39)
-  or     (c >= 0x41 and c <= 0x5A)
-  or     (c >= 0x61 and c <= 0x7A)
-  or     (c >= 0xC0 and c <= 0xD6)
-  or     (c >= 0xD8 and c <= 0xF6)
-  or     (c >= 0xF8 and c <= 0x10FC)
-  or     (c >= 0x1200 and c <= 0x1FFE)
-  or     (c >= 0xA4D0 and c <= 0xA877)
-  or     (c >= 0xAB01 and c <= 0xABBF)
-  or     (c >= 0xFB00 and c <= 0xFDFD)
-  or     (c >= 0xFE70 and c <= 0xFEFC)
+  return c >= 0x30 and c <= 0x39
+  or     c >= 0x41 and c <= 0x5A
+  or     c >= 0x61 and c <= 0x7A
+  or     c >= 0xC0 and c <= 0xD6
+  or     c >= 0xD8 and c <= 0xF6
+  or     c >= 0xF8 and c <= 0x10FC
+  or     c >= 0x1200 and c <= 0x1FFE
+  or     c >= 0xA4D0 and c <= 0xA877
+  or     c >= 0xAB01 and c <= 0xABBF
+  or     c >= 0xFB00 and c <= 0xFDFD
+  or     c >= 0xFE70 and c <= 0xFEFC
 end
 
 local function is_kana (c)
-  return (c >= 0x3041 and c <= 0x3096)
-  or     (c >= 0x30A1 and c <= 0x30FA)
-  or     (c >= 0x31F0 and c <= 0x31FF)
-  or     (c >= 0xFF66 and c <= 0xFF6F)
-  or     (c >= 0xFF71 and c <= 0xFF9D)
-  or      c == 0x309F or c == 0x30FF
-  or     (c >= 0x1B000 and c <= 0x1B16F)
+  return c >= 0x3041 and c <= 0x3096
+  or     c >= 0x30A1 and c <= 0x30FA
+  or     c >= 0x31F0 and c <= 0x31FF
+  or     c >= 0xFF66 and c <= 0xFF6F
+  or     c >= 0xFF71 and c <= 0xFF9D
+  or     c == 0x309F or c == 0x30FF
+  or     c >= 0x1B000 and c <= 0x1B16F
 end
 
 local function is_hangul_jamo (c)
@@ -179,7 +180,7 @@ local function is_hangul_jamo (c)
   or     is_chosong(c)
   or     is_jungsong(c)
   or     is_jongsong(c)
-  or     (c >= 0x3131 and c <= 0x318E)
+  or     c >= 0x3131 and c <= 0x318E
 end
 
 local stretch_f, shrink_f = 5/100, 3/100 -- should be consistent for ruby
@@ -263,7 +264,7 @@ luatexko.updateforcehangul = update_force_hangul
 
 local active_processes = {}
 
-local char_font_options ={
+local char_font_options = {
   interhangul     = {},
   interlatincjk   = {},
   intercharacter  = {},
@@ -452,7 +453,7 @@ local breakable_after = setmetatable({
   [0xFE58] = true, [0xFE5A] = true, [0xFE5C] = true, [0xFE5E] = true,
   [0xFF1E] = true, [0xFF5E] = true, [0xFF70] = true,
 },{ __index = function (_,c)
-  return (is_hangul_jamo(c) and not is_chosong(c))
+  return is_hangul_jamo(c) and not is_chosong(c)
   or is_noncjkletter(c)
   or is_hanja(c)
   or is_cjk_combining(c)
@@ -482,7 +483,7 @@ local breakable_before = setmetatable({
   [0xFF6F] = 1000,  [0x1B150] = 1000, [0x1B151] = 1000, [0x1B152] = 1000,
   [0x1B164] = 1000, [0x1B165] = 1000, [0x1B166] = 1000, [0x1B167] = 1000,
 },{ __index = function(_,c)
-  return (is_hangul_jamo(c) and not is_jungsong(c) and not is_jongsong(c))
+  return is_hangul_jamo(c) and not is_jungsong(c) and not is_jongsong(c)
   or is_hanja(c)
   or is_kana(c)
   or charclass[c] == 1
@@ -501,7 +502,7 @@ local allowbreak_false_nodes = {
 
 local function is_blocking_node (curr)
   local id, subtype = curr.id, curr.subtype
-  return allowbreak_false_nodes[id] or (id == kernid and subtype == userkern)
+  return allowbreak_false_nodes[id] or id == kernid and subtype == userkern
 end
 
 local function ruby_char_font (rb)
@@ -691,8 +692,8 @@ local function is_cjk (c)
   or     is_cjk_combining(c)
   or     is_kana(c)
   or     charclass[c] >= 1
-  or     (rawget(breakable_before, c) and c >= 0x2000)
-  or     (rawget(breakable_after,  c) and c >= 0x2000)
+  or     rawget(breakable_before, c) and c >= 0x2000
+  or     rawget(breakable_after,  c) and c >= 0x2000
 end
 
 local function do_interhangul_option (head, curr, pc, c, fontid, par)
@@ -744,7 +745,7 @@ local function process_interhangul (head, par)
 end
 
 local function do_interlatincjk_option (head, curr, pc, pf, c, cf, par)
-  local cc = (is_cjk(c) and 1) or (is_noncjkletter(c) and 2) or 0
+  local cc = is_cjk(c) and 1 or is_noncjkletter(c) and 2 or 0
   local brb = cc == 2 or breakable_before[c] -- numletter != br_before
 
   if brb and cc*pc == 2 and curr.lang ~= nohyphen then
@@ -891,19 +892,19 @@ local josa_code = setmetatable({
     return c ~= 0x1160 and 2
   elseif is_jongsong(c) then
     return c == 0x11AF and 1 or 3
-  elseif (is_noncjkletter(c) and c <= 0x7A )
-    or (c >= 0x2160 and c <= 0x217F) -- roman
-    or (c >= 0x2460 and c <= 0x24E9) -- ①
-    or (c >= 0x314F and c <= 0x3163) or (c >= 0x3187 and c <= 0x318E) -- ㅏ
-    or (c >= 0x320E and c <= 0x321E) -- ㈎
-    or (c >= 0x326E and c <= 0x327F) -- ㉮
-    or (c >= 0xFF10 and c <= 0xFF19) -- ０
-    or (c >= 0xFF21 and c <= 0xFF3A) -- Ａ
-    or (c >= 0xFF41 and c <= 0xFF5A) -- ａ
+  elseif is_noncjkletter(c) and c <= 0x7A
+    or c >= 0x2160 and c <= 0x217F -- roman
+    or c >= 0x2460 and c <= 0x24E9 -- ①
+    or c >= 0x314F and c <= 0x3163 or c >= 0x3187 and c <= 0x318E -- ㅏ
+    or c >= 0x320E and c <= 0x321E -- ㈎
+    or c >= 0x326E and c <= 0x327F -- ㉮
+    or c >= 0xFF10 and c <= 0xFF19 -- ０
+    or c >= 0xFF21 and c <= 0xFF3A -- Ａ
+    or c >= 0xFF41 and c <= 0xFF5A -- ａ
     then return 2
-  elseif (c >= 0x3131 and c <= 0x314E) or (c >= 0x3165 and c <= 0x3186) -- ㄱ
-    or (c >= 0x3200 and c <= 0x320D) -- ㈀
-    or (c >= 0x3260 and c <= 0x326D) -- ㉠
+  elseif c >= 0x3131 and c <= 0x314E or c >= 0x3165 and c <= 0x3186 -- ㄱ
+    or c >= 0x3200 and c <= 0x320D -- ㈀
+    or c >= 0x3260 and c <= 0x326D -- ㉠
     then return 3
   end
 end })
@@ -1085,7 +1086,7 @@ local function process_uline (head, parent, items, level)
 
       local value = curr.value
       if curr.type == lua_value then
-        local count, list, subtype = value[1], value[2], value[3]
+        local count, list, subtype = tableunpack(value)
         items[count] = {
           start   = curr,
           list    = list,
@@ -1739,14 +1740,12 @@ local function activate (name)
 end
 luatexko.activate = activate
 
--- default hangul font
+-- aux functions
 
 local function current_has_hangul_chars (cnt)
   texcount[cnt] = char_in_font(fontcurrent(), 0xAC00) and 1 or 0
 end
 luatexko.currenthashangulchars = current_has_hangul_chars
-
--- aux functions
 
 local function get_gid_of_charslot (fd, slot)
   if type(fd) == "number" then

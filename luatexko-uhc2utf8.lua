@@ -33,9 +33,9 @@ local function get_uhc_uni_table()
   if file then
     file = io.open(file, "r")
     while true do
-      local line = file:read("*line")
+      local line = file:read"*line"
       if not line then break end
-      local ea,eb,uni = line:match("<(%x+)>%s+<(%x+)>%s+<(%x+)>")
+      local ea,eb,uni = line:match"<(%x+)>%s+<(%x+)>%s+<(%x+)>"
       if ea and eb and uni then
         ea, eb, uni = tonumber(ea,16),tonumber(eb,16),tonumber(uni,16)
         for i=ea,eb do
