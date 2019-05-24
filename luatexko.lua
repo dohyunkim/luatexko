@@ -13,8 +13,8 @@
 
 luatexbase.provides_module {
   name        = 'luatexko',
-  date        = '2019/05/17',
-  version     = '2.01',
+  date        = '2019/05/24',
+  version     = '2.1',
   description = 'typesetting Korean with LuaTeX',
   author      = 'Dohyun Kim, Soojin Nam',
   license     = 'LPPL v1.3+',
@@ -189,14 +189,24 @@ local function get_font_data (fontid)
   return fontgetfont(fontid) or fontfonts[fontid] or {}
 end
 
-local function get_en_size (f)
-  local pm
+local function get_font_param (f, key)
+  local t
   if type(f) == "number" then
-    pm = getparameters(f)
-  elseif type(f) == "table" then
-    pm = f.parameters
+    t = getparameters(f)
+    if t and t[key] then
+      return t[key]
+    end
+    f = get_font_data(f)
   end
-  return pm and pm.quad and pm.quad/2 or 327680
+  if type(f) == "table" then
+    t = f.parameters
+    return t and t[key]
+  end
+end
+
+local function get_en_size (f)
+  local quad = get_font_param(f, "quad")
+  return quad and quad/2 or 327680
 end
 
 local function char_in_font(fontdata, char)
@@ -278,7 +288,8 @@ local function hangul_space_skip (curr, newfont)
     if n and n.id == glueid and n.subtype == spaceskip then
       local params = getparameters(curr.font)
       local oldwd, oldst, oldsh, oldsto, oldsho = getglue(n)
-      if oldwd == params.space
+      if params
+        and oldwd == params.space
         and oldst == params.space_stretch
         and oldsh == params.space_shrink
         and oldsto == 0
@@ -1171,7 +1182,9 @@ local function process_ruby_post_linebreak (head)
             ruby.list = insert_before(list, list, k)
           end
           ruby.width = 0
-          ruby.shift = -(curr.height + ruby_t[2]) -- rubysep
+          local _, f = ruby_char_font(curr)
+          local ascender = get_font_param(f, "ascender") or curr.height
+          ruby.shift = -ascender - ruby.depth - ruby_t[2] -- rubysep
           head = insert_before(head, curr, ruby)
         end
         ruby_t = nil

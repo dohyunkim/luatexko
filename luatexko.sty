@@ -13,7 +13,7 @@
 
 \ifdefined\luatexkohangulfontattr \endinput\fi
 \ifdefined\selectfont
-  \ProvidesPackage{luatexko}[2019/05/01 v2.0 typesetting Korean with LuaTeX]
+  \ProvidesPackage{luatexko}[2019/05/24 v2.1 typesetting Korean with LuaTeX]
   \RequirePackage{luatexbase}
   \RequirePackage{fontspec}
 \else
@@ -168,7 +168,7 @@
   \markoverwith{\lower4\p@\hbox{\luatexkofontsixly\char58}}}
 % ruby
 \def\rubysize{0.6}  % size of ruby compared to base chars
-\def\rubysep{0.2ex} % distance between base chars and ruby
+\def\rubysep{0.1ex} % distance between base chars and ruby
 \def\luatexkostretchfactor{.0125} % .5em/20/2 is hard coded.
 \newif\ifruby@overlap
 \let\rubyoverlap\ruby@overlaptrue
@@ -180,8 +180,7 @@
   \global\advance\luatexkorubycount\@ne
   \begingroup
   \leavevmode
-  \setbox\z@\luatexkorubybasehbox{% base
-    \vrule width\z@ height 2ex depth\z@ #1}%
+  \setbox\z@\luatexkorubybasehbox{#1}% base
   \setbox\tw@\hbox{% ruby
     \ifdefined\rubyfont \rubyfont \fi
     \ifdefined\selectfont % <- latex
@@ -209,9 +208,9 @@
   \else
     \ifdim\rubysize\wd\z@ > 2\wd\tw@ % ruby is far shorter
       \setbox\tw@\hbox to\wd\z@{%
-        \hskip\dimen@ii\relax
+        \hskip\dimen@ii plus 1sp\relax
         \unhbox\tw@
-        \hskip\dimen@ii\relax }%
+        \hskip\dimen@ii plus 1sp\relax }%
     \else
       \setbox\tw@\hbox to\wd\z@{%
         \hskip\z@ plus \luatexkostretchfactor \dimen@ii\relax
