@@ -13,7 +13,7 @@
 
 \ifdefined\luatexkohangulfontattr \endinput\fi
 \ifdefined\selectfont
-  \ProvidesPackage{luatexko}[2019/05/25 v2.1 typesetting Korean with LuaTeX]
+  \ProvidesPackage{luatexko}[2019/06/07 v2.2 typesetting Korean with LuaTeX]
   \RequirePackage{luatexbase}
   \RequirePackage{fontspec}
 \else
@@ -190,6 +190,7 @@
     #2}%
   \hbadness\@M % supress underfull warning
   \dimen@ii\dimexpr\rubysize em\relax % ruby font size
+  \directlua{ luatexko.getrubystretchfactor(tex.box[2]) }% for intercharstretch
   \ifdim\wd\z@ < \wd\tw@ % ruby is wider
     \ifruby@overlap
       \dimen@\dimexpr\wd\tw@-\wd\z@-\dimen@ii\relax % overhang .5 rubysize
@@ -662,6 +663,7 @@
 \newfontfeature{Expansion}{expansion=\ifx\empty#1\empty default\else #1\fi }
 \newfontfeature{Protrusion}{protrusion=\ifx\empty#1\empty default\else #1\fi }
 \newfontfeature{InterCharacter}{intercharacter=#1}
+\newfontfeature{InterCharStretch}{intercharstretch=#1}
 % italic correction
 \def\nocorrlist{,.^^^^3001^^^^3002^^^^ff0c^^^^ff0e^^^^ff61^^^^ff64}
 % package options

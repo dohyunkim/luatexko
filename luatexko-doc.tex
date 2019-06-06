@@ -72,13 +72,15 @@
 \author{Dohyun Kim \normalsize |<nomos at ktug org>| \and
         Soojin Nam \normalsize |<jsunam at gmail com>| \and
   \normalsize <\url{http://github.com/dohyunkim/luatexko}>}
-\date{Version 2.1\quad 2019/05/25}
+\date{Version 2.2\quad 2019/06/07}
 \maketitle
 
 \begin{quote}\small
   For a summary introduction in English, please see |README| file.
 
-\begin{itemize}\linespread{1.1}\selectfont
+  \begin{itemize}\linespread{1.1}\selectfont
+    \item[v2.2] ------
+    \item \hyperref[sec:fontoption]{글꼴옵션 |InterCharStretch| 제공}
     \item[v2.0] ------
     \item \hyperref[sec:packageopt]{패키지 옵션 |nofontspec| 제거}
     \item \hyperref[sec:fontoption]{글꼴옵션 |PunctRaise|, |NoEmbeding| 제거}
@@ -309,6 +311,11 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
   \footnote{%
     플레인텍에서는 각각 |+halt| 및 |+vhal|이다. 이들과 완전 동일하진
     않다. 가령 U+3002 (\char"3002) 처리의 경우.}
+
+\item[InterCharStretch] CJK 글자간 가변공백{\small(글루)}의
+  stretch 값을 지시한다.%
+  \footnote{%
+    플레인텍에서는 |intercharstretch=<dimen>|. }
 \end{description}
 
 \section{고문헌}\label{sec:classic}

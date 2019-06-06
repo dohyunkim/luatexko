@@ -13,8 +13,8 @@
 
 luatexbase.provides_module {
   name        = 'luatexko',
-  date        = '2019/05/25',
-  version     = '2.1',
+  date        = '2019/06/07',
+  version     = '2.2',
   description = 'typesetting Korean with LuaTeX',
   author      = 'Dohyun Kim, Soojin Nam',
   license     = 'LPPL v1.3+',
@@ -52,10 +52,11 @@ local fontfonts     = font.fonts
 local fontgetfont   = font.getfont
 local getparameters = font.getparameters
 
-local texcount = tex.count
-local texround = tex.round
-local texset   = tex.set
-local texsp    = tex.sp
+local texcount  = tex.count
+local texround  = tex.round
+local texset    = tex.set
+local texsp     = tex.sp
+local texsprint = tex.sprint
 
 local stringformat = string.format
 
@@ -183,7 +184,7 @@ local function is_hangul_jamo (c)
   or     c >= 0x3131 and c <= 0x318E
 end
 
-local stretch_f, shrink_f = 5/100, 3/100 -- should be consistent for ruby
+local stretch_f = 5/100 -- should be consistent for ruby
 
 local function get_font_data (fontid)
   return fontgetfont(fontid) or fontfonts[fontid] or {}
@@ -275,11 +276,12 @@ luatexko.updateforcehangul = update_force_hangul
 local active_processes = {}
 
 local char_font_options = {
-  interhangul     = {},
-  interlatincjk   = {},
-  intercharacter  = {},
-  hangulspaceskip = {},
-  tonemarkwidth   = {},
+  hangulspaceskip  = {},
+  intercharacter   = {},
+  intercharstretch = {},
+  interhangul      = {},
+  interlatincjk    = {},
+  tonemarkwidth    = {},
 }
 
 local function hangul_space_skip (curr, newfont)
@@ -576,7 +578,7 @@ local function get_font_opt_dimen (fontid, optionname)
   return dim
 end
 
-local function insert_glue_before (head, curr, par, br, brb, classic, ict, dim)
+local function insert_glue_before (head, curr, par, br, brb, classic, ict, dim, fid)
   local pn = nodenew(penaltyid)
   if not br then
     pn.penalty = 10000
@@ -590,12 +592,13 @@ local function insert_glue_before (head, curr, par, br, brb, classic, ict, dim)
 
   dim = dim or 0
   local gl = nodenew(glueid)
-  local en = get_en_size(curr.font)
+  local en = get_en_size(fid)
   if ict then
     en = classic and en or en/4
     setglue(gl, en * ict[1] + dim, nil, en * ict[2])
   else
-    setglue(gl, dim, en * stretch_f, en * shrink_f)
+    local str = get_font_opt_dimen(fid, "intercharstretch") or stretch_f*en
+    setglue(gl, dim, str, str*0.6)
   end
 
   head = insert_before(head, curr, pn)
@@ -610,7 +613,7 @@ local function maybe_linebreak (head, curr, pc, pcl, cc, old, fid, par)
     local br  = brb and breakable_after[pc]
     local dim = get_font_opt_dimen(fid, "intercharacter")
     if ict or br or dim and (pcl >= 1 or ccl >= 1) then
-      head = insert_glue_before(head, curr, par, br, brb, old, ict, dim)
+      head = insert_glue_before(head, curr, par, br, brb, old, ict, dim, fid)
     end
   end
   return head, cc, ccl
@@ -713,7 +716,7 @@ local function do_interhangul_option (head, curr, pc, c, fontid, par)
   if cc*pc == 1 and curr.lang ~= nohyphen then
     local dim = get_font_opt_dimen(fontid, "interhangul")
     if dim then
-      head = insert_glue_before(head, curr, par, true, true, false, false, dim)
+      head = insert_glue_before(head, curr, par, true, true, false, false, dim, fontid)
     end
   end
 
@@ -763,7 +766,7 @@ local function do_interlatincjk_option (head, curr, pc, pf, c, cf, par)
     local fontid = cc == 1 and cf or pf
     local dim = get_font_opt_dimen(fontid, "interlatincjk")
     if dim then
-      head = insert_glue_before(head, curr, par, true, brb, false, false, dim)
+      head = insert_glue_before(head, curr, par, true, brb, false, false, dim, fontid)
     end
   end
 
@@ -1133,6 +1136,16 @@ end
 
 local rubybox = {}
 luatexko.rubybox = rubybox
+
+local function getrubystretchfactor (box)
+  local _, fid = ruby_char_font(box)
+  local str = get_font_opt_dimen(fid, "intercharstretch")
+  if str then
+    local em = get_en_size(fid) * 2
+    texsprint(stringformat("\\def\\luatexkostretchfactor{%.4f}", str/em/2))
+  end
+end
+luatexko.getrubystretchfactor = getrubystretchfactor
 
 local function process_ruby_pre_linebreak (head)
   local curr = head
