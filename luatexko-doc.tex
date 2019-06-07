@@ -268,6 +268,14 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
   [InterCharacter=.125em]
 \end{verbatim}
 
+\item[InterCharStretch] CJK 글자간 가변공백{\small(글루)}의
+  stretch 값을 지시한다.%
+  \footnote{%
+    플레인텍에서는 |intercharstretch=<dimen>|. }
+\begin{verbatim}
+  [InterCharStretch=0.5pt]
+\end{verbatim}
+
 \item[CharRaise] 글자의 세로 위치를
   {\addhangulfontfeature{CharRaise=.3em} 조절}할 수 있는 기능이다.
   이로써 주변에 식자되는 다른 글꼴과 조화를 이루게 한다.%
@@ -280,6 +288,21 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
   세로쓰기에서 이 옵션 값을 고정길이{\small(가령 |pt| 단위)}로 주면
   크기가 다른 폰트들간에 중앙정렬이 이루어진다.
   세로쓰기에서 이 옵션을 주지 않으면 |0.5ex|가 기본값으로 동작한다.
+
+\item[RemoveClassicSpaces] 고문헌 조판시에 CJK 글자들 사이의 공백을 없애준다.%
+  \footnote{%
+    플레인텍에서는 |+removeclassicspaces|. }
+
+\item[CompressPunctuations] CJK 구두점 {\small (낫표 따위)}의 글자폭을
+  반각으로 만든다. v2.0부터는 사용자가 지시하지 않는 한 자동으로 글자폭을
+  줄여주지 않는다.%
+  \footnote{%
+    플레인텍에서는 |+compresspunctuations|. }
+  이 옵션은 |CharacterWidth=AlternateHalf| 내지 {\small (세로쓰기의 경우)}
+  |Vertical=HalfMetrics|와 거의 같은 기능을 한다.%
+  \footnote{%
+    플레인텍에서는 각각 |+halt| 및 |+vhal|이다. 이들과 완전 동일하진
+    않다. 가령 U+3002 (\char"3002) 처리의 경우.}
 
 \item[Protrusion] 특정 글자가 행 끌에 왔을 때 판면 바깥으로 끌어내는
   기능이다. Lua\TeX은 기본값으로 온점 반점 등을 완전 글자내밀기 한다.
@@ -297,25 +320,6 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
   \footnote{%
     플레인텍에서는 |expansion=default|. }
 
-\item[RemoveClassicSpaces] 고문헌 조판시에 CJK 글자들 사이의 공백을 없애준다.%
-  \footnote{%
-    플레인텍에서는 |+removeclassicspaces|. }
-
-\item[CompressPunctuations] CJK 구두점 {\small (낫표 따위)}의 글자폭을
-  반각으로 만든다. v2.0부터는 사용자가 지시하지 않는 한 자동으로 글자폭을
-  줄여주지 않는다.%
-  \footnote{%
-    플레인텍에서는 |+compresspunctuations|. }
-  이 옵션은 |CharacterWidth=AlternateHalf| 내지 {\small (세로쓰기의 경우)}
-  |Vertical=HalfMetrics|와 거의 같은 기능을 한다.%
-  \footnote{%
-    플레인텍에서는 각각 |+halt| 및 |+vhal|이다. 이들과 완전 동일하진
-    않다. 가령 U+3002 (\char"3002) 처리의 경우.}
-
-\item[InterCharStretch] CJK 글자간 가변공백{\small(글루)}의
-  stretch 값을 지시한다.%
-  \footnote{%
-    플레인텍에서는 |intercharstretch=<dimen>|. }
 \end{description}
 
 \section{고문헌}\label{sec:classic}
@@ -360,11 +364,11 @@ v2.0부터는 고문헌 조판에서 한글^^b7한자와 영문자가 붙어 나
 
 \section{세로쓰기}\label{sec:verttype}
 세로쓰기는 폰트의 고급 오픈타입 속성을 이용하므로 폰트가 이를 지원해야
-가능한 일이다. 폰트에 |Vertical=Alternates|와 |RawFeature=+vertical| 옵션을
+가능한 일이다. 폰트에 |Vertical=Alternates|와 |RawFeature=vertical| 옵션을
 준다.%
 \footnote{%
-  이는 플레인텍에서 |+vertical;+vert| 옵션을 주는 것과 같다.
-  사실 |+vertical|을 선언하면 |vert|는 자동으로 켜지도록 해 두었다. }\,%
+  이는 플레인텍에서 |vertical;+vert| 옵션을 주는 것과 같다.
+  사실 |vertical|을 선언하면 |vert|는 자동으로 켜지도록 해 두었다. }\,%
 \footnote{%
   |vmtx| 정보를 가지고 있지 않은 글꼴은 세로쓰기에 적합치 않은 글꼴이다.
   |otfinfo -t <파일>| 명령으로 글꼴에 들어있는 테이블 정보를 알 수 있다. }
@@ -382,7 +386,7 @@ v2.0부터는 고문헌 조판에서 한글^^b7한자와 영문자가 붙어 나
 
 \begin{figure}
 \framebox[\linewidth]{\begin{vertical}{20em}\sffamily
-  \addhangulfontfeature{Vertical=Alternates, RawFeature=+vertical}
+  \addhangulfontfeature{Vertical=Alternates, RawFeature=vertical}
   \linespread{1.5}\selectfont
   \hunmintxt
 \end{vertical}}
@@ -392,7 +396,7 @@ v2.0부터는 고문헌 조판에서 한글^^b7한자와 영문자가 붙어 나
 \begin{figure}
 \framebox[\linewidth]{\begin{vertical}{17em}\sffamily
   \addhangulfontfeature{Vertical=Alternates, CharRaise=3.2pt,
-  CompressPunctuations, CharacterWidth=Full, RawFeature=+vertical}
+  CompressPunctuations, CharacterWidth=Full, RawFeature=vertical}
   \parindent-1em\leftskip1em \linespread{1.5}\selectfont
   \spaceskip=.5em plus.25em minus.125em
   \noindent 님의 침묵(The Silent Beloved)
