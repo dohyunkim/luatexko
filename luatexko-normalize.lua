@@ -20,8 +20,15 @@ luatexbase.provides_module({
   license     = "LPPL v1.3+",
 })
 
-luatexkonormalize = luatexkonormalize or {}
-local luatexkonormalize = luatexkonormalize
+luatexko = luatexko or {}
+luatexko.normalize = luatexko.normalize or {}
+local luatexkonormalize = luatexko.normalize
+
+local utf8codes   = utf8.codes
+local utf8char    = utf8.char
+local tableinsert = table.insert
+local tableappend = table.append
+local tableunpack = table.unpack
 
 local chanjatohanja = {
   [0xF900] = {0x8C48, 0xFE00},
@@ -422,7 +429,7 @@ local function is_jongsong (c)
 end
 
 local function jamo2syllable (t) -- table -> integer
-  local cho, jung, jong = table.unpack(t)
+  local cho, jung, jong = tableunpack(t)
   local s = (cho - 0x1100) * 21
   s = (s + jung - 0x1161) * 28
   if jong then
@@ -445,35 +452,35 @@ end
 
 local function hanguldecompose (buffer)
   local t = {}
-  for _, c in utf8.codes(buffer) do
+  for _, c in utf8codes(buffer) do
     if is_hangul(c) then
-      table.append(t, syllable2jamo(c))
+      tableappend(t, syllable2jamo(c))
     else
-      table.insert(t, c)
+      tableinsert(t, c)
     end
   end
-  return utf8.char(table.unpack(t))
+  return utf8char(tableunpack(t))
 end
 
 -- LV | LVT, T  -> L, V, T+
 local function flush_syllable_jong (t, s)
   if #s == 2 then
-    table.append(t, syllable2jamo( s[1] ))
-    table.insert(t, s[2])
+    tableappend(t, syllable2jamo( s[1] ))
+    tableinsert(t, s[2])
   else
-    table.append(t, s)
+    tableappend(t, s)
   end
   return t, {}
 end
 
 local function compose_hanguldecompose (buffer) -- string -> table
   local t, s = {}, {}
-  for _, c in utf8.codes(buffer) do
+  for _, c in utf8codes(buffer) do
     if #s == 1 and is_jongsong(c) then
-      table.insert(s, c)
+      tableinsert(s, c)
     else
       t, s = flush_syllable_jong(t, s)
-      table.insert(is_hangul(c) and s or t, c)
+      tableinsert(is_hangul(c) and s or t, c)
     end
   end
   t = flush_syllable_jong(t, s)
@@ -483,9 +490,9 @@ end
 -- L, V, [T & ^OT]? -> LV | LVT
 local function flush_syllable (t, s)
   if #s == 2 or #s == 3 and is_modern_jong( s[3] ) then
-    table.insert(t, jamo2syllable(s))
+    tableinsert(t, jamo2syllable(s))
   else
-    table.append(t, s)
+    tableappend(t, s)
   end
   return t, {}
 end
@@ -494,10 +501,10 @@ local function compose_modern_hangul (ot)
   local t, s = {}, {}
   for _, c in ipairs(ot) do
     if #s == 1 and is_modern_jung(c) or #s >= 2 and is_jongsong(c) then
-      table.insert(s, c)
+      tableinsert(s, c)
     else
       t, s = flush_syllable(t, s)
-      table.insert(is_modern_cho(c) and s or t, c)
+      tableinsert(is_modern_cho(c) and s or t, c)
     end
   end
   t = flush_syllable(t, s)
@@ -507,9 +514,9 @@ end
 -- L, VF -> CL
 local function flush_cjamocho (t, s)
   if #s == 2 then
-    table.insert(t, jamotocjamo.ccho[ s[1] ])
+    tableinsert(t, jamotocjamo.ccho[ s[1] ])
   else
-    table.append(t, s)
+    tableappend(t, s)
   end
   return t, {}
 end
@@ -518,10 +525,10 @@ local function compose_jamo_chosong (ot)
   local t, s = {}, {}
   for _, c in ipairs(ot) do
     if #s == 1 and c == 0x1160 then
-      table.insert(s, c)
+      tableinsert(s, c)
     else
       t, s = flush_cjamocho(t, s)
-      table.insert(jamotocjamo.ccho[c] and s or t, c)
+      tableinsert(jamotocjamo.ccho[c] and s or t, c)
     end
   end
   t = flush_cjamocho(t, s)
@@ -531,9 +538,9 @@ end
 -- LF, V, ^T -> CV, ^T
 local function flush_cjamojung (t, s)
   if #s == 2 then
-    table.insert(t, jamotocjamo.cjung[ s[2] ])
+    tableinsert(t, jamotocjamo.cjung[ s[2] ])
   else
-    table.append(t, s)
+    tableappend(t, s)
   end
   return t, {}
 end
@@ -542,10 +549,10 @@ local function compose_jamo_jungsong (ot)
   local t, s = {}, {}
   for _, c in ipairs(ot) do
     if #s == 1 and jamotocjamo.cjung[c] or #s == 2 and is_jongsong(c) then
-      table.insert(s, c)
+      tableinsert(s, c)
     else
       t, s = flush_cjamojung(t, s)
-      table.insert(c == 0x115F and s or t, c)
+      tableinsert(c == 0x115F and s or t, c)
     end
   end
   t = flush_cjamojung(t, s)
@@ -555,9 +562,9 @@ end
 -- CHJ -> HJ, VS
 local function flush_compat_hanja (t, s)
   if #s == 1 then
-    table.append(t, chanjatohanja[ s[1] ])
+    tableappend(t, chanjatohanja[ s[1] ])
   else
-    table.append(t, s)
+    tableappend(t, s)
   end
   return t, {}
 end
@@ -566,10 +573,10 @@ local function compose_compat_hanja (ot)
   local t, s = {}, {}
   for _, c in ipairs(ot) do
     if #s ==  1 and c >= 0xFE00 and c <= 0xFE02 then
-      table.insert(s, c)
+      tableinsert(s, c)
     else
       t, s = flush_compat_hanja(t, s)
-      table.insert(chanjatohanja[c] and s or t, c)
+      tableinsert(chanjatohanja[c] and s or t, c)
     end
   end
   t = flush_compat_hanja(t, s)
@@ -583,7 +590,7 @@ local function hangulcompose (buffer)
   t = compose_jamo_jungsong(t)
   t = compose_compat_hanja (t)
 
-  return utf8.char(table.unpack(t))
+  return utf8char(tableunpack(t))
 end
 
 local loaded = false
@@ -592,7 +599,7 @@ local remove_from_callback = luatexbase.remove_from_callback
 
 local function unload()
   if loaded then
-    remove_from_callback('process_input_buffer', 'luatexko-hangul-normalize')
+    remove_from_callback('process_input_buffer', 'luatexko.hangul_normalize')
     loaded = false
   end
 end
@@ -600,14 +607,14 @@ luatexkonormalize.unload = unload
 
 local function compose()
   unload()
-  add_to_callback('process_input_buffer', hangulcompose, 'luatexko-hangul-normalize')
+  add_to_callback('process_input_buffer', hangulcompose, 'luatexko.hangul_normalize')
   loaded = true
 end
 luatexkonormalize.compose = compose
 
 local function decompose()
   unload()
-  add_to_callback('process_input_buffer', hanguldecompose, 'luatexko-hangul-normalize')
+  add_to_callback('process_input_buffer', hanguldecompose, 'luatexko.hangul_normalize')
   loaded = true
 end
 luatexkonormalize.decompose = decompose

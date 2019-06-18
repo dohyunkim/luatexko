@@ -61,17 +61,18 @@ local texsprint = tex.sprint
 local stringformat = string.format
 
 local tableconcat = table.concat
-local tableinsert = table.insert
 local tableunpack = table.unpack
 
-local add_to_callback     = luatexbase.add_to_callback
-local attributes          = luatexbase.attributes
-local call_callback       = luatexbase.call_callback
-local create_callback     = luatexbase.create_callback
-local module_warning      = luatexbase.module_warning
-local new_user_whatsit    = luatexbase.new_user_whatsit
-local new_user_whatsit_id = luatexbase.new_user_whatsit_id
-local registernumber      = luatexbase.registernumber
+local add_to_callback       = luatexbase.add_to_callback
+local attributes            = luatexbase.attributes
+local call_callback         = luatexbase.call_callback
+local callback_descriptions = luatexbase.callback_descriptions
+local create_callback       = luatexbase.create_callback
+local module_warning        = luatexbase.module_warning
+local new_user_whatsit      = luatexbase.new_user_whatsit
+local new_user_whatsit_id   = luatexbase.new_user_whatsit_id
+local registernumber        = luatexbase.registernumber
+local remove_from_callback  = luatexbase.remove_from_callback
 
 local function warning (...)
   return module_warning("luatexko", stringformat(...))
@@ -435,12 +436,12 @@ local charclass = setmetatable({
 
 local SC_charclass = setmetatable({
   [0xFF01] = 4, [0xFF1A] = 4, [0xFF1B] = 4, [0xFF1F] = 4,
-}, { __index = function(_,c) return charclass[c] end })
+}, { __index = charclass })
 
 local vert_charclass = setmetatable({
   [0xFF1A] = 5, -- 0xFE13
   [0xFF1B] = 5, -- 0xFE14
-}, { __index = function(_,c) return charclass[c] end })
+}, { __index = charclass })
 
 local function get_char_class (c, classic)
   if classic == vert_classic then
@@ -553,7 +554,7 @@ end
 local function fontdata_opt_dim (fd, optname)
   local dim = option_in_font(fd, optname)
   if dim then
-    local m, u = dim:match"(.+)(e[mx])%s*$"
+    local m, u = dim:match"^(.+)(e[mx])%s*$"
     if m and u then
       if u == "em" then
         dim = m * fd.parameters.quad
@@ -845,7 +846,7 @@ local function process_remove_spaces (head)
           end
           if ok then
             head = noderemove(head, curr)
-            tableinsert(to_free, curr)
+            to_free[#to_free + 1] = curr
             break
           end
         end
@@ -974,7 +975,7 @@ local function process_josa (head)
             curr.char = cc
           else
             head = noderemove(head, curr)
-            tableinsert(tofree, curr)
+            tofree[#tofree + 1] = curr
           end
         end
         unset_attribute(curr, autojosaattr)
@@ -1232,7 +1233,7 @@ local function pdfliteral_direct_actual (syllable)
   if syllable then
     local t = {}
     for _,v in ipairs(syllable) do
-      tableinsert(t, conv_tounicode(v))
+      t[#t + 1] = conv_tounicode(v)
     end
     data = stringformat("/Span<</ActualText<FEFF%s>>>BDC", tableconcat(t))
   else
@@ -1284,7 +1285,7 @@ local function process_reorder_tonemarks (head)
             if   is_jungsong(u)
               or is_jongsong(u)
               or hangul_tonemark[u] then
-              tableinsert(syllable, u)
+              syllable[#syllable + 1] = u
               curr, uni = n, u
             else
               break
@@ -1471,7 +1472,7 @@ local function process_vertical_font (fontdata)
   local tsb_tab = get_tsb_table(fontdata.filename, subfont)
   if not tsb_tab then
     warning("Vertical metrics table (vmtx) not found in the font\n"..
-    "`%s'", fontdata.fontname)
+    "`%s'", fontdata.fullname)
     return
   end
 
@@ -1697,13 +1698,13 @@ local function process_patch_font (fontdata)
       texset("global", "protrudechars", 2)
       active_processes.protrusion = true
     end
-    if not active_processes[fontdata.fontname] and
+    if not active_processes[fontdata.fullname] and
       option_in_font(fontdata, "compresspunctuations") then
       warning("Both `compresspunctuations' and `protrusion' are\n"..
       "enabled for the font `%s'.\n"..
       "Beware that this could result in bad justifications.\n",
-      fontdata.fontname)
-      active_processes[fontdata.fontname] = true
+      fontdata.fullname)
+      active_processes[fontdata.fullname] = true
     end
   end
 
@@ -1766,6 +1767,36 @@ local function activate (name)
 end
 luatexko.activate = activate
 
+-- deactivate/reactivate all functionalities
+
+local function deactivate ()
+  luatexko.deactivated = {}
+  for _, name in ipairs{ "hpack_filter",
+                         "pre_linebreak_filter",
+                         "vpack_filter",
+                         "luaotfload.patch_font" } do
+    local t = {}
+    for i, v in ipairs( callback_descriptions(name) ) do
+      if v:find("^luatexko%.") then
+        local ff, dd = remove_from_callback(name, v)
+        t[#t + 1] = { ff, dd, i }
+      end
+    end
+    luatexko.deactivated[name] = t
+  end
+end
+luatexko.deactivate = deactivate
+
+local function reactivate ()
+  for name, v in pairs(luatexko.deactivated or {}) do
+    for _, vv in ipairs(v) do
+      add_to_callback(name, tableunpack(vv))
+    end
+  end
+  luatexko.deactivated = {}
+end
+luatexko.reactivate = reactivate
+
 -- aux functions
 
 local function current_has_hangul_chars (cnt)
@@ -1789,7 +1820,7 @@ local function get_charslots_of_gid (fd, gid)
   local t = {}
   for i, v in pairs(fd.characters) do
     if v.index == gid then
-      table.insert(t, i)
+      t[#t + 1] = i
     end
   end
   return t

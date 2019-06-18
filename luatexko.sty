@@ -30,7 +30,7 @@
 \newattribute\luatexkoclassicattr
 \newattribute\luatexkodotemphattr
 \newattribute\luatexkorubyattr \chardef\luatexkorubyalloc\allocationnumber
-\directlua{ require"luatexko.lua" }
+\directlua{ require"luatexko" }
 % classic
 \protected\def\typesetclassic{\luatexkoclassicattr\z@\parindent1em }
 \protected\def\typesetvertical{\luatexkoclassicattr\@ne\parindent1em }
@@ -293,17 +293,17 @@
   \directlua{require"luatexko-normalize"}%
   \afterassignment\luatexkohangulnormalize\count@}
 \def\luatexkohangulnormalize{%
-  \ifcase\count@ \directlua{ luatexkonormalize.unload() }% 0: none
-  \or \directlua{ luatexkonormalize.compose() }% 1: nfc
-  \else \directlua{ luatexkonormalize.decompose() }% 2: nfd
+  \ifcase\count@ \directlua{ luatexko.normalize.unload() }% 0: none
+  \or \directlua{ luatexko.normalize.compose() }% 1: nfc
+  \else \directlua{ luatexko.normalize.decompose() }% 2: nfd
   \fi }
 % convert uhc to utf8
 \def\luatexuhcinputencoding{%
   \directlua{require"luatexko-uhc2utf8"}%
   \afterassignment\luatexkouhcinputencoding\count@}
 \def\luatexkouhcinputencoding{%
-  \ifcase\count@ \directlua{ luatexkouhc2utf8.stopconvert() }%
-  \else \directlua{ luatexkouhc2utf8.startconvert() }%
+  \ifcase\count@ \directlua{ luatexko.uhc2utf8.stopconvert() }%
+  \else \directlua{ luatexko.uhc2utf8.startconvert() }%
   \fi}
 % actualtext not provided
 \protected\def\actualtext#1#{\luatexkoactualtext}

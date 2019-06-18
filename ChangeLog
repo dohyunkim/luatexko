@@ -1,3 +1,11 @@
+2019-06-19      Dohyun Kim <nomos at ktug org>
+
+	Version 2.3
+
+	* luatexko.lua: (almost) all functionalities will not work
+	after `\directlua{ luatexko.deactivate() }' until it comes across
+	`\directlua{ luatexko.reactivate() }'.
+
 2019-06-07      Dohyun Kim <nomos at ktug org>
 
 	Version 2.2

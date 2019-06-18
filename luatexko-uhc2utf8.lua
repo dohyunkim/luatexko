@@ -20,8 +20,9 @@ luatexbase.provides_module({
   license     = "LPPL v1.3+",
 })
 
-luatexkouhc2utf8 = luatexkouhc2utf8 or {}
-local luatexkouhc2utf8 = luatexkouhc2utf8
+luatexko = luatexko or {}
+luatexko.uhc2utf8 = luatexko.uhc2utf8 or {}
+local luatexkouhc2utf8 = luatexko.uhc2utf8
 
 local kpse_find_file = kpse.find_file
 local add_to_callback = luatexbase.add_to_callback
@@ -64,12 +65,12 @@ local function uhc_to_utf8 (buffer)
 end
 
 local function startconvert ()
-  add_to_callback('process_input_buffer', uhc_to_utf8, 'luatexko-uhctoutf8', 1)
+  add_to_callback('process_input_buffer', uhc_to_utf8, 'luatexko.uhctoutf8', 1)
 end
 luatexkouhc2utf8.startconvert = startconvert
 
 local function stopconvert ()
-  remove_from_callback('process_input_buffer', 'luatexko-uhctoutf8')
+  remove_from_callback('process_input_buffer', 'luatexko.uhctoutf8')
 end
 luatexkouhc2utf8.stopconvert = stopconvert
 
@@ -93,13 +94,13 @@ local function utf8_to_uhc (name)
     if u >= 0xA1 and u <= 0xFFE6 then
       local c = t_ucs2uhc[u]
       if c then
-        table.insert(t, c // 256)
-        table.insert(t, c %  256)
+        t[#t + 1] = c // 256
+        t[#t + 1] = c %  256
       else
-        table.insert(t, u)
+        t[#t + 1] = u
       end
     else
-      table.insert(t, u)
+      t[#t + 1] = u
     end
   end
   return string.char(table.unpack(t))
@@ -113,15 +114,15 @@ local function uhc_find_file (file, ...)
 end
 
 local function start_uhc_filename ()
-  add_to_callback('find_read_file', function(id, name) return uhc_find_file(name) end, 'luatexko-touhc-findreadfile')
-  add_to_callback('find_image_file', uhc_find_file, 'luatexko-touhc-findimagefile')
+  add_to_callback('find_read_file', function(id, name) return uhc_find_file(name) end, 'luatexko.touhc_findreadfile')
+  add_to_callback('find_image_file', uhc_find_file, 'luatexko.touhc_findimagefile')
   kpse.find_file = uhc_find_file
 end
 luatexkouhc2utf8.start_uhc_filename = start_uhc_filename
 
 local function stop_uhc_filename ()
-  remove_from_callback('find_read_file', 'luatexko-touhc-findreadfile')
-  remove_from_callback('find_image_file', 'luatexko-touhc-findimagefile')
+  remove_from_callback('find_read_file', 'luatexko.touhc_findreadfile')
+  remove_from_callback('find_image_file', 'luatexko.touhc_findimagefile')
   kpse.find_file = kpse_find_file
 end
 luatexkouhc2utf8.stop_uhc_filename = stop_uhc_filename
