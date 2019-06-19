@@ -612,8 +612,8 @@ local function maybe_linebreak (head, curr, pc, pcl, cc, old, fid, par)
   if pc and cc and curr.lang ~= nohyphen then
     local ict = intercharclass[pcl][ccl]
     local brb = breakable_before[cc]
-    local br  = brb and breakable_after[pc] or pcl > 1
-    -- pcl>1 : cjk closing punctuations prevented interlatincjk glue.
+    local br  = brb and breakable_after[pc] or pcl > 1 and is_noncjkletter(cc)
+    -- latter part : cjk closing punctuations prevented interlatincjk glue.
     local dim = get_font_opt_dimen(fid, "intercharacter")
     if ict or br or dim and (pcl >= 1 or ccl >= 1) then
       head = insert_glue_before(head, curr, par, br, brb, old, ict, dim, fid)
