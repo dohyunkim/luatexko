@@ -764,8 +764,12 @@ end
 local function do_interlatincjk_option (head, curr, pc, pf, c, cf, par)
   local cc = is_cjk(c) and 1 or is_noncjkletter(c) and 2 or 0
   local brb = cc == 2 or breakable_before[c] -- numletter != br_before
+  local old = has_attribute(curr, classicattr)
+  local ccl = old and get_char_class(c, old) or 0
 
-  if brb and cc*pc == 2 and curr.lang ~= nohyphen then
+  if brb and cc*pc == 2 and curr.lang ~= nohyphen and ccl ~= 1 then
+    -- ccl~=1 : prevent glue before opening punctuations under classic env.
+    --          this will be managed later by process_linebreak.
     local fontid = cc == 1 and cf or pf
     local dim = get_font_opt_dimen(fontid, "interlatincjk")
     if dim then
@@ -773,7 +777,7 @@ local function do_interlatincjk_option (head, curr, pc, pf, c, cf, par)
     end
   end
 
-  if get_char_class(c) > 1 then
+  if ccl > 1 then
     cc = 0 -- cjk closing punctuations prevent insertion of next glue.
   end
   return head, cc, cf
