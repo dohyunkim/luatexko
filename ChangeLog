@@ -1,11 +1,3 @@
-2019-06-19      Dohyun Kim <nomos at ktug org>
-
-	Version 2.3
-
-	* luatexko.lua, luatexko.sty: (almost) all functionalities
-	of the package will not work after `\deactivateluatexko=1'
-	until it comes across `\deactivateluatexko=0'.
-
 2019-06-07      Dohyun Kim <nomos at ktug org>
 
 	Version 2.2

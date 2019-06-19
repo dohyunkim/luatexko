@@ -99,6 +99,7 @@ local lua_number = 100
 local lua_value  = 108
 local spaceskip  = 13
 local nohyphen = registernumber"l@nohyphenation" or -1 -- verbatim
+local langkor  = registernumber"koreanlanguage"  or 16383
 
 local hangulfontattr   = attributes.luatexkohangulfontattr
 local hanjafontattr    = attributes.luatexkohanjafontattr
@@ -611,7 +612,8 @@ local function maybe_linebreak (head, curr, pc, pcl, cc, old, fid, par)
   if pc and cc and curr.lang ~= nohyphen then
     local ict = intercharclass[pcl][ccl]
     local brb = breakable_before[cc]
-    local br  = brb and breakable_after[pc]
+    local br  = brb and breakable_after[pc] or pcl > 1
+    -- pcl>1 : cjk closing punctuations prevented interlatincjk glue.
     local dim = get_font_opt_dimen(fid, "intercharacter")
     if ict or br or dim and (pcl >= 1 or ccl >= 1) then
       head = insert_glue_before(head, curr, par, br, brb, old, ict, dim, fid)
@@ -771,6 +773,9 @@ local function do_interlatincjk_option (head, curr, pc, pf, c, cf, par)
     end
   end
 
+  if get_char_class(c) > 1 then
+    cc = 0 -- cjk closing punctuations prevent insertion of next glue.
+  end
   return head, cc, cf
 end
 
@@ -1767,7 +1772,21 @@ local function activate (name)
 end
 luatexko.activate = activate
 
--- deactivate/reactivate all functionalities
+add_to_callback ("hyphenate",
+function(head)
+  local curr = head
+  while curr do
+    if curr.id == glyphid   and curr.subtype == 1      and
+      curr.lang ~= nohyphen and is_cjk(curr.char or 0) then
+      curr.lang = langkor
+    end
+    curr = getnext(curr)
+  end
+  lang.hyphenate(head)
+end,
+"luatexko.hyphenate.prevent_disc_nodes")
+
+-- aux functions
 
 local function deactivate_all (str)
   luatexko.deactivated = {}
@@ -1796,8 +1815,6 @@ local function reactivate_all ()
   luatexko.deactivated = nil
 end
 luatexko.reactivateall = reactivate_all
-
--- aux functions
 
 local function current_has_hangul_chars (cnt)
   texcount[cnt] = char_in_font(fontcurrent(), 0xAC00) and 1 or 0

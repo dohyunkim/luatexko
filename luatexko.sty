@@ -22,6 +22,7 @@
   \chardef\luatexkoatcatcode=\catcode`\@
   \catcode`\@=11
 \fi
+\newlanguage\koreanlanguage
 \protected\def\pdfliteral{\pdfextension literal}
 \newattribute\luatexkohangulfontattr
 \newattribute\luatexkohanjafontattr
@@ -112,14 +113,6 @@
   \afterassignment\luatexkohanjabyhanjafont\count@ }
 \def\luatexkohanjabyhanjafont{\luatexkodoluacode{
   luatexko.hanjabyhanjafont=\ifcase\count@ false \else true \fi }}
-% deactivate luatexko
-\def\deactivateluatexko{\afterassignment\luatexkodeactivateluatexko\count@ }
-\def\luatexkodeactivateluatexko{\directlua{
-  \ifcase\count@
-    luatexko.reactivateall()
-  \else
-    luatexko.deactivateall()
-  \fi }}
 % dotemph
 \newcount\luatexkodotemphcount
 \def\dotemphraise{1ex }
