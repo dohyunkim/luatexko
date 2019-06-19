@@ -645,8 +645,16 @@ local function process_linebreak (head, par)
       end
 
     elseif id == mathid then
+      if pcl > 1 then
+        local old = has_attribute(curr, classicattr)
+        head = maybe_linebreak(head, curr, pc, pcl, 0x30, old, 0, par)
+      end
       pc, pcl, curr = 0x30, 0, end_of_math(curr)
     elseif id == dirid then
+      if pcl > 1 and curr.dir:sub(1,1) == "+" then
+        local old = has_attribute(curr, classicattr)
+        head = maybe_linebreak(head, curr, pc, pcl, 0x30, old, 0, par)
+      end
       pc, pcl = curr.dir:sub(1,1) == "-" and 0x30, 0 -- pop dir
     elseif is_blocking_node(curr) then
       pc, pcl = false, 0
