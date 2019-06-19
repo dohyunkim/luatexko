@@ -330,7 +330,7 @@ local function process_fonts (head)
 
         local c = curr.char
 
-        if is_unicode_var_sel(c) then
+        if is_cjk_combining(c) then
           local p = getprev(curr)
           if p.id == glyphid and curr.font ~= p.font then
             hangul_space_skip(curr, p.font)
@@ -1769,7 +1769,7 @@ luatexko.activate = activate
 
 -- deactivate/reactivate all functionalities
 
-local function deactivate ()
+local function deactivate_all (str)
   luatexko.deactivated = {}
   for _, name in ipairs{ "hpack_filter",
                          "pre_linebreak_filter",
@@ -1777,7 +1777,7 @@ local function deactivate ()
                          "luaotfload.patch_font" } do
     local t = {}
     for i, v in ipairs( callback_descriptions(name) ) do
-      if v:find("^luatexko%.") then
+      if v:find(str or "^luatexko%.") then
         local ff, dd = remove_from_callback(name, v)
         t[#t + 1] = { ff, dd, i }
       end
@@ -1785,17 +1785,17 @@ local function deactivate ()
     luatexko.deactivated[name] = t
   end
 end
-luatexko.deactivate = deactivate
+luatexko.deactivateall = deactivate_all
 
-local function reactivate ()
+local function reactivate_all ()
   for name, v in pairs(luatexko.deactivated or {}) do
     for _, vv in ipairs(v) do
       add_to_callback(name, tableunpack(vv))
     end
   end
-  luatexko.deactivated = {}
+  luatexko.deactivated = nil
 end
-luatexko.reactivate = reactivate
+luatexko.reactivateall = reactivate_all
 
 -- aux functions
 
