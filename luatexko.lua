@@ -1793,6 +1793,7 @@ local function deactivate_all (str)
   for _, name in ipairs{ "hpack_filter",
                          "pre_linebreak_filter",
                          "vpack_filter",
+                         "hyphenate",
                          "luaotfload.patch_font" } do
     local t = {}
     for i, v in ipairs( callback_descriptions(name) ) do
