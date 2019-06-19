@@ -612,8 +612,7 @@ local function maybe_linebreak (head, curr, pc, pcl, cc, old, fid, par)
   if pc and cc and curr.lang ~= nohyphen then
     local ict = intercharclass[pcl][ccl]
     local brb = breakable_before[cc]
-    local br  = brb and breakable_after[pc] or pcl > 1 and is_noncjkletter(cc)
-    -- latter part : cjk closing punctuations prevented interlatincjk glue.
+    local br  = brb and breakable_after[pc]
     local dim = get_font_opt_dimen(fid, "intercharacter")
     if ict or br or dim and (pcl >= 1 or ccl >= 1) then
       head = insert_glue_before(head, curr, par, br, brb, old, ict, dim, fid)
@@ -645,16 +644,8 @@ local function process_linebreak (head, par)
       end
 
     elseif id == mathid then
-      if pcl > 1 then
-        local old = has_attribute(curr, classicattr)
-        head = maybe_linebreak(head, curr, pc, pcl, 0x30, old, 0, par)
-      end
       pc, pcl, curr = 0x30, 0, end_of_math(curr)
     elseif id == dirid then
-      if pcl > 1 and curr.dir:sub(1,1) == "+" then
-        local old = has_attribute(curr, classicattr)
-        head = maybe_linebreak(head, curr, pc, pcl, 0x30, old, 0, par)
-      end
       pc, pcl = curr.dir:sub(1,1) == "-" and 0x30, 0 -- pop dir
     elseif is_blocking_node(curr) then
       pc, pcl = false, 0
@@ -769,62 +760,63 @@ local function process_interhangul (head, par)
   return head
 end
 
-local function do_interlatincjk_option (head, curr, pc, pf, c, cf, par)
+local function do_interlatincjk_option (head, curr, pc, pf, pcl, c, cf, par)
   local cc = is_cjk(c) and 1 or is_noncjkletter(c) and 2 or 0
-  local brb = cc == 2 or breakable_before[c] -- numletter != br_before
   local old = has_attribute(curr, classicattr)
-  local ccl = old and get_char_class(c, old) or 0
+  local ccl = get_char_class(c, old)
 
-  if brb and cc*pc == 2 and curr.lang ~= nohyphen and ccl ~= 1 then
-    -- ccl~=1 : prevent glue before opening punctuations under classic env.
-    --          this will be managed later by process_linebreak.
-    local fontid = cc == 1 and cf or pf
-    local dim = get_font_opt_dimen(fontid, "interlatincjk")
-    if dim then
-      head = insert_glue_before(head, curr, par, true, brb, false, false, dim, fontid)
+  if cc*pc == 2 and curr.lang ~= nohyphen then
+    local brb = cc == 2 or breakable_before[c] -- numletter != br_before
+    if brb then
+      local fid = cc == 1 and cf or pf
+      local dim = get_font_opt_dimen(fid, "interlatincjk")
+      if dim then
+        local ict = old and intercharclass[pcl][ccl] -- under classic env. only
+        if ict then
+          dim = get_font_opt_dimen(fid, "intercharacter") or 0
+        end
+        head = insert_glue_before(head, curr, par, true, brb, old, ict, dim, fid)
+      end
     end
   end
 
-  if ccl > 1 then
-    cc = 0 -- cjk closing punctuations prevent insertion of next glue.
-  end
-  return head, cc, cf
+  return head, cc, cf, ccl
 end
 
 local function process_interlatincjk (head, par)
-  local curr, pc, pf = head, 0, 0
+  local curr, pc, pf, pcl = head, 0, 0, 0
   while curr do
     local id = curr.id
     if id == glyphid then
       local c = my_node_props(curr).unicode or curr.char
-      head, pc, pf = do_interlatincjk_option(head, curr, pc, pf, c, curr.font, par)
+      head, pc, pf, pcl = do_interlatincjk_option(head, curr, pc, pf, pcl, c, curr.font, par)
       pc = breakable_after[c] and pc or 0
 
     elseif id == hlistid and has_attribute(curr, rubyattr) then
       local c, cf = ruby_char_font(curr)
-      head, pc, pf = do_interlatincjk_option(head, curr, pc, pf, c, cf, par)
+      head, pc, pf, pcl = do_interlatincjk_option(head, curr, pc, pf, pcl, c, cf, par)
 
     elseif id == whatsitid and curr.mode == directmode then
       local glyf, c = get_actualtext(curr)
       if c and glyf then
-        head, pc, pf = do_interlatincjk_option(head, curr, pc, pf, c, glyf.font, par)
+        head, pc, pf, pcl = do_interlatincjk_option(head, curr, pc, pf, pcl, c, glyf.font, par)
         curr = goto_end_actualtext(curr)
       end
 
     elseif id == mathid then
       if pc == 1 then
-        head = do_interlatincjk_option(head, curr, pc, pf, 0x30, pf, par)
+        head = do_interlatincjk_option(head, curr, pc, pf, pcl, 0x30, pf, par)
       end
-      pc, curr = 2, end_of_math(curr)
+      pc, pcl, curr = 2, 0, end_of_math(curr)
 
     elseif id == dirid then
       if pc == 1 and curr.dir:sub(1,1) == "+" then
-        head = do_interlatincjk_option(head, curr, pc, pf, 0x30, pf, par)
-        pc = 0
+        head = do_interlatincjk_option(head, curr, pc, pf, pcl, 0x30, pf, par)
+        pc, pcl = 0, 0
       end
 
     elseif is_blocking_node(curr) then
-      pc = 0
+      pc, pcl = 0
     end
     curr = getnext(curr)
   end
@@ -1818,7 +1810,11 @@ local function deactivate_all (str)
   end
 end
 luatexko.deactivateall = deactivate_all
-
+--[[
+-- luatexko.deactivateall() -- or ("^ltj%.")
+--   ... \par
+-- luatexko.reactivateall()
+--]]
 local function reactivate_all ()
   for name, v in pairs(luatexko.deactivated or {}) do
     for _, vv in ipairs(v) do
