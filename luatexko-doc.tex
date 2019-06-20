@@ -122,7 +122,8 @@ CP949 인코딩에 관해서는 제\ref{sec:uhcencoding}절 참조.
 \luatexko를 로드하면 fontspec 패키지를 자동으로 불러온다. 글꼴 설정에
 대해서는 fontspec 문서를 참조.
 
-한국어 글꼴을 위해 새로 마련한 명령은 다음과 같다.%
+한국어 글꼴을 위해 새로 마련한 명령은 다음과 같다.
+첫 두 줄, 즉 main/sans 글꼴들에는 |Ligatures=TeX| 옵션이 자동으로 주어진다.%
 \footnote{%
   \cs{adhochangulfont} \cs{adhochanjafont} \cs{addhocfallbackfont}는
   마지막 줄 명령들의 다른 이름들이다. }\,%
@@ -141,8 +142,6 @@ CP949 인코딩에 관해서는 제\ref{sec:uhcencoding}절 참조.
   \addhangulfontfeature  \addhanjafontfeature \addfallbackfontfeature
   \hangulfontspec        \hanjafontspec       \fallbackfontspec
 \end{verbatim}
-첫 두 줄, 즉 main/sans hangul/hanja/fallback 글꼴에는
-|Ligatures=TeX| 옵션이 자동으로 주어진다.
 
 \section{글꼴 대체}\label{sec:fontswitch}
 원칙적으로 \luatexko는 지시된 글자가 영문폰트에 없으면 한글폰트에서,
@@ -159,7 +158,7 @@ CP949 인코딩에 관해서는 제\ref{sec:uhcencoding}절 참조.
 문단 중간에서 사용해도 동작한다. 그러나 루아코드가 실행되므로
 텍의 그룹에 의해 영향받지 않는 전역적 효과를 가진다.
 
-나아가 일정한 영문 문장부호들은 한글 폰트로 식자된다.
+일정한 영문 문장부호들은 한글 폰트로 식자된다.
 즉, \cs{hangulpunctuations=1}이 기본으로 작동하고,
 |0|을 지시해야 이 기능이 비로소 꺼진다.
 verbatim 코드를 식자할 때는 이 기능이 작동하지 않는다.%
@@ -179,13 +178,14 @@ verbatim 코드를 식자할 때는 이 기능이 작동하지 않는다.%
   [0x2015]  ―   [0x2018]  ‘   [0x2019]  ’   [0x201C]  “
   [0x201D]  ”    [0x2026]  …   [0x203B]  ※
 \end{verbatim}
+
 다음과 같은 명령으로 이 목록에 문자를 추가하거나 제거할 수 있다.
 인자는 콤마로 분리된 숫자 형식으로서 유니코드 코드포인트를 뜻한다.
+이들 명령은 문단 중간에서도 쓸 수 있지만, 전역적 효과를 가진다.
 \begin{verbatim}
   \registerpunctuations{45, "2D, `-}
   \unregisterpunctuations{"2D, "2015}
 \end{verbatim}
-이들 명령은 문단 중간에서도 쓸 수 있지만, 전역적 효과를 가진다.
 
 \section{줄바꿈 허용}\label{sec:break}
 어떤 글자 앞이나 뒤에서 줄바꿈을 허용하고 싶을 때 아래와 같이 명령을 준다.

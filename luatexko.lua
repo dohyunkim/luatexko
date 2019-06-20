@@ -154,7 +154,7 @@ local function is_cjk_combining (c)
   or     is_unicode_var_sel(c)
 end
 
-local function is_noncjkletter (c)
+local function is_noncjk_char (c)
   return c >= 0x30 and c <= 0x39
   or     c >= 0x41 and c <= 0x5A
   or     c >= 0x61 and c <= 0x7A
@@ -469,7 +469,7 @@ local breakable_after = setmetatable({
   [0xFF1E] = true, [0xFF5E] = true, [0xFF70] = true,
 },{ __index = function (_,c)
   return is_hangul_jamo(c) and not is_chosong(c)
-  or is_noncjkletter(c)
+  or is_noncjk_char(c)
   or is_hanja(c)
   or is_cjk_combining(c)
   or is_kana(c)
@@ -702,7 +702,7 @@ end
 
 -- interhangul & interlatincjk
 
-local function is_cjk (c)
+local function is_cjk_char (c)
   return is_hangul_jamo(c)
   or     is_hanja(c)
   or     is_cjk_combining(c)
@@ -710,6 +710,32 @@ local function is_cjk (c)
   or     charclass[c] >= 1
   or     rawget(breakable_before, c) and c >= 0x2000
   or     rawget(breakable_after,  c) and c >= 0x2000
+end
+
+local function is_cjk (n, c) -- node, char
+  if n and c then
+    if is_unicode_var_sel(c) then
+      local p = getprev(n)
+      if p and p.id == glyphid then
+        local pc = my_node_props(p).unicode or p.char or 0
+        return is_cjk_char(pc)
+      end
+    end
+    return is_cjk_char(c)
+  end
+end
+
+local function is_noncjk (n, c) -- node, char
+  if n and c then
+    if is_unicode_var_sel(c) then
+      local p = getprev(n)
+      if p and p.id == glyphid then
+        local pc = my_node_props(p).unicode or p.char or 0
+        return is_noncjk_char(pc)
+      end
+    end
+    return is_noncjk_char(c)
+  end
 end
 
 local function do_interhangul_option (head, curr, pc, c, fontid, par)
@@ -761,7 +787,7 @@ local function process_interhangul (head, par)
 end
 
 local function do_interlatincjk_option (head, curr, pc, pf, pcl, c, cf, par)
-  local cc = is_cjk(c) and 1 or is_noncjkletter(c) and 2 or 0
+  local cc = is_cjk(curr, c) and 1 or is_noncjk(curr, c) and 2 or 0
   local old = has_attribute(curr, classicattr)
   local ccl = get_char_class(c, old)
 
@@ -846,7 +872,7 @@ local function process_remove_spaces (head)
                 vchar, vfont = ruby_char_font(v)
               end
               if vchar and vfont and option_in_font(vfont, opt_name) then
-                ok = is_cjk(vchar)
+                ok = is_cjk(v, vchar)
               end
 
               break
@@ -916,7 +942,7 @@ local josa_code = setmetatable({
     return c ~= 0x1160 and 2
   elseif is_jongsong(c) then
     return c == 0x11AF and 1 or 3
-  elseif is_noncjkletter(c) and c <= 0x7A
+  elseif is_noncjk_char(c) and c <= 0x7A
     or c >= 0x2160 and c <= 0x217F -- roman
     or c >= 0x2460 and c <= 0x24E9 -- ①
     or c >= 0x314F and c <= 0x3163 or c >= 0x3187 and c <= 0x318E -- ㅏ
@@ -1780,9 +1806,15 @@ add_to_callback ("hyphenate",
 function(head)
   local curr = head
   while curr do
-    if curr.id == glyphid   and curr.subtype == 1      and
-      curr.lang ~= nohyphen and is_cjk(curr.char or 0) then
-      curr.lang = langkor
+    local id = curr.id
+    if id == glyphid then
+      if curr.subtype == 1      and
+        curr.lang ~= nohyphen   and
+        is_cjk(curr, curr.char) then
+        curr.lang = langkor
+      end
+    elseif id == mathid then
+      curr = end_of_math(curr)
     end
     curr = getnext(curr)
   end
