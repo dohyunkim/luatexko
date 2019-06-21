@@ -13,8 +13,8 @@
 
 luatexbase.provides_module {
   name        = 'luatexko',
-  date        = '2019/06/07',
-  version     = '2.2',
+  date        = '2019/06/21',
+  version     = '2.3',
   description = 'typesetting Korean with LuaTeX',
   author      = 'Dohyun Kim, Soojin Nam',
   license     = 'LPPL v1.3+',
@@ -1842,11 +1842,7 @@ local function deactivate_all (str)
   end
 end
 luatexko.deactivateall = deactivate_all
---[[
--- luatexko.deactivateall() -- or ("^ltj%.")
---   ... \par
--- luatexko.reactivateall()
---]]
+
 local function reactivate_all ()
   for name, v in pairs(luatexko.deactivated or {}) do
     for _, vv in ipairs(v) do

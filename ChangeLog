@@ -1,3 +1,10 @@
+2019-06-21      Dohyun Kim <nomos at ktug org>
+
+	Version 2.3
+
+	* luatexko.lua: prevent discretionary node after Kana;
+	provide lua functions deactivateall() and reactivateall().
+
 2019-06-07      Dohyun Kim <nomos at ktug org>
 
 	Version 2.2

@@ -13,6 +13,7 @@
 \usepackage[svgnames]{xcolor}
 \usepackage[hangul]{luatexko}
 \setmainhangulfont{Noto Serif CJK KR}[
+  Scale=0.98,
   AutoFakeSlant,
   Script=Hangul,
   Language=Korean,
@@ -23,6 +24,7 @@
   Expansion, Protrusion,
 ]
 \setsanshangulfont{Noto Sans CJK KR}[
+  Scale=0.98,
   Script=Hangul,
   Language=Korean,
   UprightFont=* DemiLight,
@@ -30,12 +32,15 @@
   InterLatinCJK=.125em,
 ]
 \setmonofont{Inconsolatazi4}[
+  Scale=0.98,
+  CharRaise=0.125ex,
   Color=MidnightBlue,
 ]
 \setmonohangulfont{Noto Sans CJK KR}[
+  Scale=0.98,
   UprightFont=* DemiLight,
   BoldFont=* Bold,
-  CharRaise=-.2ex,
+  CharRaise=-.125ex,
   Color=MidnightBlue,
 ]
 \setmathhangulfont{Noto Sans CJK KR}[
@@ -72,7 +77,7 @@
 \author{Dohyun Kim \normalsize |<nomos at ktug org>| \and
         Soojin Nam \normalsize |<jsunam at gmail com>| \and
   \normalsize <\url{http://github.com/dohyunkim/luatexko}>}
-\date{Version 2.2\quad 2019/06/07}
+\date{Version 2.3\quad 2019/06/21}
 \maketitle
 
 \begin{quote}\small
@@ -82,7 +87,6 @@
     \item[v2.2] ------
     \item \hyperref[sec:fontoption]{글꼴옵션 |InterCharStretch| 제공}
     \item[v2.0] ------
-    \item \hyperref[sec:packageopt]{패키지 옵션 |nofontspec| 제거}
     \item \hyperref[sec:fontoption]{글꼴옵션 |PunctRaise|, |NoEmbeding| 제거}
     \item \hyperref[sec:mathhangul]{수식 한글 글꼴을 자동으로 잡아주지 않음}
     \item \cs{actualtext} 명령 작동 않음. 대신, 옛한글 텍스트 추출 자동 지원%
@@ -99,6 +103,7 @@
 \smallskip
 
 \section{부르기}\label{sec:loading}
+
 \hemph{\texlive\ 2019 이상}{ \small (\luatex\ v1.10 이상)}을 사용해야 한다.
 
 \luatexko\ 부르기: \cs{usepackage{luatexko}} 혹은 \cs{usepackage{kotex}}.%
@@ -110,6 +115,7 @@ BOM (Byte Order Mark)은 있어도 좋고 없어도 좋다.
 CP949 인코딩에 관해서는 제\ref{sec:uhcencoding}절 참조.
 
 \section{패키지 옵션}\label{sec:packageopt}
+
 패키지 옵션으로 |[hangul]|과 |[hanja]|가 제공된다.%
 \footnote{%
   |[nofontspec]| 옵션은 v2.0부터 더는 제공되지 않는다. }
@@ -119,6 +125,7 @@ CP949 인코딩에 관해서는 제\ref{sec:uhcencoding}절 참조.
 ``제~3 장''과 같은 방식으로 표시되며 절 제목 이하에는 붙지 않는다.
 
 \section{글꼴명령}\label{sec:fontcmds}
+
 \luatexko를 로드하면 fontspec 패키지를 자동으로 불러온다. 글꼴 설정에
 대해서는 fontspec 문서를 참조.
 
@@ -144,6 +151,7 @@ CP949 인코딩에 관해서는 제\ref{sec:uhcencoding}절 참조.
 \end{verbatim}
 
 \section{글꼴 대체}\label{sec:fontswitch}
+
 원칙적으로 \luatexko는 지시된 글자가 영문폰트에 없으면 한글폰트에서,
 한글폰트에도 없으면 한자폰트에서, 한자폰트에도 없으면 fallback
 폰트에서 글자를 찾아 찍는다.
@@ -188,6 +196,7 @@ verbatim 코드를 식자할 때는 이 기능이 작동하지 않는다.%
 \end{verbatim}
 
 \section{줄바꿈 허용}\label{sec:break}
+
 어떤 글자 앞이나 뒤에서 줄바꿈을 허용하고 싶을 때 아래와 같이 명령을 준다.
 \begin{verbatim}
 \registerbreakableafter{"2460, "2461}
@@ -198,6 +207,7 @@ verbatim 코드를 식자할 때는 이 기능이 작동하지 않는다.%
 이들 문자 앞뒤 모두에서 줄바꿈이 되지 않는다.
 
 \section{글꼴 옵션}\label{sec:fontoption}
+
 fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있다.%
 \footnote{%
   옛한글 식자를 위해서는 적어도 |Script=Hangul|
@@ -323,6 +333,24 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
 \end{description}
 
 \section{고문헌}\label{sec:classic}
+
+\begin{figure}
+  \centering
+  \fbox{\parbox{37em}{\typesetclassic\sffamily
+  \addhangulfontfeature{CompressPunctuations}
+子曰：「學而時習之，不亦說乎？有朋自遠方來，不亦樂乎？人不知而不慍，
+不亦君子乎？」\par
+有子曰：「其爲人也孝弟，而好犯上者，鮮矣！不好犯上，而好作亂者，未之有也！
+君子務本，本立而道生；孝弟也者，其爲仁之本與？」\par
+子曰：「巧言令色，鮮矣仁！」\par
+曾子曰：「吾日三省吾身：爲人謀，而不忠乎？與朋友交，而不信乎？傳，
+不習乎？」\par
+子曰：「道千乘之國，敬事而信，節用而愛人，使民以時。」\par
+子曰：「弟子入則孝，出則弟；謹而信，汎愛衆；而親仁，行有餘力，則以學文。」
+  }}
+\caption{고문헌 조판 보기. typesetclassic 환경을 이용했다.}\label{fig:gomun}
+\end{figure}
+
 고문헌 조판을 위해 |typesetclassic| 환경을 제공한다.%
 \footnote{%
   플레인텍에서는 (문서 전체에 적용하지 않는다면 그룹 안에서)
@@ -342,27 +370,11 @@ v2.0부터는 고문헌 조판에서 한글^^b7한자와 영문자가 붙어 나
   플레인텍에서는 (문서 전체에 적용하지 않는다면 그룹 안에서)
   \cs{typesetmodern}을 사용한다. }
 
-\begin{figure}
-  \centering
-  \fbox{\parbox{37em}{\typesetclassic\sffamily
-  \addhangulfontfeature{CompressPunctuations}
-子曰：「學而時習之，不亦說乎？有朋自遠方來，不亦樂乎？人不知而不慍，
-不亦君子乎？」\par
-有子曰：「其爲人也孝弟，而好犯上者，鮮矣！不好犯上，而好作亂者，未之有也！
-君子務本，本立而道生；孝弟也者，其爲仁之本與？」\par
-子曰：「巧言令色，鮮矣仁！」\par
-曾子曰：「吾日三省吾身：爲人謀，而不忠乎？與朋友交，而不信乎？傳，
-不習乎？」\par
-子曰：「道千乘之國，敬事而信，節用而愛人，使民以時。」\par
-子曰：「弟子入則孝，出則弟；謹而信，汎愛衆；而親仁，行有餘力，則以學文。」
-  }}
-\caption{고문헌 조판 보기. typesetclassic 환경을 이용했다.}\label{fig:gomun}
-\end{figure}
-
 고문헌 조판 중 \luatexko가 글자 사이에 삽입하는 미세간격을
 사용자가 영{\small(zero)}으로 강제하기 위해선 \cs{inhibitglue} 명령을 이용한다.
 
 \section{세로쓰기}\label{sec:verttype}
+
 세로쓰기는 폰트의 고급 오픈타입 속성을 이용하므로 폰트가 이를 지원해야
 가능한 일이다. 폰트에 |Vertical=Alternates|와 |RawFeature=vertical| 옵션을
 준다.%
@@ -378,12 +390,6 @@ v2.0부터는 고문헌 조판에서 한글^^b7한자와 영문자가 붙어 나
 세로쓰기에서는 \cs{typesetclassic}의 아종인 \cs{typesetvertical}이
 기본으로 셋팅되어 있다. 일종의 고문헌 조판으로 보는 것이다.
 
-문서의 일부를 세로쓰기하려면 \cs{begin{vertical}{<dimen>}} \ldots\ \cs{end{vertical}}
-환경을 이용한다. |<dimen>|으로 세로쓰기 박스의 높이를 지시한다.%
-\footnote{%
-  플레인텍에서는 \cs{vertical{<dimen>}} \ldots\ \cs{endvertical}. }
-그림~\ref{fig:vertical} 및 그림~\ref{fig:vertical2} 참조.
-
 \begin{figure}
 \framebox[\linewidth]{\begin{vertical}{20em}\sffamily
   \addhangulfontfeature{Vertical=Alternates, RawFeature=vertical}
@@ -392,6 +398,12 @@ v2.0부터는 고문헌 조판에서 한글^^b7한자와 영문자가 붙어 나
 \end{vertical}}
 \caption{세로쓰기의 예. 박스 높이 |20em|을 지시했다.}\label{fig:vertical}
 \end{figure}
+
+문서의 일부를 세로쓰기하려면 \cs{begin{vertical}{<dimen>}} \ldots\ \cs{end{vertical}}
+환경을 이용한다. |<dimen>|으로 세로쓰기 박스의 높이를 지시한다.%
+\footnote{%
+  플레인텍에서는 \cs{vertical{<dimen>}} \ldots\ \cs{endvertical}. }
+그림~\ref{fig:vertical} 및 그림~\ref{fig:vertical2} 참조.
 
 \begin{figure}
 \framebox[\linewidth]{\begin{vertical}{17em}\sffamily
@@ -430,37 +442,8 @@ v2.0부터는 고문헌 조판에서 한글^^b7한자와 영문자가 붙어 나
   플레인텍에서는 \cs{horizontal{<dimen>}} \ldots\ \cs{endhorizontal}. }
 가로쓰기 영역의 폰트 설정은 사용자의 몫이다.
 
-\section{수식 한글}\label{sec:mathhangul}
-\begin{quote}
-  |$가^{나^다}$|\quad$\Rightarrow\quad가^{나^다}$
-\end{quote}
-수식 한글 폰트를 설정하면 수식 모드에서도 한글을 {\small(hbox로 감싸지 않고)}
-직접 입력할 수 있다.%
-\footnote{%
-  플레인텍에서는 \cs{mathhangulfont=UnBatang}과 같이 설정한다.
-  또는 좀 더 그럴듯하게 하려면:\par
-  \leftskip=3em\noindent
-  |\\font\\texthangul="Noto Sans CJK KR DemiLight" at 10pt|\\
-  |\\font\\scripthangul="Noto Sans CJK KR Regular" at 7pt|\\
-  |\\font\\scriptscripthangul="Noto Sans CJK KR Medium" at 5pt|\\
-  |\\setmathhangulfonts\\texthangul\\scripthangul\\scriptscripthangul| }
-v2.0부터는 자동으로 수식 한글을 잡아주지 않는다.
-\begin{verbatim}
-  \setmathhangulfont{Noto Sans CJK KR}[
-    SizeFeatures={
-      {Size=-6,  Font=* Medium},
-      {Size=6-9, Font=* Regular},
-      {Size=9-,  Font=* DemiLight},
-    } ]
-\end{verbatim}
-현재 한글만 쓸 수 있게 설정되어 있다.
-한자도 수식에 직접 입력하려면 사용자는
-\begin{verbatim}
-  \setmathhangulblock{4E00}{9FC3}
-\end{verbatim}
-명령으로 유니코드 블럭을 추가 지정해야 한다.
-
 \section{드러냄표}\label{sec:dotemph}
+
 \cs{dotemph} 명령으로 \dotemph{드러냄표}%
 를 이용한 강조를 할 수 있다.  기본은 글자 위에 점을 찍는 형태이나
 다음과 같이 명령을 주어 개인적으로 선호하는 기호를 드러냄표로 쓸 수
@@ -472,6 +455,7 @@ v2.0부터는 자동으로 수식 한글을 잡아주지 않는다.
 ②~|\def\dotemphchar{\bfseries ^^^^02d9}|: 드러냄표 기호 자체를 정의.
 
 \section{루비}\label{sec:ruby}
+
 루비를 달 수 있다. ruby 패키지가 이미 존재하지만 \luatexko와 궁합이 잘
 맞지 않아 새로 매크로를 제공한다.
 \begin{quote}
@@ -507,6 +491,7 @@ v2.0부터는 자동으로 수식 한글을 잡아주지 않는다.
 두 인자의 글자 수가 동일해야 한다.
 
 \section{밑줄긋기}\label{sec:uline}
+
 ulem 패키지가 \luatexko와 궁합이 잘 맞지 않아{\small (줄바꿈에 문제가 있음)}
 명령을 따로 제공한다.
 
@@ -553,6 +538,7 @@ ulem 패키지가 \luatexko와 궁합이 잘 맞지 않아{\small (줄바꿈에 
 \ymarker{노란색을 칠해서 강조한다}.
 
 \section{자동조사}\label{sec:autojosa}
+
 자동조사는 \kotex 과 동일하게 \cs{은} \cs{는} \cs{이} \cs{가} \cs{을} \cs{를}
 \cs{와} \cs{과} \cs{로} \cs{으로} \cs{라} \cs{이라} 따위를 사용한다.
 버전 1.3부터는 \cs{josaignoreparens=1}이 선언되어 있으면 자동조사는
@@ -567,7 +553,49 @@ ulem 패키지가 \luatexko와 궁합이 잘 맞지 않아{\small (줄바꿈에 
   |홍길동(2001)\로|\quad$\Rightarrow$\quad 홍길동(2001)\로
 \end{quote}
 
+\section{루아 모듈의 제거 및 복원}\label{sec:luamodule}
+
+루아 코드 |luatexko.deactivateall()|은 이상 언급한 \luatexko 의 거의 모든
+기능을 무력화한다. |luatexko.reactivateall()|은 이를 복원한다.%
+\footnote{수직 모드 (문단과 문단 사이)에서 사용할 것.
+  수평 모드에서는 정상작동을 보장하지 못한다.}
+다른 패키지와 충돌할 때 시도해 볼 수 있다.
+전자의 함수에는 문자열을 인자로 줄 수도 있는데, 해당하는 다른 패키지의
+모듈들을 잠시 제거할 수 있다.
+
+\section{수식 한글}\label{sec:mathhangul}
+
+\begin{quote}
+  |$가^{나^다}$|\quad$\Rightarrow\quad가^{나^다}$
+\end{quote}
+수식 한글 폰트를 설정하면 수식 모드에서도 한글을 {\small(hbox로 감싸지 않고)}
+직접 입력할 수 있다.%
+\footnote{%
+  플레인텍에서는 \cs{mathhangulfont=UnBatang}과 같이 설정한다.
+  또는 좀 더 그럴듯하게 하려면:\par
+  \leftskip=3em\noindent
+  |\\font\\texthangul="Noto Sans CJK KR DemiLight" at 10pt|\\
+  |\\font\\scripthangul="Noto Sans CJK KR Regular" at 7pt|\\
+  |\\font\\scriptscripthangul="Noto Sans CJK KR Medium" at 5pt|\\
+  |\\setmathhangulfonts\\texthangul\\scripthangul\\scriptscripthangul| }
+v2.0부터는 자동으로 수식 한글을 잡아주지 않는다.
+\begin{verbatim}
+  \setmathhangulfont{Noto Sans CJK KR}[
+    SizeFeatures={
+      {Size=-6,  Font=* Medium},
+      {Size=6-9, Font=* Regular},
+      {Size=9-,  Font=* DemiLight},
+    } ]
+\end{verbatim}
+현재 한글만 쓸 수 있게 설정되어 있다.
+한자도 수식에 직접 입력하려면 사용자는
+다음 명령으로 유니코드 블럭을 추가 지정해야 한다.
+\begin{verbatim}
+  \setmathhangulblock{4E00}{9FC3}
+\end{verbatim}
+
 \section{한국어 항목 번호}\label{sec:hangulnums}
+
 \kotex과 동일하게 항목 번호를 한국어 기호로 붙일 수 있다.%
 \footnote{%
   \cs{jaso} \cs{gana} \cs{ojaso} \cs{ogana} \cs{pjaso} \cs{pgana}
@@ -575,12 +603,14 @@ ulem 패키지가 \luatexko와 궁합이 잘 맞지 않아{\small (줄바꿈에 
   \cs{hroman} \cs{hRoman} \cs{hNum} \cs{hanjanum} 따위를 사용한다. }
 
 \section{입력 변환}\label{sec:noramlize}
+
 \cs{luatexhangulnormalize=1}이라 지시하면 첫가끝 자모를 완성형 음절로,
 |2|라면 완성형 음절을 첫가끝 자모로 인코딩 변환한다. |0|이 할당되면
 인코딩 변환 기능이 꺼진다. \XeTeX의 \cs{XeTeXinputnormalization} 명령과
 유사하나, 오직 한글과 일부 한자에 대해서만 정규화가 작동할 뿐이다.
 
 \section{UHC 입력 인코딩}\label{sec:uhcencoding}
+
 권장하지 않지만 불가피하게 입력 인코딩이 UHC (Unified Hangul Code)%
 \footnote{%
   CP949라고도 하며 EUC-KR을 포함한다. }%
