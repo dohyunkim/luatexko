@@ -55,6 +55,7 @@ local getparameters = font.getparameters
 local texcount  = tex.count
 local texround  = tex.round
 local texset    = tex.set
+local texsetdimen = tex.setdimen
 local texsp     = tex.sp
 local texsprint = tex.sprint
 
@@ -1521,6 +1522,10 @@ local function process_vertical_font (fontdata)
   if not goffset then
     goffset  = (parameters.x_height or quad/2) / 2
   end
+
+  -- declare shift amount of horizontal box inside vertical env.
+  texsetdimen("global", "luatexkohorizboxmoveleft", quad/2-goffset)
+
   for i,v in pairs(fontdata.characters) do
     local voff = goffset - (v.width or 0)/2
     local bbox = descriptions[i] and descriptions[i].boundingbox or {0,0,0,0}

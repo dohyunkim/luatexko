@@ -257,6 +257,8 @@
       \pdfliteral{q 0 -1 1 0 0 0 cm}\box#1\pdfliteral{Q}%
       \vfil }}}
 % horizontal box inside vertical writing
+\newdimen\luatexkohorizboxmoveleft
+\luatexkohorizboxmoveleft=0.5ex
 \protected\def\horizontal#1{%
   \leavevmode
   \setbox\z@\vbox\bgroup
@@ -265,7 +267,7 @@
 \protected\def\endhorizontal{%
   \egroup
   \luatexkounrotatebox\z@
-  \box\z@ }
+  \lower\luatexkohorizboxmoveleft\box\z@ }
 \protected\def\luatexkounrotatebox#1{%
   \setbox#1\hbox to\dimexpr\ht#1+\dp#1{%
     \vbox to\wd#1{%
