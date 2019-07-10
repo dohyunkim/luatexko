@@ -532,6 +532,39 @@ local function ruby_char_font (rb)
   return c, f
 end
 
+local function hbox_ini_char_font (box)
+  local curr = box.list
+  while curr do
+    local id = curr.id
+    if id == glyphid then
+      return my_node_props(curr).unicode or curr.char, curr.font
+    elseif id == hlistid and curr.list then
+      return hbox_ini_char_font(curr)
+    elseif is_blocking_node(curr) then
+      return
+    end
+    curr = getnext(curr)
+  end
+end
+
+local function hbox_fin_char_font (box)
+  local curr = nodeslide(box.list)
+  while curr do
+    local id = curr.id
+    if id == glyphid then
+      local c = my_node_props(curr).unicode or curr.char
+      if c and not is_unicode_var_sel(c) then
+        return c, curr.font
+      end
+    elseif id == hlistid and curr.list then
+      return hbox_fin_char_font(curr)
+    elseif is_blocking_node(curr) then
+      return
+    end
+    curr = getprev(curr)
+  end
+end
+
 local function get_actualtext (curr)
   local actual = my_node_props(curr).startactualtext
   if type(actual) == "table" then
@@ -627,20 +660,31 @@ local function process_linebreak (head, par)
   while curr do
     local id = curr.id
     if id == glyphid then
-      local cc = my_node_props(curr).unicode or curr.char
-      local old = has_attribute(curr, classicattr)
-      head, pc, pcl = maybe_linebreak(head, curr, pc, pcl, cc, old, curr.font, par)
+      local c = my_node_props(curr).unicode or curr.char
+      if c and not is_unicode_var_sel(c) then
+        local old = has_attribute(curr, classicattr)
+        head, pc, pcl = maybe_linebreak(head, curr, pc, pcl, c, old, curr.font, par)
+      end
 
-    elseif id == hlistid and has_attribute(curr, rubyattr) then
-      local cc, fi = ruby_char_font(curr) -- rubybase
+    elseif id == hlistid and curr.list then
       local old = has_attribute(curr, classicattr)
-      head, pc, pcl = maybe_linebreak(head, curr, pc, pcl, cc, old, fi, par)
+      if has_attribute(curr, rubyattr) then
+        local c, f = ruby_char_font(curr) -- rubybase
+        head, pc, pcl = maybe_linebreak(head, curr, pc, pcl, c, old, f, par)
+      else
+        local c, f = hbox_ini_char_font(curr)
+        if c and f then
+          head = maybe_linebreak(head, curr, pc, pcl, c, old, f, par)
+        end
+        pc = hbox_fin_char_font(curr)
+        pcl = pc and get_char_class(pc, old) or 0
+      end
 
     elseif id == whatsitid and curr.mode == directmode then
-      local glyf, cc, fin = get_actualtext(curr)
-      if cc and fin and glyf then
+      local glyf, c, fin = get_actualtext(curr)
+      if c and fin and glyf then
         local old = has_attribute(glyf, classicattr)
-        head = maybe_linebreak(head, curr, pc, pcl, cc, old, glyf.font, par)
+        head = maybe_linebreak(head, curr, pc, pcl, c, old, glyf.font, par)
         pc, pcl, curr = fin, 0, goto_end_actualtext(curr)
       end
 
@@ -713,34 +757,8 @@ local function is_cjk_char (c)
   or     rawget(breakable_after,  c) and c >= 0x2000
 end
 
-local function is_cjk (n, c) -- node, char
-  if n and c then
-    if is_unicode_var_sel(c) then
-      local p = getprev(n)
-      if p and p.id == glyphid then
-        local pc = my_node_props(p).unicode or p.char or 0
-        return is_cjk_char(pc)
-      end
-    end
-    return is_cjk_char(c)
-  end
-end
-
-local function is_noncjk (n, c) -- node, char
-  if n and c then
-    if is_unicode_var_sel(c) then
-      local p = getprev(n)
-      if p and p.id == glyphid then
-        local pc = my_node_props(p).unicode or p.char or 0
-        return is_noncjk_char(pc)
-      end
-    end
-    return is_noncjk_char(c)
-  end
-end
-
 local function do_interhangul_option (head, curr, pc, c, fontid, par)
-  local cc = (is_hangul(c) or is_chosong(c)) and 1 or 0
+  local cc = is_hangul_jamo(c) and not is_jungsong(c) and not is_jongsong(c) and 1 or 0
 
   if cc*pc == 1 and curr.lang ~= nohyphen then
     local dim = get_font_opt_dimen(fontid, "interhangul")
@@ -758,17 +776,28 @@ local function process_interhangul (head, par)
     local id = curr.id
     if id == glyphid then
       local c = my_node_props(curr).unicode or curr.char
-      head, pc = do_interhangul_option(head, curr, pc, c, curr.font, par)
+      if c and not is_unicode_var_sel(c) then
+        head, pc = do_interhangul_option(head, curr, pc, c, curr.font, par)
 
-      if is_chosong(c) then
-        pc = 0
-      elseif is_jungsong(c) or is_jongsong(c) or hangul_tonemark[c] then
-        pc = 1
+        if is_chosong(c) then
+          pc = 0
+        elseif is_jungsong(c) or is_jongsong(c) or hangul_tonemark[c] then
+          pc = 1
+        end
       end
 
-    elseif id == hlistid and has_attribute(curr, rubyattr) then
-      local c, fi = ruby_char_font(curr)
-      head, pc = do_interhangul_option(head, curr, pc, c, fi, par)
+    elseif id == hlistid and curr.list then
+      if has_attribute(curr, rubyattr) then
+        local c, f = ruby_char_font(curr)
+        head, pc = do_interhangul_option(head, curr, pc, c, f, par)
+      else
+        local c, f = hbox_ini_char_font(curr)
+        if c and f then
+          head = do_interhangul_option(head, curr, pc, c, f, par)
+        end
+        c = hbox_fin_char_font(curr)
+        pc = c and (is_hangul_jamo(c) or hangul_tonemark[c]) and 1 or 0
+      end
 
     elseif id == whatsitid and curr.mode == directmode then
       local glyf, c = get_actualtext(curr)
@@ -788,21 +817,21 @@ local function process_interhangul (head, par)
 end
 
 local function do_interlatincjk_option (head, curr, pc, pf, pcl, c, cf, par)
-  local cc = is_cjk(curr, c) and 1 or is_noncjk(curr, c) and 2 or 0
+  local cc = is_cjk_char(c) and 1 or is_noncjk_char(c) and 2 or 0
   local old = has_attribute(curr, classicattr)
   local ccl = get_char_class(c, old)
 
   if cc*pc == 2 and curr.lang ~= nohyphen then
     local brb = cc == 2 or breakable_before[c] -- numletter != br_before
     if brb then
-      local fid = cc == 1 and cf or pf
-      local dim = get_font_opt_dimen(fid, "interlatincjk")
+      local f = cc == 1 and cf or pf
+      local dim = get_font_opt_dimen(f, "interlatincjk")
       if dim then
         local ict = old and intercharclass[pcl][ccl] -- under classic env. only
         if ict then
-          dim = get_font_opt_dimen(fid, "intercharacter") or 0
+          dim = get_font_opt_dimen(f, "intercharacter") or 0
         end
-        head = insert_glue_before(head, curr, par, true, brb, old, ict, dim, fid)
+        head = insert_glue_before(head, curr, par, true, brb, old, ict, dim, f)
       end
     end
   end
@@ -816,12 +845,29 @@ local function process_interlatincjk (head, par)
     local id = curr.id
     if id == glyphid then
       local c = my_node_props(curr).unicode or curr.char
-      head, pc, pf, pcl = do_interlatincjk_option(head, curr, pc, pf, pcl, c, curr.font, par)
-      pc = breakable_after[c] and pc or 0
+      if c and not is_unicode_var_sel(c) then
+        head, pc, pf, pcl = do_interlatincjk_option(head, curr, pc, pf, pcl, c, curr.font, par)
+        pc = breakable_after[c] and pc or 0
+      end
 
-    elseif id == hlistid and has_attribute(curr, rubyattr) then
-      local c, cf = ruby_char_font(curr)
-      head, pc, pf, pcl = do_interlatincjk_option(head, curr, pc, pf, pcl, c, cf, par)
+    elseif id == hlistid and curr.list then
+      if has_attribute(curr, rubyattr) then
+        local c, f = ruby_char_font(curr)
+        head, pc, pf, pcl = do_interlatincjk_option(head, curr, pc, pf, pcl, c, f, par)
+      else
+        local c, f = hbox_ini_char_font(curr)
+        if c and f then
+          head = do_interlatincjk_option(head, curr, pc, pf, pcl, c, f, par)
+        end
+        c, f = hbox_fin_char_font(curr)
+        if not c or not breakable_after[c] then
+          pc = 0
+        else
+          pc = is_cjk_char(c) and 1 or is_noncjk_char(c) and 2 or 0
+        end
+        pcl = c and get_char_class(c, has_attribute(curr, classicattr)) or 0
+        pf  = f or 0
+      end
 
     elseif id == whatsitid and curr.mode == directmode then
       local glyf, c = get_actualtext(curr)
@@ -862,18 +908,28 @@ local function process_remove_spaces (head)
         for k, v in pairs{ p = getprev(curr), n = getnext(curr) } do
           local ok
           while v do
-            local vid = v.id
-            if vid ~= whatsitid -- skip whatsit or kern except userkern
-              and ( vid ~= kernid or v.subtype == userkern ) then
+            local id = v.id
+            if id ~= whatsitid -- skip whatsit or kern except userkern
+              and ( id ~= kernid or v.subtype == userkern ) then
 
               local vchar, vfont
-              if vid == glyphid and v.lang ~= nohyphen then
-                vchar, vfont = v.char, v.font
-              elseif vid == hlistid and has_attribute(v, rubyattr) then
-                vchar, vfont = ruby_char_font(v)
+              if id == glyphid and v.lang ~= nohyphen then
+                local c = my_node_props(v).unicode or v.char or 0
+                if is_unicode_var_sel(c) then
+                  v = getprev(v) or v
+                end
+                vchar, vfont = my_node_props(v).unicode or v.char, v.font
+              elseif id == hlistid and v.list then
+                if has_attribute(v, rubyattr) then
+                  vchar, vfont = ruby_char_font(v)
+                elseif k == "p" then
+                  vchar, vfont = hbox_fin_char_font(v)
+                else
+                  vchar, vfont = hbox_ini_char_font(v)
+                end
               end
               if vchar and vfont and option_in_font(vfont, opt_name) then
-                ok = is_cjk(v, vchar)
+                ok = is_cjk_char(vchar)
               end
 
               break
@@ -1812,11 +1868,17 @@ function(head)
   local curr = head
   while curr do
     local id = curr.id
-    if id == glyphid then
-      if curr.subtype == 1      and
-        curr.lang ~= nohyphen   and
-        is_cjk(curr, curr.char) then
-        curr.lang = langkor
+    if id == glyphid and curr.subtype == 1 and curr.lang ~= nohyphen then
+      local c = curr.char
+      if c then
+        if is_unicode_var_sel(c) then
+          local p = getprev(curr)
+          if p.id == glyphid then
+            curr.lang = p.lang
+          end
+        elseif is_cjk_char(c) then
+          curr.lang = langkor
+        end
       end
     elseif id == mathid then
       curr = end_of_math(curr)
