@@ -537,7 +537,10 @@ local function hbox_ini_char_font (box)
   while curr do
     local id = curr.id
     if id == glyphid then
-      return my_node_props(curr).unicode or curr.char, curr.font
+      local c = my_node_props(curr).unicode or curr.char
+      if c and not is_cjk_combining(c) then
+        return c, curr.font
+      end
     elseif id == hlistid and curr.list then
       return hbox_ini_char_font(curr)
     elseif is_blocking_node(curr) then
@@ -553,7 +556,7 @@ local function hbox_fin_char_font (box)
     local id = curr.id
     if id == glyphid then
       local c = my_node_props(curr).unicode or curr.char
-      if c and not is_unicode_var_sel(c) then
+      if c and not is_cjk_combining(c) then
         return c, curr.font
       end
     elseif id == hlistid and curr.list then
