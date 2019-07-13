@@ -143,6 +143,10 @@ local hangul_tonemark = {
   [0x302E] = true, [0x302F] = true,
 }
 
+local function is_compat_jamo (c)
+  return c >= 0x3131 and c <= 0x318E
+end
+
 local function is_unicode_var_sel (c)
   return c >= 0xFE00  and c <= 0xFE0F
   or     c >= 0xE0100 and c <= 0xE01EF
@@ -181,10 +185,10 @@ end
 
 local function is_hangul_jamo (c)
   return is_hangul(c)
+  or     is_compat_jamo(c)
   or     is_chosong(c)
   or     is_jungsong(c)
   or     is_jongsong(c)
-  or     c >= 0x3131 and c <= 0x318E
 end
 
 local stretch_f = 5/100 -- should be consistent for ruby
@@ -470,11 +474,11 @@ local breakable_after = setmetatable({
   [0xFF1E] = true, [0xFF5E] = true, [0xFF70] = true,
 },{ __index = function (_,c)
   return is_hangul_jamo(c) and not is_chosong(c)
-  or is_noncjk_char(c)
-  or is_hanja(c)
-  or is_cjk_combining(c)
-  or is_kana(c)
-  or charclass[c] >= 2
+  or     is_noncjk_char(c)
+  or     is_hanja(c)
+  or     is_cjk_combining(c)
+  or     is_kana(c)
+  or     charclass[c] >= 2
 end })
 luatexko.breakableafter = breakable_after
 
@@ -499,10 +503,12 @@ local breakable_before = setmetatable({
   [0xFF6F] = 1000,  [0x1B150] = 1000, [0x1B151] = 1000, [0x1B152] = 1000,
   [0x1B164] = 1000, [0x1B165] = 1000, [0x1B166] = 1000, [0x1B167] = 1000,
 },{ __index = function(_,c)
-  return is_hangul_jamo(c) and not is_jungsong(c) and not is_jongsong(c)
-  or is_hanja(c)
-  or is_kana(c)
-  or charclass[c] == 1
+  return is_hangul(c)
+  or     is_compat_jamo(c)
+  or     is_chosong(c)
+  or     is_hanja(c)
+  or     is_kana(c)
+  or     charclass[c] == 1
 end
 })
 luatexko.breakablebefore = breakable_before
@@ -522,14 +528,14 @@ local function is_blocking_node (curr)
 end
 
 local function ruby_char_font (rb)
-  local n, c, f = has_glyph(rb.list), 0, 0
+  local n = has_glyph(rb.list)
   if n then
-    c, f = my_node_props(n).unicode or n.char, n.font or 0
+    local c, f = my_node_props(n).unicode or n.char, n.font
     if is_chosong(c) or hangul_tonemark[c] then
       c = 0xAC00
     end
+    return c, f
   end
-  return c, f
 end
 
 local function hbox_ini_char_font (box)
@@ -673,7 +679,11 @@ local function process_linebreak (head, par)
       local old = has_attribute(curr, classicattr)
       if has_attribute(curr, rubyattr) then
         local c, f = ruby_char_font(curr) -- rubybase
-        head, pc, pcl = maybe_linebreak(head, curr, pc, pcl, c, old, f, par)
+        if c and f then
+          head, pc, pcl = maybe_linebreak(head, curr, pc, pcl, c, old, f, par)
+        else
+          pc, pcl = false, 0
+        end
       else
         local c, f = hbox_ini_char_font(curr)
         if c and f then
@@ -761,7 +771,7 @@ local function is_cjk_char (c)
 end
 
 local function do_interhangul_option (head, curr, pc, c, fontid, par)
-  local cc = is_hangul_jamo(c) and not is_jungsong(c) and not is_jongsong(c) and 1 or 0
+  local cc = (is_hangul(c) or is_compat_jamo(c) or is_chosong(c)) and 1 or 0
 
   if cc*pc == 1 and curr.lang ~= nohyphen then
     local dim = get_font_opt_dimen(fontid, "interhangul")
@@ -792,14 +802,18 @@ local function process_interhangul (head, par)
     elseif id == hlistid and curr.list then
       if has_attribute(curr, rubyattr) then
         local c, f = ruby_char_font(curr)
-        head, pc = do_interhangul_option(head, curr, pc, c, f, par)
+        if c and f then
+          head, pc = do_interhangul_option(head, curr, pc, c, f, par)
+        else
+          pc = 0
+        end
       else
         local c, f = hbox_ini_char_font(curr)
         if c and f then
           head = do_interhangul_option(head, curr, pc, c, f, par)
         end
         c = hbox_fin_char_font(curr)
-        pc = c and (is_hangul_jamo(c) or hangul_tonemark[c]) and 1 or 0
+        pc = c and is_hangul_jamo(c) and 1 or 0
       end
 
     elseif id == whatsitid and curr.mode == directmode then
@@ -856,17 +870,21 @@ local function process_interlatincjk (head, par)
     elseif id == hlistid and curr.list then
       if has_attribute(curr, rubyattr) then
         local c, f = ruby_char_font(curr)
-        head, pc, pf, pcl = do_interlatincjk_option(head, curr, pc, pf, pcl, c, f, par)
+        if c and f then
+          head, pc, pf, pcl = do_interlatincjk_option(head, curr, pc, pf, pcl, c, f, par)
+        else
+          pc, pf, pcl = 0, 0, 0
+        end
       else
         local c, f = hbox_ini_char_font(curr)
         if c and f then
           head = do_interlatincjk_option(head, curr, pc, pf, pcl, c, f, par)
         end
         c, f = hbox_fin_char_font(curr)
-        if not c or not breakable_after[c] then
-          pc = 0
-        else
+        if c and breakable_after[c] then
           pc = is_cjk_char(c) and 1 or is_noncjk_char(c) and 2 or 0
+        else
+          pc = 0
         end
         pcl = c and get_char_class(c, has_attribute(curr, classicattr)) or 0
         pf  = f or 0
@@ -883,16 +901,17 @@ local function process_interlatincjk (head, par)
       if pc == 1 then
         head = do_interlatincjk_option(head, curr, pc, pf, pcl, 0x30, pf, par)
       end
-      pc, pcl, curr = 2, 0, end_of_math(curr)
+      pc, pf, pcl = 2, 0, 0
+      curr = end_of_math(curr)
 
     elseif id == dirid then
       if pc == 1 and curr.dir:sub(1,1) == "+" then
         head = do_interlatincjk_option(head, curr, pc, pf, pcl, 0x30, pf, par)
-        pc, pcl = 0, 0
+        pc, pf, pcl = 0, 0, 0
       end
 
     elseif is_blocking_node(curr) then
-      pc, pcl = 0
+      pc, pf, pcl = 0, 0, 0
     end
     curr = getnext(curr)
   end
@@ -1097,7 +1116,11 @@ local function process_dotemph (head, tofree)
       local dotattr = has_attribute(curr, dotemphattr)
       if dotattr then
         local c = my_node_props(curr).unicode or curr.char
-        if is_hangul(c) or is_hanja(c) or is_chosong(c) or is_kana(c) then
+        if is_hangul(c)      or
+           is_compat_jamo(c) or
+           is_chosong(c)     or
+           is_hanja(c)       or
+           is_kana(c)        then
           local currwd = curr.width
           if currwd >= get_en_size(curr.font) then
             local box = nodecopy(dotemphbox[dotattr])
@@ -1928,25 +1951,3 @@ local function current_has_hangul_chars (cnt)
 end
 luatexko.currenthashangulchars = current_has_hangul_chars
 
-local function get_gid_of_charslot (fd, slot)
-  if type(fd) == "number" then
-    fd = get_font_data(fd)
-  end
-  local character = fd.characters[slot]
-  return character and character.index
-end
-luatexko.get_gid_of_charslot = get_gid_of_charslot
-
-local function get_charslots_of_gid (fd, gid)
-  if type(fd) == "number" then
-    fd = get_font_data(fd)
-  end
-  local t = {}
-  for i, v in pairs(fd.characters) do
-    if v.index == gid then
-      t[#t + 1] = i
-    end
-  end
-  return t
-end
-luatexko.get_charslots_of_gid = get_charslots_of_gid

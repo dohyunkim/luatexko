@@ -12,6 +12,25 @@
 \usepackage[hmargin=3.8cm]{geometry}
 \usepackage[svgnames]{xcolor}
 \usepackage[hangul]{luatexko}
+\directlua{
+  fonts.protrusions.setups.notoserifcjk = {
+    [171]     = { 0.5, 0   },
+    [187]     = { 0,   0.5 },
+    [1002965] = { 0,   0.5 },
+    [1002968] = { 0.5, 0   },
+    [1002969] = { 0,   0.5 },
+    [1002970] = { 0,   1   },
+    [1002971] = { 0,   0.5 },
+    [1002972] = { 0,   1   },
+    [1002974] = { 0,   0.5 },
+    [1002975] = { 0,   0.5 },
+    [1002976] = { 0,   0.5 },
+    [1002985] = { 1,   0   },
+    [1002986] = { 0,   1   },
+    [1002988] = { 0.5, 0   },
+    [1002989] = { 0,   0.5 },
+  }
+}
 \setmainhangulfont{Noto Serif CJK KR}[
   Scale=0.98,
   AutoFakeSlant,
@@ -21,7 +40,7 @@
   UprightFont=* Light,
   BoldFont=* Bold,
   InterLatinCJK=.125em,
-  Expansion, Protrusion,
+  Expansion, Protrusion=notoserifcjk,
 ]
 \setsanshangulfont{Noto Sans CJK KR}[
   Scale=0.98,
