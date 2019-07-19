@@ -345,10 +345,11 @@ local function process_fonts (head)
         else
           local hf  = has_attribute(curr, hangulfontattr) or false
           local hjf = has_attribute(curr, hanjafontattr)  or false
-          local fontdata  = get_font_data(curr.font)
-          local format    = fontdata.format
-          local no_legacy = format == "opentype" or format == "truetype"
-          if hf and no_legacy and force_hangul[c] and curr.lang ~= nohyphen then
+          local fontdata = get_font_data(curr.font)
+          local format   = fontdata.format
+          local encode   = fontdata.encodingbytes
+          local widefont = encode == 2 or format == "opentype" or format == "truetype"
+          if hf and widefont and force_hangul[c] and curr.lang ~= nohyphen then
             curr.font = hf
           elseif hf and luatexko.hangulbyhangulfont and is_hangul_jamo(c) then
             hangul_space_skip(curr, hf)
