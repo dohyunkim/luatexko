@@ -342,6 +342,14 @@ local function process_fonts (head)
             hangul_space_skip(curr, p.font)
             curr.font = p.font
           end
+
+          if not active_processes.reorderTM and
+             hangul_tonemark[c] and
+             option_in_font(curr.font, "script") == "hang" then
+            luatexko.activate("reorderTM") -- activate reorderTM here
+            active_processes.reorderTM = true
+          end
+
         else
           local hf  = has_attribute(curr, hangulfontattr) or false
           local hjf = has_attribute(curr, hanjafontattr)  or false
@@ -367,13 +375,6 @@ local function process_fonts (head)
               end
             end
           end
-        end
-
-        if not active_processes.reorderTM
-          and hangul_tonemark[c]
-          and option_in_font(curr.font, "script") == "hang" then
-          luatexko.activate("reorderTM") -- activate reorderTM here
-          active_processes.reorderTM = true
         end
 
         props.unicode = c
