@@ -257,9 +257,9 @@
       \pdfliteral{q 0 -1 1 0 0 0 cm}\box#1\pdfliteral{Q}%
       \vfil }}}
 % horizontal box inside vertical writing
-\newdimen\luatexkohorizboxmoveleft
-\luatexkohorizboxmoveleft=0.5ex
+\def\luatexkohorizboxmoveleft{0.5ex}
 \protected\def\horizontal#1{%
+  \directlua{ luatexko.gethorizboxmoveleft() }%
   \leavevmode
   \setbox\z@\vbox\bgroup
     \hsize#1\relax

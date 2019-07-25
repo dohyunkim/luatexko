@@ -52,12 +52,12 @@ local fontfonts     = font.fonts
 local fontgetfont   = font.getfont
 local getparameters = font.getparameters
 
-local texcount  = tex.count
-local texround  = tex.round
-local texset    = tex.set
-local texsetdimen = tex.setdimen
-local texsp     = tex.sp
-local texsprint = tex.sprint
+local texattribute = tex.attribute
+local texcount     = tex.count
+local texset       = tex.set
+local texsp        = tex.sp
+
+local set_macro = token.set_macro
 
 local stringformat = string.format
 
@@ -311,7 +311,7 @@ local function hangul_space_skip (curr, newfont)
           newsp = nodes.simple_font_handler(newsp)
           newwd = newsp and newsp.width or false
           if newwd then
-            newwd = { texround(newwd), texround(newwd/2), texround(newwd/3) }
+            newwd = { texsp(newwd), texsp(newwd/2), texsp(newwd/3) }
           end
           char_font_options.hangulspaceskip[newfont] = newwd
           if newsp then
@@ -1262,7 +1262,7 @@ local function getrubystretchfactor (box)
   local str = get_font_opt_dimen(fid, "intercharstretch")
   if str then
     local em = get_en_size(fid) * 2
-    texsprint(stringformat("\\def\\luatexkostretchfactor{%.4f}", str/em/2))
+    set_macro("luatexkostretchfactor", stringformat("%.4f", str/em/2))
   end
 end
 luatexko.getrubystretchfactor = getrubystretchfactor
@@ -1607,7 +1607,7 @@ local function process_vertical_font (fontdata)
   end
 
   -- declare shift amount of horizontal box inside vertical env.
-  texsetdimen("global", "luatexkohorizboxmoveleft", quad/2-goffset)
+  fontdata.horizboxmoveleftamount = quad/2-goffset
 
   for i,v in pairs(fontdata.characters) do
     local voff = goffset - (v.width or 0)/2
@@ -1672,6 +1672,22 @@ local function process_vertical_font (fontdata)
     end
   end
 end
+
+local function get_horizbox_moveleft ()
+  for _, v in ipairs{ fontcurrent(),
+                      texattribute.luatexkohangulfontattr,
+                      texattribute.luatexkohanjafontattr,
+                      texattribute.luatexkofallbackfontattr } do
+    if v and v > 0 then
+      local amount = get_font_data(v).horizboxmoveleftamount
+      if amount then
+        set_macro("luatexkohorizboxmoveleft", texsp(amount).."sp")
+        break
+      end
+    end
+  end
+end
+luatexko.gethorizboxmoveleft = get_horizbox_moveleft
 
 -- charraise
 
