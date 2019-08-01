@@ -96,7 +96,7 @@
 \author{Dohyun Kim \normalsize |<nomos at ktug org>| \and
         Soojin Nam \normalsize |<jsunam at gmail com>| \and
   \normalsize <\url{http://github.com/dohyunkim/luatexko}>}
-\date{Version 2.3\quad 2019/06/21}
+\date{Version 2.4\quad 2019/08/01}
 \maketitle
 
 \begin{quote}\small
@@ -353,10 +353,7 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
 
 \section{고문헌}\label{sec:classic}
 
-\begin{figure}
-  \centering
-  \fbox{\parbox{37em}{\typesetclassic\sffamily
-  \addhangulfontfeature{CompressPunctuations}
+\def\analectstext{%
 子曰：「學而時習之，不亦說乎？有朋自遠方來，不亦樂乎？人不知而不慍，
 不亦君子乎？」\par
 有子曰：「其爲人也孝弟，而好犯上者，鮮矣！不好犯上，而好作亂者，未之有也！
@@ -366,6 +363,12 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
 不習乎？」\par
 子曰：「道千乘之國，敬事而信，節用而愛人，使民以時。」\par
 子曰：「弟子入則孝，出則弟；謹而信，汎愛衆；而親仁，行有餘力，則以學文。」
+}
+\begin{figure}
+  \centering
+  \fbox{\parbox{37em}{\typesetclassic\sffamily
+  \addhangulfontfeature{CompressPunctuations}
+  \analectstext
   }}
 \caption{고문헌 조판 보기. typesetclassic 환경을 이용했다.}\label{fig:gomun}
 \end{figure}
@@ -410,7 +413,7 @@ v2.0부터는 고문헌 조판에서 한글^^b7한자와 영문자가 붙어 나
 기본으로 셋팅되어 있다. 일종의 고문헌 조판으로 보는 것이다.
 
 \begin{figure}
-\framebox[\linewidth]{\begin{vertical}{20em}\sffamily
+\framebox[\linewidth]{\begin{vertical}{19.6em}\sffamily
   \addhangulfontfeature{Vertical=Alternates, RawFeature=vertical}
   \linespread{1.5}\selectfont
   \hunmintxt
@@ -418,14 +421,39 @@ v2.0부터는 고문헌 조판에서 한글^^b7한자와 영문자가 붙어 나
 \caption{세로쓰기의 예. 박스 높이 |20em|을 지시했다.}\label{fig:vertical}
 \end{figure}
 
+\begin{figure}
+\framebox[\linewidth]{\begin{vertical}{18.62em}\sffamily
+  \addhangulfontfeature{Vertical=Alternates, RemoveClassicSpaces,
+  InterCharStretch=1pt, CompressPunctuations, RawFeature=vertical}
+  \linespread{1.5}\selectfont
+  \analectstext
+\end{vertical}}
+\caption{세로쓰기의 다른 예. 박스 높이 |19em|을 지시했다.
+  글꼴옵션으로 |RemoveClassicSpaces|, |CompressPunctuations|와 더불어
+  |InterCharStretch=1pt|를 추가했다. 공백이 없는 문서는 자간늘이기 값을
+  넉넉하게 주는 것이 좋다.}\label{fig:vertical3}
+\end{figure}
+
 문서의 일부를 세로쓰기하려면 \cs{begin{vertical}{<dimen>}} \ldots\ \cs{end{vertical}}
 환경을 이용한다. |<dimen>|으로 세로쓰기 박스의 높이를 지시한다.%
 \footnote{%
   플레인텍에서는 \cs{vertical{<dimen>}} \ldots\ \cs{endvertical}. }
-그림~\ref{fig:vertical} 및 그림~\ref{fig:vertical2} 참조.
+그림~\ref{fig:vertical},~\ref{fig:vertical3} 및 \ref{fig:vertical2} 참조.
+
+문서 전체를 세로쓰기한다면 이 환경을 쓰는 대신
+\cs{verticaltypesetting} 명령을 전처리부에 선언한다.
+이때 면주는 가로로 식자되며 면주 폰트의 설정은 사용자의 몫이다.
+
+세로쓰기 도중에 문서의 일부를 가로쓰기하려면
+\cs{begin{horizontal}{<dimen>}} \ldots\ \cs{end{horizontal}}
+환경을 이용한다. |<dimen>|은 가로쓰기 박스의 너비를 지시한다.%
+\footnote{%
+  플레인텍에서는 \cs{horizontal{<dimen>}} \ldots\ \cs{endhorizontal}. }
+가로쓰기 영역의 폰트 설정은 사용자의 몫이다.%
+\footnote{폰트 지시는 |horizontal| 환경 안에서 행하는 것을 권장한다.}
 
 \begin{figure}
-\framebox[\linewidth]{\begin{vertical}{17em}\sffamily
+\framebox[\linewidth]{\begin{vertical}{16.66em}\sffamily
   \addhangulfontfeature{Vertical=Alternates, CharRaise=3.2pt,
   CompressPunctuations, CharacterWidth=Full, RawFeature=vertical}
   \parindent-1em\leftskip1em \linespread{1.5}\selectfont
@@ -449,18 +477,6 @@ v2.0부터는 고문헌 조판에서 한글^^b7한자와 영문자가 붙어 나
   즉 전각크기로 매우 크기 때문에, 여기서는 \cs{spaceskip} 명령을 이용하여
   반각 크기로 강제했다.}\label{fig:vertical2}
 \end{figure}
-
-문서 전체를 세로쓰기한다면 이 환경을 쓰는 대신
-\cs{verticaltypesetting} 명령을 전처리부에 선언한다.
-이때 면주는 가로로 식자되며 면주 폰트의 설정은 사용자의 몫이다.
-
-세로쓰기 도중에 문서의 일부를 가로쓰기하려면
-\cs{begin{horizontal}{<dimen>}} \ldots\ \cs{end{horizontal}}
-환경을 이용한다. |<dimen>|은 가로쓰기 박스의 너비를 지시한다.%
-\footnote{%
-  플레인텍에서는 \cs{horizontal{<dimen>}} \ldots\ \cs{endhorizontal}. }
-가로쓰기 영역의 폰트 설정은 사용자의 몫이다.%
-\footnote{폰트 지시는 |horizontal| 환경 안에서 행하는 것을 권장한다.}
 
 \section{드러냄표}\label{sec:dotemph}
 

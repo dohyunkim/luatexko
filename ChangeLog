@@ -1,3 +1,10 @@
+2019-08-01      Dohyun Kim <nomos at ktug org>
+
+	Version 2.4
+
+	* luatexko.lua: allow linebreak before/after a normal hbox
+	* luatexko.{sty,lua}: moveleft horizontal box inside vertical writing
+
 2019-06-21      Dohyun Kim <nomos at ktug org>
 
 	Version 2.3

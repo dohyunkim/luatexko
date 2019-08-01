@@ -13,8 +13,8 @@
 
 luatexbase.provides_module {
   name        = 'luatexko',
-  date        = '2019/06/21',
-  version     = '2.3',
+  date        = '2019/08/01',
+  version     = '2.4',
   description = 'typesetting Korean with LuaTeX',
   author      = 'Dohyun Kim, Soojin Nam',
   license     = 'LPPL v1.3+',
@@ -1602,11 +1602,9 @@ local function process_vertical_font (fontdata)
   local scale    = parameters.factor or 655.36
   local quad     = parameters.quad or 655360
   local ascender = parameters.ascender or quad*0.8
-  local goffset  = fontdata_opt_dim(fontdata, "charraise")
-  if not goffset then
-    goffset  = (parameters.x_height or quad/2) / 2
-  end
 
+  local goffset = fontdata_opt_dim(fontdata, "charraise") or
+                  (parameters.x_height or quad/2)/2
   -- declare shift amount of horizontal box inside vertical env.
   fontdata.horizboxmoveleftamount = quad/2-goffset
 
