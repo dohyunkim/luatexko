@@ -410,6 +410,7 @@ local intercharclass = { [0] =
   { [0] = {1,0},  {1,0},  nil,    {1.5,.5},nil,    {1,0},  {1,0} },
   { [0] = nil,    {1,1},  nil,    {.5,.5} },
   { [0] = {1,1},  {1,1},  nil,    {.5,.5} },
+  { }, -- vertical colon
 }
 
 local charclass = setmetatable({
@@ -447,8 +448,8 @@ local SC_charclass = setmetatable({
 }, { __index = charclass })
 
 local vert_charclass = setmetatable({
-  [0xFF1A] = 5, -- 0xFE13
-  [0xFF1B] = 5, -- 0xFE14
+  [0xFF1A] = 7, -- 0xFE13
+  [0xFF1B] = 7, -- 0xFE14
 }, { __index = charclass })
 
 local function get_char_class (c, classic)
