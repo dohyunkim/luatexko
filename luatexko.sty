@@ -369,8 +369,8 @@
     \afterassignment\luatexkosetmathhangulfonts\font\textmathhangul}
   \def\luatexkosetmathhangulfonts{%
     \toks@\expandafter{\directlua{
-      local n = string.gsub("\fontname\textmathhangul", " at .+", "")
-      tex.sprint(n) }}%
+      local n = tex.fontname(font.id"textmathhangul"):gsub(" at .+", "")
+      tex.sprint(string.unquoted(n)) }}%
     \dimen@\fontdimen 6 \textmathhangul
     \font\scriptmathhangul= {\the\toks@} at .7\dimen@
     \font\scriptscriptmathhangul = {\the\toks@} at .5\dimen@
