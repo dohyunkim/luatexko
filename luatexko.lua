@@ -59,6 +59,7 @@ local texsp        = tex.sp
 
 local set_macro = token.set_macro
 
+local mathmax = math.max
 local stringformat = string.format
 
 local tableconcat = table.concat
@@ -230,8 +231,8 @@ local function option_in_font (fontdata, optionname)
   if type(fontdata) == "number" then
     fontdata = get_font_data(fontdata)
   end
-  if fontdata.shared then
-    return fontdata.shared.features[optionname]
+  if fontdata.specification then
+    return fontdata.specification.features.normal[optionname]
   end
 end
 
@@ -243,6 +244,14 @@ local function my_node_props (n)
   end
   t.luatexko = t.luatexko or {}
   return t.luatexko
+end
+
+local function is_not_harf (f)
+  if type(f) == "number" then
+    f = get_font_data(f)
+  end
+  if f.hb then return false end
+  return true
 end
 
 -- font fallback
@@ -292,7 +301,7 @@ local char_font_options = {
 }
 
 local function hangul_space_skip (curr, newfont)
-  if curr.lang ~= nohyphen then
+  if curr.lang ~= nohyphen and curr.font ~= newfont then
     local n = getnext(curr)
     if n and n.id == glueid and n.subtype == spaceskip then
       local params = getparameters(curr.font)
@@ -306,17 +315,24 @@ local function hangul_space_skip (curr, newfont)
 
         local newwd = char_font_options.hangulspaceskip[newfont]
         if newwd == nil then
-          local newsp = nodecopy(curr)
-          newsp.char, newsp.font = 32, newfont
-          newsp = nodes.simple_font_handler(newsp)
-          newwd = newsp and newsp.width or false
-          if newwd then
-            newwd = { texsp(newwd), texsp(newwd/2), texsp(newwd/3) }
+          if is_not_harf(newfont) then
+            local newsp = nodecopy(curr)
+            newsp.char, newsp.font = 32, newfont
+            newsp = nodes.simple_font_handler(newsp)
+            newwd = newsp and newsp.width or false
+            if newwd then
+              newwd = { texsp(newwd), texsp(newwd/2), texsp(newwd/3) }
+            end
+            if newsp then
+              nodefree(newsp)
+            end
+          else
+            newwd = getparameters(newfont) or false
+            if newwd then
+              newwd = { newwd.space, newwd.space_stretch, newwd.space_shrink }
+            end
           end
           char_font_options.hangulspaceskip[newfont] = newwd
-          if newsp then
-            nodefree(newsp)
-          end
         end
         if newwd then
           setglue(n, newwd[1], newwd[2], newwd[3])
@@ -345,6 +361,7 @@ local function process_fonts (head)
 
           if not active_processes.reorderTM and
              hangul_tonemark[c] and
+             is_not_harf(curr.font) and
              option_in_font(curr.font, "script") == "hang" then
             luatexko.activate("reorderTM") -- activate reorderTM here
             active_processes.reorderTM = true
@@ -732,7 +749,8 @@ local function process_glyph_width (head)
         if class >= 1 and class <= 4 and
           (old or cc < 0x2000 or cc > 0x202F) then -- exclude general puncts
 
-          local gpos = class == 1 and getprev(curr) or getnext(curr)
+          -- harf-node always puts kern after the glyph
+          local gpos = class == 1 and is_not_harf(curr.font) and getprev(curr) or getnext(curr)
           gpos = gpos and gpos.id == kernid and gpos.subtype == fontkern
 
           if not gpos then
@@ -1049,9 +1067,9 @@ local function prevjosacode (n, parenlevel)
     local id = n.id
     if id == glyphid then
       local c = my_node_props(n).unicode or n.char -- beware hlist/vlist
-      if ignore_parens and c == 0x29 then
+      if ignore_parens and c == 0x29 then -- )
         parenlevel = parenlevel + 1
-      elseif ignore_parens and c == 0x28 then
+      elseif ignore_parens and c == 0x28 then -- (
         parenlevel = parenlevel - 1
       elseif parenlevel <= 0 then
         josacode = josa_code[c]
@@ -1124,6 +1142,19 @@ local function process_dotemph (head, tofree)
            is_chosong(c)     or
            is_hanja(c)       or
            is_kana(c)        then
+
+          if not is_not_harf(curr.font) then
+            local p = getprev(curr)
+            if p and
+               p.id == whatsitid and
+               p.subtype == literal_whatsit and
+               p.data and
+               p.data:match"/Span<</ActualText<FEFF(.+)302[EF]>>>BDC" then
+
+              curr = getnext(curr) -- harf font: skip tone mark
+            end
+          end
+
           local currwd = curr.width
           if currwd >= get_en_size(curr.font) then
             local box = nodecopy(dotemphbox[dotattr])
@@ -1391,7 +1422,9 @@ local function process_reorder_tonemarks (head)
   local curr = head
   while curr do
     local id = curr.id
-    if id == glyphid and option_in_font(curr.font, "script") == "hang" then
+    if id == glyphid and
+       is_not_harf(curr.font) and
+       option_in_font(curr.font, "script") == "hang" then
       local fontdata = get_font_data(curr.font)
       local uni = my_node_props(curr).unicode or curr.char
       if is_hangul(uni) or is_chosong(uni) or uni == 0x25CC then
@@ -1694,19 +1727,32 @@ luatexko.gethorizboxmoveleft = get_horizbox_moveleft
 local function process_charriase_font (fontdata)
   local raise = fontdata_opt_dim(fontdata, "charraise")
   if raise then
+    local scale = fontdata.hb and fontdata.hb.scale or
+                  fontdata.parameters.factor        or 655.36
+
     local shared = fontdata.shared or {}
-    local descriptions = shared.rawdata and shared.rawdata.descriptions or {}
-    local scale = fontdata.parameters.factor or 655.36
+    local descrips = shared.rawdata and shared.rawdata.descriptions or {}
+
     for i, v in pairs( fontdata.characters ) do
       v.commands = {
         {"down", -raise },
         {"char", i},
       }
-      local bbox = descriptions[i] and descriptions[i].boundingbox or {0,0,0,0}
-      local ht = bbox[4] * scale + raise
-      local dp = bbox[2] * scale + raise
-      v.height = ht > 0 and  ht or nil
-      v.depth  = dp < 0 and -dp or nil
+      if fontdata.hb then
+        local extents = fontdata.hb.shared.font:get_glyph_extents(v.index)
+        if extents then
+          v.height = extents.y_bearing * scale + raise
+          v.depth  = -(extents.height + extents.y_bearing)*scale - raise
+        end
+      else
+        local bbox = descrips[i] and descrips[i].boundingbox
+        if bbox then
+          local ht = bbox[4] * scale + raise
+          local dp = bbox[2] * scale + raise
+          v.height = ht > 0 and  ht or nil
+          v.depth  = dp < 0 and -dp or nil
+        end
+      end
     end
   end
 end
@@ -1719,28 +1765,31 @@ local function process_fake_slant_corr (head) -- for font fallback
     local id = curr.id
     if id == kernid then
       if curr.subtype == italcorr and curr.kern == 0 then
-        local p = getprev(curr)
+        local p, t = getprev(curr), {}
         while p do -- skip jungsong/jongsong
-          if p.id == glyphid and p.width < get_en_size(p.font) then
+          if p.id == glyphid then
+            local fontdata = get_font_data(p.font)
+            if fontdata.slant and fontdata.slant > 0 then
+              t[#t+1] = char_in_font(fontdata, p.char).italic or 0
+            end
+
             local c = my_node_props(p).unicode or p.char
-            if not is_jungsong(c) and not is_jongsong(c) then
+            if (is_jungsong(c) or is_jongsong(c) or hangul_tonemark[c]) and
+               p.width < get_en_size(p.font) then -- skip
+            else
               break
             end
-          elseif p.id == whatsitid
-            and p.mode == directmode
-            and my_node_props(p).endactualtext then -- skip
+          elseif p.id == whatsitid and p.mode == directmode then -- skip
           else
             break
           end
           p = getprev(p)
         end
-        if p.id == glyphid then
-          local fontdata = get_font_data(p.font)
-          if fontdata.slant and fontdata.slant > 0 then
-            local italic = char_in_font(fontdata, p.char).italic
-            if italic then
-              curr.kern = italic
-            end
+
+        if p.id == glyphid and #t > 0 then
+          local italic = mathmax(tableunpack(t))
+          if italic > 0 then
+            curr.kern = italic
           end
         end
       end
@@ -1758,12 +1807,32 @@ local function process_fake_slant_font (fontdata)
     fsl = fsl/1000
     local params = fontdata.parameters or {}
     params.slant = (params.slant or 0) + fsl*65536 -- slant per point
-    local scale  = params.factor or 655.36
+
+    local scale  = fontdata.hb and fontdata.hb.scale or params.factor or 655.36
+
     local shared = fontdata.shared or {}
     local descriptions = shared.rawdata and shared.rawdata.descriptions or {}
+
     for i, v in pairs(fontdata.characters) do
-      local bbox = descriptions[i] and descriptions[i].boundingbox or {0,0,0,0}
-      local italic = (v.height or 0) * fsl - (v.width or 0) + bbox[3]*scale
+      local ht   = v.height and v.height > 0 and v.height or 0
+      local wd   = v.width  and v.width  > 0 and v.width  or 0
+      local ybearing = 0
+
+      if wd > 0 then -- or, jong/jung italic could by very large value
+        if fontdata.hb then
+          local extents = fontdata.hb.shared.font:get_glyph_extents(v.index)
+          if extents then
+            ybearing = wd - (extents.x_bearing + extents.width)*scale
+          end
+        else
+          local bbox = descriptions[i] and descriptions[i].boundingbox
+          if bbox then
+            ybearing = wd - bbox[3]*scale
+          end
+        end
+      end
+
+      local italic = ht * fsl - ybearing
       if italic > 0 then
         v.italic = italic
       end
@@ -1817,6 +1886,11 @@ local font_opt_procs = {
 }
 
 local function process_patch_font (fontdata)
+  if type(fontdata) ~= "table" or
+     fontdata.format ~= "opentype" and fontdata.format ~= "truetype" then
+    return
+  end -- as we have called patch_font_unsafe for hb fonts
+
   for name, procs in pairs( font_opt_procs ) do
     if not active_processes[name] and option_in_font(fontdata, name) then
       for cbnam, cbfun in pairs( procs ) do
@@ -1848,7 +1922,12 @@ local function process_patch_font (fontdata)
   end
 
   if option_in_font(fontdata, "vertical") then
-    process_vertical_font(fontdata)
+    if is_not_harf(fontdata) then
+      process_vertical_font(fontdata)
+    else
+      warning("Vertical writing is not supported for HarfBuzz fonts;\n"..
+      "`Renderer=Node' option is needed for `%s'", fontdata.fullname)
+    end
   elseif option_in_font(fontdata, "charraise") then
     process_charriase_font(fontdata)
   end
@@ -1859,6 +1938,8 @@ local function process_patch_font (fontdata)
 end
 
 add_to_callback("luaotfload.patch_font", process_patch_font,
+"luatexko.patch_font")
+add_to_callback("luaotfload.patch_font_unsafe", process_patch_font,
 "luatexko.patch_font")
 
 local auxiliary_procs = {
@@ -1940,6 +2021,7 @@ local function deactivate_all (str)
                          "pre_linebreak_filter",
                          "vpack_filter",
                          "hyphenate",
+                         "luaotfload.patch_font_unsafe", -- added for harf
                          "luaotfload.patch_font" } do
     local t = {}
     for i, v in ipairs( callback_descriptions(name) ) do

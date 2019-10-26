@@ -50,6 +50,18 @@
   BoldFont=* Bold,
   InterLatinCJK=.125em,
 ]
+\directlua{
+  if tex.formatname:find"luahblatex" then
+    token.set_macro("luatexkoHBrenderer","Renderer=OpenType")
+  else
+    token.set_macro("luatexkoHBrenderer")
+  end
+}
+\newhangulfontfamily\testharfbuzz{HCR Dotum LVT}[
+  \luatexkoHBrenderer,
+  Script=Hangul,
+  Language=Korean,
+]
 \setmonofont{Inconsolatazi4}[
   Scale=0.98,
   CharRaise=0.125ex,
@@ -190,11 +202,12 @@ CP949 인코딩에 관해서는 제\ref{sec:uhcencoding}절 참조.
 |0|을 지시해야 이 기능이 비로소 꺼진다.
 verbatim 코드를 식자할 때는 이 기능이 작동하지 않는다.%
 \footnote{%
-  좀 더 정확히 말하면 \cs{language=1} 상황에서는 작동하지 않는다.
+  정확히 말하자면 \cs{language=1}, 즉 nohyphenation 상황에서는
+  작동하지 않는다.
   부연하건대, \cs{language=1}인 상황에서 작동하지 않는 그밖의 기능들은
   다음과 같다: 줄바꿈 허용, InterCharacter, InterHangul, InterLatinCJK,
   CompressPunctuations, RemoveClassicSpaces,
-  한글^^b7한자 폰트 문자 다음에 오는 공백의 크기 조정 등. }\,%
+  한글^^b7한자 폰트 문자 다음의 공백 크기 조정 등. }\,%
 \footnote{%
   또한 플레인텍에서는 영문글꼴을 트루타입/오픈타입으로 지정해야만 작동한다. }
 영향 받는 문장부호들의 기본값은 다음과 같다:
@@ -263,11 +276,12 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
 
 \begin{figure}
   \fboxsep=1em
-  \fbox{\parbox{\dimexpr\linewidth-2.1em\relax}{\sffamily
+  \fbox{\parbox{\dimexpr\linewidth-2.1em\relax}{
+  \testharfbuzz
   \parindent1em
   \hunmintxt
 }}
-\caption{옛한글 조판 보기}\label{fig:yethangul}
+\caption{옛한글 조판 보기. Harfbuzz 이용.}\label{fig:yethangul}
 \end{figure}
 
 \begin{description}
@@ -405,7 +419,12 @@ v2.0부터는 고문헌 조판에서 한글^^b7한자와 영문자가 붙어 나
   사실 |vertical|을 선언하면 |vert|는 자동으로 켜지도록 해 두었다. }\,%
 \footnote{%
   |vmtx| 정보를 가지고 있지 않은 글꼴은 세로쓰기에 적합치 않은 글꼴이다.
-  |otfinfo -t <파일>| 명령으로 글꼴에 들어있는 테이블 정보를 알 수 있다. }
+  |otfinfo -t <파일>| 명령으로 글꼴에 들어있는 테이블 정보를 알 수 있다. }\,%
+\footnote{%
+  폰트 옵션 |Renderer=OpenType| 등(플레인텍에서는 |mode=harf| 옵션)을 주고
+  |luahblatex|으로 컴파일하여 Harfbuzz 모듈을 이용하려는 경우 세로쓰기가
+  현재로서는 지원되지 않는다. 세로쓰기를 하려면 이 옵션을 빼고 디폴트 값인
+  |Renderer=Node| (플레인텍에서는 |mode=node|)를 사용하라.}
 세로쓰기에서 |CharRaise| 옵션의 효과에 대해서는 제\ref{sec:fontoption}절을
 참조할 것.
 
