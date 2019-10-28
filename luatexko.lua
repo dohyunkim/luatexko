@@ -292,6 +292,7 @@ luatexko.updateforcehangul = update_force_hangul
 local active_processes = {}
 
 local char_font_options = {
+  charraise        = {},
   hangulspaceskip  = {},
   intercharacter   = {},
   intercharstretch = {},
@@ -1724,37 +1725,23 @@ luatexko.gethorizboxmoveleft = get_horizbox_moveleft
 
 -- charraise
 
-local function process_charriase_font (fontdata)
-  local raise = fontdata_opt_dim(fontdata, "charraise")
-  if raise then
-    local scale = fontdata.hb and fontdata.hb.scale or
-                  fontdata.parameters.factor        or 655.36
-
-    local shared = fontdata.shared or {}
-    local descrips = shared.rawdata and shared.rawdata.descriptions or {}
-
-    for i, v in pairs( fontdata.characters ) do
-      v.commands = {
-        {"down", -raise },
-        {"char", i},
-      }
-      if fontdata.hb then
-        local extents = fontdata.hb.shared.font:get_glyph_extents(v.index)
-        if extents then
-          v.height = extents.y_bearing * scale + raise
-          v.depth  = -(extents.height + extents.y_bearing)*scale - raise
-        end
-      else
-        local bbox = descrips[i] and descrips[i].boundingbox
-        if bbox then
-          local ht = bbox[4] * scale + raise
-          local dp = bbox[2] * scale + raise
-          v.height = ht > 0 and  ht or nil
-          v.depth  = dp < 0 and -dp or nil
+local function process_charraise (head)
+  local curr = head
+  while curr do
+    if curr.id == glyphid then
+      local f = curr.font
+      local raise = get_font_opt_dimen(f, "charraise")
+      if raise and not option_in_font(f, "vertical") then
+        local props = my_node_props(curr)
+        if not props.charraised then
+          curr.yoffset = (curr.yoffset or 0) + raise
+          props.charraised = true
         end
       end
     end
+    curr = getnext(curr)
   end
+  return head
 end
 
 -- fake italic correctioin
@@ -1766,7 +1753,7 @@ local function process_fake_slant_corr (head) -- for font fallback
     if id == kernid then
       if curr.subtype == italcorr and curr.kern == 0 then
         local p, t = getprev(curr), {}
-        while p do -- skip jungsong/jongsong
+        while p do
           if p.id == glyphid then
             local fontdata = get_font_data(p.font)
             if fontdata.slant and fontdata.slant > 0 then
@@ -1875,6 +1862,10 @@ local font_opt_procs = {
     luatexko_post_hpack        = process_interlatincjk,
     luatexko_post_prelinebreak = process_interlatincjk,
   },
+  charraise = {
+    hpack_filter         = process_charraise,
+    pre_linebreak_filter = process_charraise,
+  },
   compresspunctuations = {
     hpack_filter         = process_glyph_width,
     pre_linebreak_filter = process_glyph_width,
@@ -1893,10 +1884,13 @@ local function process_patch_font (fontdata)
 
   for name, procs in pairs( font_opt_procs ) do
     if not active_processes[name] and option_in_font(fontdata, name) then
-      for cbnam, cbfun in pairs( procs ) do
-        add_to_callback(cbnam, cbfun, "luatexko."..cbnam.."."..name)
+      if name == "charraise" and option_in_font(fontdata, "vertical") then
+      else
+        for cbnam, cbfun in pairs( procs ) do
+          add_to_callback(cbnam, cbfun, "luatexko."..cbnam.."."..name)
+        end
+        active_processes[name] = true
       end
-      active_processes[name] = true
     end
   end
 
@@ -1928,8 +1922,6 @@ local function process_patch_font (fontdata)
       warning("Vertical writing is not supported for HarfBuzz fonts;\n"..
       "`Renderer=Node' option is needed for `%s'", fontdata.fullname)
     end
-  elseif option_in_font(fontdata, "charraise") then
-    process_charriase_font(fontdata)
   end
 
   if option_in_font(fontdata, "slant") then
