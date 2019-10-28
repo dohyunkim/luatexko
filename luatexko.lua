@@ -1144,6 +1144,7 @@ local function process_dotemph (head, tofree)
            is_hanja(c)       or
            is_kana(c)        then
 
+          -- consider harf mode
           if not is_not_harf(curr.font) then
             local p = getprev(curr)
             if p and
@@ -1166,6 +1167,16 @@ local function process_dotemph (head, tofree)
               k.kern = shift
               box.list = insert_before(list, list, k)
             end
+
+            -- consider charraise
+            local base_yoff = curr.yoffset
+            if base_yoff and base_yoff ~= 0 then
+              local boxglyph = has_glyph(box.list)
+              if not boxglyph or boxglyph.yoffset ~= base_yoff then
+                box.shift = box.shift - base_yoff
+              end
+            end
+
             box.width = 0
             head = insert_before(head, curr, box)
             tofree[dotattr] = true

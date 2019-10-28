@@ -57,10 +57,12 @@
     token.set_macro("luatexkoHBrenderer")
   end
 }
-\newhangulfontfamily\testharfbuzz{HCR Dotum LVT}[
+\newhangulfontfamily\testharfbuzz{Noto Serif CJK KR}[
   \luatexkoHBrenderer,
   Script=Hangul,
   Language=Korean,
+  UprightFont=* Regular,
+  BoldFont=* SemiBold,
 ]
 \setmonofont{Inconsolatazi4}[
   Scale=0.98,
@@ -276,8 +278,7 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
 
 \begin{figure}
   \fboxsep=1em
-  \fbox{\parbox{\dimexpr\linewidth-2.1em\relax}{
-  \testharfbuzz
+  \fbox{\parbox{\dimexpr\linewidth-2.1em\relax}{\testharfbuzz
   \parindent1em
   \hunmintxt
 }}
