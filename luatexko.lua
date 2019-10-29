@@ -1383,8 +1383,10 @@ local function process_ruby_post_linebreak (head)
           -- consider charraise
           local shift = shift_put_top(curr, ruby)
 
+          -- harf mode gets ascender from hhea table; node mode from OS/2
+          -- so here we regard ascender as quad*0.88
           local _, f = ruby_char_font(curr)
-          local ascender = get_font_param(f, "ascender") or curr.height
+          local ascender = get_font_param(f, "quad") * 0.88
           ruby.shift = shift - ascender - ruby.depth - ruby_t[2] -- rubysep
           head = insert_before(head, curr, ruby)
         end
