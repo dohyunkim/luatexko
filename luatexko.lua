@@ -246,12 +246,28 @@ local function my_node_props (n)
   return t.luatexko
 end
 
-local function is_not_harf (f)
+local function is_harf (f)
   if type(f) == "number" then
     f = get_font_data(f)
   end
-  if f.hb then return false end
+  return f.hb
+end
+
+local function is_not_harf (f)
+  if is_harf(f) then
+    return false
+  end
   return true
+end
+
+local function harf_reordered_tonemark (curr)
+  if is_harf(curr.font) then
+    local props = getproperty(curr) or {}
+    local actualtext = props.luaotfload_startactualtext or ""
+    if actualtext:find"302[EF]$" then
+      return true
+    end
+  end
 end
 
 -- font fallback
@@ -1144,17 +1160,9 @@ local function process_dotemph (head, tofree)
            is_hanja(c)       or
            is_kana(c)        then
 
-          -- consider harf mode
-          if not is_not_harf(curr.font) then
-            local p = getprev(curr)
-            if p and
-               p.id == whatsitid and
-               p.subtype == literal_whatsit and
-               p.data and
-               p.data:match"/Span<</ActualText<FEFF(.+)302[EF]>>>BDC" then
-
-              curr = getnext(curr) -- harf font: skip tone mark
-            end
+          -- harf font: skip reordered tone mark
+          if harf_reordered_tonemark(curr) then
+            curr = getnext(curr)
           end
 
           local currwd = curr.width
@@ -1766,14 +1774,18 @@ local function process_fake_slant_corr (head) -- for font fallback
         local p, t = getprev(curr), {}
         while p do
           if p.id == glyphid then
-            local fontdata = get_font_data(p.font)
-            if fontdata.slant and fontdata.slant > 0 then
-              t[#t+1] = char_in_font(fontdata, p.char).italic or 0
+            -- harf font: break before reordered tone mark
+            if harf_reordered_tonemark(p) then
+              break
+            end
+
+            local slant = option_in_font(p.font, "slant")
+            if slant and slant > 0 then
+              t[#t+1] = char_in_font(p.font, p.char).italic or 0
             end
 
             local c = my_node_props(p).unicode or p.char
-            if (is_jungsong(c) or is_jongsong(c) or hangul_tonemark[c]) and
-               p.width < get_en_size(p.font) then -- skip
+            if is_jungsong(c) or is_jongsong(c) or hangul_tonemark[c] then
             else
               break
             end
@@ -1806,31 +1818,32 @@ local function process_fake_slant_font (fontdata)
     local params = fontdata.parameters or {}
     params.slant = (params.slant or 0) + fsl*65536 -- slant per point
 
-    local scale  = fontdata.hb and fontdata.hb.scale or params.factor or 655.36
+    local hb = is_harf(fontdata)
+    local scale  = hb and hb.scale or params.factor or 655.36
 
     local shared = fontdata.shared or {}
-    local descriptions = shared.rawdata and shared.rawdata.descriptions or {}
+    local descrs = shared.rawdata and shared.rawdata.descriptions or {}
 
     for i, v in pairs(fontdata.characters) do
       local ht   = v.height and v.height > 0 and v.height or 0
       local wd   = v.width  and v.width  > 0 and v.width  or 0
-      local ybearing = 0
+      local rbearing = 0
 
       if wd > 0 then -- or, jong/jung italic could by very large value
-        if fontdata.hb then
-          local extents = fontdata.hb.shared.font:get_glyph_extents(v.index)
+        if hb then
+          local extents = hb.shared.font:get_glyph_extents(v.index)
           if extents then
-            ybearing = wd - (extents.x_bearing + extents.width)*scale
+            rbearing = wd - (extents.x_bearing + extents.width)*scale
           end
         else
-          local bbox = descriptions[i] and descriptions[i].boundingbox
+          local bbox = descrs[i] and descrs[i].boundingbox
           if bbox then
-            ybearing = wd - bbox[3]*scale
+            rbearing = wd - bbox[3]*scale
           end
         end
       end
 
-      local italic = ht * fsl - ybearing
+      local italic = ht * fsl - rbearing
       if italic > 0 then
         v.italic = italic
       end
