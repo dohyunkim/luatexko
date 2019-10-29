@@ -149,7 +149,8 @@
   \directlua{
     if \the\luatexkoulinecount == 1 then luatexko.activate("uline") end
     luatexko.ulboundary(\the\count@, tex.box[0].list, \luatexkoleaderstype)
-  }#2\directlua{
+  }#2\relax
+  \directlua{
     luatexko.ulboundary(\the\count@)
   }\endgroup }
 \protected\def\uline{\markoverwith{%
@@ -309,8 +310,10 @@
   \else \directlua{ luatexko.uhc2utf8.startconvert() }%
   \fi}
 % actualtext not provided
-\protected\def\actualtext#1#{\luatexkoactualtext}
-\def\luatexkoactualtext#1{#1}
+\ifdefined\actualtext\else
+  \protected\def\actualtext#1#{\luatexkoactualtext}
+  \def\luatexkoactualtext#1{#1}
+\fi
 % math hangul
 \def\setmathhangulblock#1#2{%
   \count@="#1

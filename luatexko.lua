@@ -254,10 +254,7 @@ local function is_harf (f)
 end
 
 local function is_not_harf (f)
-  if is_harf(f) then
-    return false
-  end
-  return true
+  return not is_harf(f)
 end
 
 local function harf_reordered_tonemark (curr)
@@ -332,7 +329,12 @@ local function hangul_space_skip (curr, newfont)
 
         local newwd = char_font_options.hangulspaceskip[newfont]
         if newwd == nil then
-          if is_not_harf(newfont) then
+          if is_harf(newfont) then
+            newwd = getparameters(newfont) or false
+            if newwd then
+              newwd = { newwd.space, newwd.space_stretch, newwd.space_shrink }
+            end
+          else
             local newsp = nodecopy(curr)
             newsp.char, newsp.font = 32, newfont
             newsp = nodes.simple_font_handler(newsp)
@@ -342,11 +344,6 @@ local function hangul_space_skip (curr, newfont)
             end
             if newsp then
               nodefree(newsp)
-            end
-          else
-            newwd = getparameters(newfont) or false
-            if newwd then
-              newwd = { newwd.space, newwd.space_stretch, newwd.space_shrink }
             end
           end
           char_font_options.hangulspaceskip[newfont] = newwd
@@ -1143,6 +1140,26 @@ end
 
 -- dotemph
 
+local function shift_put_top (bot, top)
+  local shift = top.shift or 0
+
+  if bot.id == hlistid then
+    bot = has_glyph(bot.list) or {}
+  end
+  local bot_off = bot.yoffset or 0
+
+  if bot_off ~= 0 then
+    if top.id == hlistid then
+      top = has_glyph(top.list) or {}
+    end
+    local top_off = top.yoffset or 0
+
+    return shift + top_off - bot_off
+  end
+
+  return shift
+end
+
 local dotemphbox = {}
 luatexko.dotemphbox = dotemphbox
 
@@ -1177,13 +1194,7 @@ local function process_dotemph (head, tofree)
             end
 
             -- consider charraise
-            local base_yoff = curr.yoffset
-            if base_yoff and base_yoff ~= 0 then
-              local boxglyph = has_glyph(box.list)
-              if not boxglyph or boxglyph.yoffset ~= base_yoff then
-                box.shift = box.shift - base_yoff
-              end
-            end
+            box.shift = shift_put_top(curr, box)
 
             box.width = 0
             head = insert_before(head, curr, box)
@@ -1368,9 +1379,13 @@ local function process_ruby_post_linebreak (head)
             ruby.list = insert_before(list, list, k)
           end
           ruby.width = 0
+
+          -- consider charraise
+          local shift = shift_put_top(curr, ruby)
+
           local _, f = ruby_char_font(curr)
           local ascender = get_font_param(f, "ascender") or curr.height
-          ruby.shift = -ascender - ruby.depth - ruby_t[2] -- rubysep
+          ruby.shift = shift - ascender - ruby.depth - ruby_t[2] -- rubysep
           head = insert_before(head, curr, ruby)
         end
         ruby_t = nil
@@ -1940,11 +1955,11 @@ local function process_patch_font (fontdata)
   end
 
   if option_in_font(fontdata, "vertical") then
-    if is_not_harf(fontdata) then
-      process_vertical_font(fontdata)
-    else
+    if is_harf(fontdata) then
       warning("Vertical writing is not supported for HarfBuzz fonts;\n"..
       "`Renderer=Node' option is needed for `%s'", fontdata.fullname)
+    else
+      process_vertical_font(fontdata)
     end
   end
 
