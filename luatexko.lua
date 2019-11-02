@@ -1658,12 +1658,21 @@ local function get_tsb_table (filename, subfont)
   end
 end
 
+local function fontdata_warning(activename, ...)
+  if not active_processes[activename] then
+    warning(...)
+    active_processes[activename] = true
+  end
+end
+
 local function process_vertical_font (fontdata)
   local subfont = fontdata.specification and fontdata.specification.sub
   local tsb_tab = get_tsb_table(fontdata.filename, subfont)
+
   if not tsb_tab then
-    warning("Vertical metrics table (vmtx) not found in the font\n"..
-    "`%s'", fontdata.fullname)
+    local fullname = fontdata.fullname
+    fontdata_warning("vertical."..fullname,
+    "Vertical metrics table (vmtx) not found in the font\n`%s'", fullname)
     return
   end
 
@@ -1917,6 +1926,46 @@ local font_opt_procs = {
   },
 }
 
+local font_opt_procs_single = {
+  expansion = function()
+    if not active_processes.expansion then
+      texset("global", "adjustspacing", 2)
+      active_processes.expansion = true
+    end
+  end,
+
+  protrusion = function(fontdata)
+    if not active_processes.protrusion then
+      texset("global", "protrudechars", 2)
+      active_processes.protrusion = true
+    end
+    if option_in_font(fontdata, "compresspunctuations") then
+      local fullname = fontdata.fullname
+      fontdata_warning("protrude."..fullname,
+      "Both `compresspunctuations' and `protrusion' are\nenabled for `%s'.\n"..
+      "Beware bad justifications.", fullname)
+    end
+  end,
+
+  slant = function(fontdata)
+    process_fake_slant_font(fontdata)
+  end,
+
+  vertical = function(fontdata)
+    local fullname = fontdata.fullname
+    if is_harf(fontdata) then
+      fontdata_warning("vertical."..fullname,
+      "Currently, vertical writing is not supported\nby harf mode."..
+      "`Renderer=Node' option is needed for\n`%s'", fullname)
+    elseif fontdata.type == "virtual" then
+      fontdata_warning("vitrual."..fullname,
+      "Virtual font `%s' cannot be\nused for vertical writing.", fullname)
+    else
+      process_vertical_font(fontdata)
+    end
+  end,
+}
+
 local function process_patch_font (fontdata)
   if type(fontdata) ~= "table" or
      fontdata.format ~= "opentype" and fontdata.format ~= "truetype" then
@@ -1935,38 +1984,10 @@ local function process_patch_font (fontdata)
     end
   end
 
-  if not active_processes.expansion
-    and option_in_font(fontdata, "expansion") then
-    texset("global", "adjustspacing", 2)
-    active_processes.expansion = true
-  end
-
-  if option_in_font(fontdata, "protrusion") then
-    if not active_processes.protrusion then
-      texset("global", "protrudechars", 2)
-      active_processes.protrusion = true
+  for name, func in pairs( font_opt_procs_single ) do
+    if option_in_font(fontdata, name) then
+      func(fontdata)
     end
-    if not active_processes[fontdata.fullname] and
-      option_in_font(fontdata, "compresspunctuations") then
-      warning("Both `compresspunctuations' and `protrusion' are\n"..
-      "enabled for the font `%s'.\n"..
-      "Beware that this could result in bad justifications.\n",
-      fontdata.fullname)
-      active_processes[fontdata.fullname] = true
-    end
-  end
-
-  if option_in_font(fontdata, "vertical") then
-    if is_harf(fontdata) then
-      warning("Vertical writing is not supported for HarfBuzz fonts;\n"..
-      "`Renderer=Node' option is needed for `%s'", fontdata.fullname)
-    else
-      process_vertical_font(fontdata)
-    end
-  end
-
-  if option_in_font(fontdata, "slant") then
-    process_fake_slant_font(fontdata)
   end
 end
 

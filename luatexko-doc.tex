@@ -43,26 +43,16 @@
   Expansion, Protrusion=notoserifcjk,
 ]
 \setsanshangulfont{Noto Sans CJK KR}[
+  \directlua{
+    if tex.formatname:find "luahblatex" then
+      tex.sprint "Renderer=OpenType"
+    end },
   Scale=0.98,
   Script=Hangul,
   Language=Korean,
   UprightFont=* DemiLight,
   BoldFont=* Bold,
   InterLatinCJK=.125em,
-]
-\directlua{
-  if tex.formatname:find"luahblatex" then
-    token.set_macro("luatexkoHBrenderer","Renderer=OpenType")
-  else
-    token.set_macro("luatexkoHBrenderer")
-  end
-}
-\newhangulfontfamily\testharfbuzz{Noto Serif CJK KR}[
-  \luatexkoHBrenderer,
-  Script=Hangul,
-  Language=Korean,
-  UprightFont=* Regular,
-  BoldFont=* SemiBold,
 ]
 \setmonofont{Inconsolatazi4}[
   Scale=0.98,
@@ -278,7 +268,7 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
 
 \begin{figure}
   \fboxsep=1em
-  \fbox{\parbox{\dimexpr\linewidth-2.1em\relax}{\testharfbuzz
+  \fbox{\parbox{\dimexpr\linewidth-2.1em\relax}{\sffamily
   \parindent1em
   \hunmintxt
 }}
@@ -434,7 +424,7 @@ v2.0부터는 고문헌 조판에서 한글^^b7한자와 영문자가 붙어 나
 
 \begin{figure}
 \framebox[\linewidth]{\begin{vertical}{19.6em}\sffamily
-  \addhangulfontfeature{Vertical=Alternates, RawFeature=vertical}
+  \addhangulfontfeature{Renderer=Node, Vertical=Alternates, RawFeature=vertical}
   \linespread{1.5}\selectfont
   \hunmintxt
 \end{vertical}}
@@ -443,9 +433,10 @@ v2.0부터는 고문헌 조판에서 한글^^b7한자와 영문자가 붙어 나
 
 \begin{figure}
 \framebox[\linewidth]{\begin{vertical}{18.62em}\sffamily
-  \addhangulfontfeature{Vertical=Alternates, RemoveClassicSpaces,
+  \addhangulfontfeature{Renderer=Node, Vertical=Alternates, RemoveClassicSpaces,
   InterCharStretch=1pt, CompressPunctuations, RawFeature=vertical}
   \linespread{1.5}\selectfont
+  \parindent=-1em \leftskip=1em
   \analectstext
 \end{vertical}}
 \caption{세로쓰기의 다른 예. 박스 높이 |19em|을 지시했다.
@@ -474,7 +465,7 @@ v2.0부터는 고문헌 조판에서 한글^^b7한자와 영문자가 붙어 나
 
 \begin{figure}
 \framebox[\linewidth]{\begin{vertical}{16.66em}\sffamily
-  \addhangulfontfeature{Vertical=Alternates, CharRaise=3.2pt,
+  \addhangulfontfeature{Renderer=Node, Vertical=Alternates, CharRaise=3.2pt,
   CompressPunctuations, CharacterWidth=Full, RawFeature=vertical}
   \parindent-1em\leftskip1em \linespread{1.5}\selectfont
   \spaceskip=.5em plus.25em minus.125em
