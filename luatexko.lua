@@ -60,7 +60,9 @@ local texsp        = tex.sp
 local set_macro = token.set_macro
 
 local mathmax = math.max
+
 local stringformat = string.format
+local stringunpack = string.unpack
 
 local tableconcat = table.concat
 local tableunpack = table.unpack
@@ -305,6 +307,7 @@ luatexko.updateforcehangul = update_force_hangul
 local active_processes = {}
 
 local char_font_options = {
+  ascender         = {},
   charraise        = {},
   hangulspaceskip  = {},
   intercharacter   = {},
@@ -1362,6 +1365,42 @@ local function process_ruby_pre_linebreak (head)
   return head
 end
 
+local os2tag = luaotfload.harfbuzz and luaotfload.harfbuzz.Tag.new"OS/2"
+
+-- luaharfbuzz's Font:get_h_extents() gets ascender value from hhea table;
+-- Node mode's parameters.ascender is gotten from OS/2 table.
+-- TypoAscender in OS/2 table seems to be more suitable for our purpose.
+local function get_font_ascender (f)
+  local ascender = char_font_options.ascender
+  local ascend = ascender[f]
+  if ascend == nil then
+    local hb = is_harf(f)
+    if hb and os2tag then
+      local hbface = hb.shared.face
+      local tags = hbface:get_table_tags()
+      local hasos2 = false
+      for _,v in ipairs(tags) do
+        if v == os2tag then
+          hasos2 = true
+          break
+        end
+      end
+      if hasos2 then
+        local os2 = hbface:get_table(os2tag)
+        local length = os2:get_length()
+        if length > 69 then -- sTypoAscender (int16)
+          local data = os2:get_data()
+          local typoascender = stringunpack(">h", data, 69)
+          ascend = typoascender * hb.scale
+        end
+      end
+    end
+    ascend = ascend or get_font_param(f, "ascender") or false
+    ascender[f] = ascend
+  end
+  return ascend
+end
+
 local function process_ruby_post_linebreak (head)
   local curr = head
   while curr do
@@ -1383,10 +1422,8 @@ local function process_ruby_post_linebreak (head)
           -- consider charraise
           local shift = shift_put_top(curr, ruby)
 
-          -- harf mode gets ascender from hhea table; node mode from OS/2
-          -- so here we regard ascender as quad*0.88
           local _, f = ruby_char_font(curr)
-          local ascender = get_font_param(f, "quad") * 0.88
+          local ascender = get_font_ascender(f) or curr.height
           ruby.shift = shift - ascender - ruby.depth - ruby_t[2] -- rubysep
           head = insert_before(head, curr, ruby)
         end
