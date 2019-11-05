@@ -454,7 +454,7 @@
   \fontspec_set_family:cnn { luatexko_user_family_ \cs_to_str:N #1 } { #2, #4 } { #3 }
   \DeclareRobustCommand #1
   {
-    \tl_set:Nn \luatexkohangulfont
+    \cs_set_nopar:Npn \luatexkohangulfont
     {
       \exp_args:Nc \fontfamily { luatexko_user_family_ \cs_to_str:N #1 } \selectfont
     }
@@ -469,7 +469,7 @@
 \DeclareDocumentCommand \hangulfontspec { O{} m O{} }
 {
   \fontspec_set_family:Nnn \luatexkohangulfontfamily { #1, #3 } { #2 }
-  \tl_set:Nn \luatexkohangulfont
+  \cs_set_nopar:Npn \luatexkohangulfont
   {
     \fontfamily \luatexkohangulfontfamily \selectfont
   }
@@ -523,7 +523,7 @@
   \fontspec_set_family:cnn { luatexko_user_family_ \cs_to_str:N #1 } { #2, #4 } { #3 }
   \DeclareRobustCommand #1
   {
-    \tl_set:Nn \luatexkohanjafont
+    \cs_set_nopar:Npn \luatexkohanjafont
     {
       \exp_args:Nc \fontfamily { luatexko_user_family_ \cs_to_str:N #1 } \selectfont
     }
@@ -538,7 +538,7 @@
 \DeclareDocumentCommand \hanjafontspec { O{} m O{} }
 {
   \fontspec_set_family:Nnn \luatexkohanjafontfamily { #1, #3 } { #2 }
-  \tl_set:Nn \luatexkohanjafont
+  \cs_set_nopar:Npn \luatexkohanjafont
   {
     \fontfamily \luatexkohanjafontfamily \selectfont
   }
@@ -593,7 +593,7 @@
   \fontspec_set_family:cnn { luatexko_user_family_ \cs_to_str:N #1 } { #2, #4 } { #3 }
   \DeclareRobustCommand #1
   {
-    \tl_set:Nn \luatexkofallbackfont
+    \cs_set_nopar:Npn \luatexkofallbackfont
     {
       \exp_args:Nc \fontfamily { luatexko_user_family_ \cs_to_str:N #1 } \selectfont
     }
@@ -608,7 +608,7 @@
 \DeclareDocumentCommand \fallbackfontspec { O{} m O{} }
 {
   \fontspec_set_family:Nnn \luatexkofallbackfontfamily { #1, #3 } { #2 }
-  \tl_set:Nn \luatexkofallbackfont
+  \cs_set_nopar:Npn \luatexkofallbackfont
   {
     \fontfamily \luatexkofallbackfontfamily \selectfont
   }
