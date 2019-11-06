@@ -410,7 +410,7 @@
 \DeclareDocumentCommand \setmainhangulfont { O{} m O{} }
 {
   \fontspec_set_family:Nnn \luatexkomainhangulfamily { Ligatures=TeX, #1, #3 } { #2 }
-  \DeclareRobustCommand \luatexkomainhangulfont
+  \cs_set_protected_nopar:Npn \luatexkomainhangulfont
   {
     \fontfamily \luatexkomainhangulfamily \selectfont
   }
@@ -424,7 +424,7 @@
 \DeclareDocumentCommand \setsanshangulfont { O{} m O{} }
 {
   \fontspec_set_family:Nnn \luatexkosanshangulfamily { Ligatures=TeX, #1, #3 } { #2 }
-  \DeclareRobustCommand \luatexkosanshangulfont
+  \cs_set_protected_nopar:Npn \luatexkosanshangulfont
   {
     \fontfamily \luatexkosanshangulfamily \selectfont
   }
@@ -438,7 +438,7 @@
 \DeclareDocumentCommand \setmonohangulfont { O{} m O{} }
 {
   \fontspec_set_family:Nnn \luatexkomonohangulfamily { #1, #3 } { #2 }
-  \DeclareRobustCommand \luatexkomonohangulfont
+  \cs_set_protected_nopar:Npn \luatexkomonohangulfont
   {
     \fontfamily \luatexkomonohangulfamily \selectfont
   }
@@ -452,7 +452,7 @@
 \DeclareDocumentCommand \newhangulfontfamily { m O{} m O{} }
 {
   \fontspec_set_family:cnn { luatexko_user_family_ \cs_to_str:N #1 } { #2, #4 } { #3 }
-  \DeclareRobustCommand #1
+  \cs_set_protected_nopar:Npn #1
   {
     \cs_set_nopar:Npn \luatexkohangulfont
     {
@@ -479,7 +479,7 @@
 \DeclareDocumentCommand \setmainhanjafont { O{} m O{} }
 {
   \fontspec_set_family:Nnn \luatexkomainhanjafamily { Ligatures=TeX, #1, #3 } { #2 }
-  \DeclareRobustCommand \luatexkomainhanjafont
+  \cs_set_protected_nopar:Npn \luatexkomainhanjafont
   {
     \fontfamily \luatexkomainhanjafamily \selectfont
   }
@@ -493,7 +493,7 @@
 \DeclareDocumentCommand \setsanshanjafont { O{} m O{} }
 {
   \fontspec_set_family:Nnn \luatexkosanshanjafamily { Ligatures=TeX, #1, #3 } { #2 }
-  \DeclareRobustCommand \luatexkosanshanjafont
+  \cs_set_protected_nopar:Npn \luatexkosanshanjafont
   {
     \fontfamily \luatexkosanshanjafamily \selectfont
   }
@@ -507,7 +507,7 @@
 \DeclareDocumentCommand \setmonohanjafont { O{} m O{} }
 {
   \fontspec_set_family:Nnn \luatexkomonohanjafamily { #1, #3 } { #2 }
-  \DeclareRobustCommand \luatexkomonohanjafont
+  \cs_set_protected_nopar:Npn \luatexkomonohanjafont
   {
     \fontfamily \luatexkomonohanjafamily \selectfont
   }
@@ -521,7 +521,7 @@
 \DeclareDocumentCommand \newhanjafontfamily { m O{} m O{} }
 {
   \fontspec_set_family:cnn { luatexko_user_family_ \cs_to_str:N #1 } { #2, #4 } { #3 }
-  \DeclareRobustCommand #1
+  \cs_set_protected_nopar:Npn #1
   {
     \cs_set_nopar:Npn \luatexkohanjafont
     {
@@ -549,7 +549,7 @@
 \DeclareDocumentCommand \setmainfallbackfont { O{} m O{} }
 {
   \fontspec_set_family:Nnn \luatexkomainfallbackfamily { Ligatures=TeX, #1, #3 } { #2 }
-  \DeclareRobustCommand \luatexkomainfallbackfont
+  \cs_set_protected_nopar:Npn \luatexkomainfallbackfont
   {
     \fontfamily \luatexkomainfallbackfamily \selectfont
   }
@@ -563,7 +563,7 @@
 \DeclareDocumentCommand \setsansfallbackfont { O{} m O{} }
 {
   \fontspec_set_family:Nnn \luatexkosansfallbackfamily { Ligatures=TeX, #1, #3 } { #2 }
-  \DeclareRobustCommand \luatexkosansfallbackfont
+  \cs_set_protected_nopar:Npn \luatexkosansfallbackfont
   {
     \fontfamily \luatexkosansfallbackfamily \selectfont
   }
@@ -577,7 +577,7 @@
 \DeclareDocumentCommand \setmonofallbackfont { O{} m O{} }
 {
   \fontspec_set_family:Nnn \luatexkomonofallbackfamily { #1, #3 } { #2 }
-  \DeclareRobustCommand \luatexkomonofallbackfont
+  \cs_set_protected_nopar:Npn \luatexkomonofallbackfont
   {
     \fontfamily \luatexkomonofallbackfamily \selectfont
   }
@@ -591,7 +591,7 @@
 \DeclareDocumentCommand \newfallbackfontfamily { m O{} m O{} }
 {
   \fontspec_set_family:cnn { luatexko_user_family_ \cs_to_str:N #1 } { #2, #4 } { #3 }
-  \DeclareRobustCommand #1
+  \cs_set_protected_nopar:Npn #1
   {
     \cs_set_nopar:Npn \luatexkofallbackfont
     {
