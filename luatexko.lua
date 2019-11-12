@@ -65,6 +65,7 @@ local stringformat = string.format
 local stringunpack = string.unpack
 
 local tableconcat = table.concat
+local tableinsert = table.insert
 local tableunpack = table.unpack
 
 local add_to_callback       = luatexbase.add_to_callback
@@ -263,9 +264,7 @@ local function harf_reordered_tonemark (curr)
   if is_harf(curr.font) then
     local props = getproperty(curr) or {}
     local actualtext = props.luaotfload_startactualtext or ""
-    if actualtext:find"302[EF]$" then
-      return true
-    end
+    return actualtext:find"302[EF]$"
   end
 end
 
@@ -614,20 +613,22 @@ end
 local function get_actualtext (curr)
   local actual = my_node_props(curr).startactualtext
   if type(actual) == "table" then
-     return actual[0], actual[1], actual[#actual]
+     return actual[1], actual[#actual]
   end
 end
 
 local function goto_end_actualtext (curr)
-  local n = getnext(curr)
-  while n do
-    if n.id == whatsitid
-      and n.mode == directmode
-      and my_node_props(n).endactualtext then
-      curr = n
-      break
+  while curr do
+    local n = getnext(curr)
+    if n then
+      local id = n.id
+      if id == glyphid and my_node_props(n).endactualtext then
+      elseif id == kernid and n.subtype ~= userkern then
+      else
+        return curr
+      end
     end
-    n = getnext(n)
+    curr = n
   end
   return curr
 end
@@ -706,10 +707,16 @@ local function process_linebreak (head, par)
   while curr do
     local id = curr.id
     if id == glyphid then
-      local c = my_node_props(curr).unicode or curr.char
-      if c and not is_unicode_var_sel(c) then
-        local old = has_attribute(curr, classicattr)
-        head, pc, pcl = maybe_linebreak(head, curr, pc, pcl, c, old, curr.font, par)
+      local old = has_attribute(curr, classicattr)
+      local ini, fin = get_actualtext(curr)
+      if ini and fin then
+        head = maybe_linebreak(head, curr, pc, pcl, ini, old, curr.font, par)
+        pc, pcl, curr = fin, 0, goto_end_actualtext(curr)
+      else
+        local c = my_node_props(curr).unicode or curr.char
+        if c and not is_unicode_var_sel(c) then
+          head, pc, pcl = maybe_linebreak(head, curr, pc, pcl, c, old, curr.font, par)
+        end
       end
 
     elseif id == hlistid and curr.list then
@@ -728,14 +735,6 @@ local function process_linebreak (head, par)
         end
         pc = hbox_fin_char_font(curr)
         pcl = pc and get_char_class(pc, old) or 0
-      end
-
-    elseif id == whatsitid and curr.mode == directmode then
-      local glyf, c, fin = get_actualtext(curr)
-      if c and fin and glyf then
-        local old = has_attribute(glyf, classicattr)
-        head = maybe_linebreak(head, curr, pc, pcl, c, old, glyf.font, par)
-        pc, pcl, curr = fin, 0, goto_end_actualtext(curr)
       end
 
     elseif id == mathid then
@@ -826,14 +825,20 @@ local function process_interhangul (head, par)
   while curr do
     local id = curr.id
     if id == glyphid then
-      local c = my_node_props(curr).unicode or curr.char
-      if c and not is_unicode_var_sel(c) then
-        head, pc = do_interhangul_option(head, curr, pc, c, curr.font, par)
+      local ini, fin = get_actualtext(curr)
+      if ini and fin then
+        head = do_interhangul_option(head, curr, pc, ini, curr.font, par)
+        pc, curr = 1, goto_end_actualtext(curr)
+      else
+        local c = my_node_props(curr).unicode or curr.char
+        if c and not is_unicode_var_sel(c) then
+          head, pc = do_interhangul_option(head, curr, pc, c, curr.font, par)
 
-        if is_chosong(c) then
-          pc = 0
-        elseif is_jungsong(c) or is_jongsong(c) or hangul_tonemark[c] then
-          pc = 1
+          if is_chosong(c) then
+            pc = 0
+          elseif is_jungsong(c) or is_jongsong(c) or hangul_tonemark[c] then
+            pc = 1
+          end
         end
       end
 
@@ -852,13 +857,6 @@ local function process_interhangul (head, par)
         end
         c = hbox_fin_char_font(curr)
         pc = c and is_hangul_jamo(c) and 1 or 0
-      end
-
-    elseif id == whatsitid and curr.mode == directmode then
-      local glyf, c = get_actualtext(curr)
-      if c and glyf then
-        head = do_interhangul_option(head, curr, pc, c, glyf.font, par)
-        pc, curr = 1, goto_end_actualtext(curr)
       end
 
     elseif id == mathid then
@@ -899,10 +897,16 @@ local function process_interlatincjk (head, par)
   while curr do
     local id = curr.id
     if id == glyphid then
-      local c = my_node_props(curr).unicode or curr.char
-      if c and not is_unicode_var_sel(c) then
-        head, pc, pf, pcl = do_interlatincjk_option(head, curr, pc, pf, pcl, c, curr.font, par)
-        pc = breakable_after[c] and pc or 0
+      local ini, fin = get_actualtext(curr)
+      if ini and fin then
+        head, pc, pf, pcl = do_interlatincjk_option(head, curr, pc, pf, pcl, ini, curr.font, par)
+        curr = goto_end_actualtext(curr)
+      else
+        local c = my_node_props(curr).unicode or curr.char
+        if c and not is_unicode_var_sel(c) then
+          head, pc, pf, pcl = do_interlatincjk_option(head, curr, pc, pf, pcl, c, curr.font, par)
+          pc = breakable_after[c] and pc or 0
+        end
       end
 
     elseif id == hlistid and curr.list then
@@ -926,13 +930,6 @@ local function process_interlatincjk (head, par)
         end
         pcl = c and get_char_class(c, has_attribute(curr, classicattr)) or 0
         pf  = f or 0
-      end
-
-    elseif id == whatsitid and curr.mode == directmode then
-      local glyf, c = get_actualtext(curr)
-      if c and glyf then
-        head, pc, pf, pcl = do_interlatincjk_option(head, curr, pc, pf, pcl, c, glyf.font, par)
-        curr = goto_end_actualtext(curr)
       end
 
     elseif id == mathid then
@@ -998,7 +995,7 @@ local function process_remove_spaces (head)
           end
           if ok then
             head = noderemove(head, curr)
-            to_free[#to_free + 1] = curr
+            tableinsert(to_free, curr)
             break
           end
         end
@@ -1127,7 +1124,7 @@ local function process_josa (head)
             curr.char = cc
           else
             head = noderemove(head, curr)
-            tofree[#tofree + 1] = curr
+            tableinsert(tofree, curr)
           end
         end
         unset_attribute(curr, autojosaattr)
@@ -1454,26 +1451,43 @@ local function conv_tounicode (uni)
   end
 end
 
-local function pdfliteral_direct_actual (syllable)
-  local data
-  if syllable then
-    local t = {}
-    for _,v in ipairs(syllable) do
-      t[#t + 1] = conv_tounicode(v)
-    end
-    data = stringformat("/Span<</ActualText<FEFF%s>>>BDC", tableconcat(t))
-  else
-    data = "EMC"
-  end
+local function insert_actualtext_whatsit (head, curr, data)
   local what = nodenew(whatsitid, literal_whatsit)
   what.mode = directmode
-  what.data = data
-  if syllable then
-    my_node_props(what).startactualtext = syllable
+  if data then
+    what.data = data
+    return insert_before(head, curr, what)
   else
-    my_node_props(what).endactualtext = true
+    what.data = "EMC"
+    return insert_after(head, curr, what)
   end
-  return what
+end
+
+local function process_actual_text (head)
+  local curr = head
+  while curr do
+    local id = curr.id
+    if id == glyphid and is_not_harf(curr.font) then
+      local syllable = my_node_props(curr).startactualtext
+      if syllable then
+        local start, stop = curr, goto_end_actualtext(curr)
+        if stop then
+          local t = {}
+          for _,v in ipairs(syllable) do
+            tableinsert(t, conv_tounicode(v))
+          end
+          local data = stringformat("/Span<</ActualText<FEFF%s>>>BDC", tableconcat(t))
+          head = insert_actualtext_whatsit(head, start, data)
+          head, curr = insert_actualtext_whatsit(head, stop)
+        end
+        my_node_props(start).startactualtext = nil
+      end
+    elseif id == hlistid and curr.list then
+      curr.list = process_actual_text(curr.list)
+    end
+    curr = getnext(curr)
+  end
+  return head
 end
 
 local function get_tonemark_width (curr, uni)
@@ -1499,65 +1513,68 @@ local function process_reorder_tonemarks (head)
     if id == glyphid and
        is_not_harf(curr.font) and
        option_in_font(curr.font, "script") == "hang" then
-      local fontdata = get_font_data(curr.font)
-      local uni = my_node_props(curr).unicode or curr.char
-      if is_hangul(uni) or is_chosong(uni) or uni == 0x25CC then
 
-        local syllable = { [0]=curr, uni }
+      if get_actualtext(curr) then
+        curr = goto_end_actualtext(curr)
+      else
+        local fontdata = get_font_data(curr.font)
+        local uni = my_node_props(curr).unicode or curr.char
+        if is_hangul(uni) or is_chosong(uni) or uni == 0x25CC then
 
-        local n = getnext(curr)
-        while n do
-          local nid = n.id
-          if nid == glyphid then
-            local u = my_node_props(n).unicode or n.char
-            if   is_jungsong(u)
-              or is_jongsong(u)
-              or hangul_tonemark[u] then
-              syllable[#syllable + 1] = u
-              curr, uni = n, u
-            else
+          local syllable, jamos = { uni }, { curr }
+
+          local n = getnext(curr)
+          while n do
+            local id = n.id
+            if id == glyphid then
+              local u = my_node_props(n).unicode or n.char
+              if is_jungsong(u) or is_jongsong(u) then
+                tableinsert(syllable, u)
+                tableinsert(jamos, n)
+                curr, uni = n, u
+              elseif hangul_tonemark[u] then
+                tableinsert(syllable, u)
+                curr, uni = n, u
+                break
+              else
+                break
+              end
+            elseif id ~= kernid or n.subtype == userkern then
               break
             end
-          elseif nid ~= kernid or n.subtype == userkern then
-            break
+            n = getnext(n)
           end
-          n = getnext(n)
-        end
 
-        if #syllable > 1
-          and hangul_tonemark[uni]
-          and get_tonemark_width(curr, uni) ~= 0 then
+          if #syllable > 1 and
+             hangul_tonemark[uni] and
+             get_tonemark_width(curr, uni) ~= 0 then
 
-          local ini, fin = syllable[0], curr
-          local actual = pdfliteral_direct_actual(syllable)
-          local endactual = pdfliteral_direct_actual()
-          head = insert_before(head, ini, actual)
-          head, curr = insert_after(head, curr, endactual)
+            local TM, first, last = curr, jamos[1], jamos[#jamos]
 
-          head = noderemove(head, fin)
-          head = insert_before(head, ini, fin)
-        end
+            my_node_props(TM).startactualtext = syllable
+            for _, v in ipairs(jamos) do
+              my_node_props(v).endactualtext = true
+            end
 
-      elseif hangul_tonemark[uni] -- isolated tone mark
-        and char_in_font(fontdata, 0x25CC) then
+            head = noderemove(head, TM)
+            head = insert_before(head, first, TM)
+            curr = last
+          end
 
-        local dotcircle = nodecopy(curr)
-        dotcircle.char = 0x25CC
-        if get_tonemark_width(curr, uni) ~= 0 then
-          local actual = pdfliteral_direct_actual{ [0]=curr, uni }
-          local endactual = pdfliteral_direct_actual()
-          head = insert_before(head, curr, actual)
-          head, curr = insert_after(head, curr, dotcircle)
-          head, curr = insert_after(head, curr, endactual)
-        else
-          head = insert_before(head, curr, dotcircle)
+        elseif hangul_tonemark[uni] -- isolated tone mark
+          and char_in_font(fontdata, 0x25CC) then
+
+          local dotcircle = nodecopy(curr)
+          dotcircle.char = 0x25CC
+          if get_tonemark_width(curr, uni) ~= 0 then
+            my_node_props(curr).startactualtext    = { uni }
+            my_node_props(dotcircle).endactualtext = true
+            head, curr = insert_after(head, curr, dotcircle)
+          else
+            head = insert_before(head, curr, dotcircle)
+          end
         end
       end
-    elseif id == whatsitid
-      and curr.mode == directmode
-      and my_node_props(curr).startactualtext then
-
-      curr = goto_end_actualtext(curr)
 
     elseif id == mathid then
       curr = end_of_math(curr)
@@ -1844,7 +1861,7 @@ local function process_fake_slant_corr (head) -- for font fallback
 
             local slant = option_in_font(p.font, "slant")
             if slant and slant > 0 then
-              t[#t+1] = char_in_font(p.font, p.char).italic or 0
+              tableinsert(t, char_in_font(p.font, p.char).italic or 0)
             end
 
             local c = my_node_props(p).unicode or p.char
@@ -1852,7 +1869,6 @@ local function process_fake_slant_corr (head) -- for font fallback
             else
               break
             end
-          elseif p.id == whatsitid and p.mode == directmode then -- skip
           else
             break
           end
@@ -1917,37 +1933,37 @@ end
 -- wrap up
 
 local pass_fun = function(...) return ... end
-create_callback("luatexko_pre_hpack", "data", pass_fun)
-create_callback("luatexko_pre_prelinebreak", "data", pass_fun)
-create_callback("luatexko_post_hpack", "data", pass_fun)
-create_callback("luatexko_post_prelinebreak", "data", pass_fun)
+create_callback("luatexko_hpack_first",         "data", pass_fun)
+create_callback("luatexko_prelinebreak_first",  "data", pass_fun)
+create_callback("luatexko_hpack_second",        "data", pass_fun)
+create_callback("luatexko_prelinebreak_second", "data", pass_fun)
 
 add_to_callback("hpack_filter", function(h)
   h = process_fonts(h)
-  h = call_callback("luatexko_pre_hpack", h)
-  h = call_callback("luatexko_post_hpack", h)
+  h = call_callback("luatexko_hpack_first", h)
+  h = call_callback("luatexko_hpack_second", h)
   return process_linebreak(h)
 end, "luatexko.hpack_filter.pre_rendering", 1)
 
 add_to_callback("pre_linebreak_filter", function(h)
   h = process_fonts(h)
-  h = call_callback("luatexko_pre_prelinebreak", h, true)
-  h = call_callback("luatexko_post_prelinebreak", h, true)
+  h = call_callback("luatexko_prelinebreak_first", h, true)
+  h = call_callback("luatexko_prelinebreak_second", h, true)
   return process_linebreak(h, true)
 end, "luatexko.pre_linebreak_filter.pre_rendering", 1)
 
 local font_opt_procs = {
   removeclassicspaces = {
-    luatexko_pre_hpack        = process_remove_spaces,
-    luatexko_pre_prelinebreak = process_remove_spaces,
+    luatexko_hpack_first        = process_remove_spaces,
+    luatexko_prelinebreak_first = process_remove_spaces,
   },
   interhangul = {
-    luatexko_post_hpack        = process_interhangul,
-    luatexko_post_prelinebreak = process_interhangul,
+    luatexko_hpack_second        = process_interhangul,
+    luatexko_prelinebreak_second = process_interhangul,
   },
   interlatincjk = {
-    luatexko_post_hpack        = process_interlatincjk,
-    luatexko_post_prelinebreak = process_interlatincjk,
+    luatexko_hpack_second        = process_interlatincjk,
+    luatexko_prelinebreak_second = process_interlatincjk,
   },
   charraise = {
     hpack_filter         = process_charraise,
@@ -2048,12 +2064,14 @@ local auxiliary_procs = {
     vpack_filter         = process_ruby_post_linebreak,
   },
   autojosa = {
-    luatexko_pre_hpack        = process_josa,
-    luatexko_pre_prelinebreak = process_josa,
+    luatexko_hpack_first        = process_josa,
+    luatexko_prelinebreak_first = process_josa,
   },
   reorderTM = {
-    luatexko_pre_hpack        = process_reorder_tonemarks,
-    luatexko_pre_prelinebreak = process_reorder_tonemarks,
+    luatexko_hpack_first        = process_reorder_tonemarks,
+    luatexko_prelinebreak_first = process_reorder_tonemarks,
+    hpack_filter                = process_actual_text,
+    vpack_filter                = process_actual_text,
   },
 }
 
@@ -2118,7 +2136,7 @@ local function deactivate_all (str)
     for i, v in ipairs( callback_descriptions(name) ) do
       if v:find(str or "^luatexko%.") then
         local ff, dd = remove_from_callback(name, v)
-        t[#t + 1] = { ff, dd, i }
+        tableinsert(t, { ff, dd, i })
       end
     end
     luatexko.deactivated[name] = t
