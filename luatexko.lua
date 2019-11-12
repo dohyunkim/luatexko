@@ -618,17 +618,15 @@ local function get_actualtext (curr)
 end
 
 local function goto_end_actualtext (curr)
-  while curr do
-    local n = getnext(curr)
-    if n then
-      local id = n.id
-      if id == glyphid and my_node_props(n).endactualtext then
-      elseif id == kernid and n.subtype ~= userkern then
-      else
-        return curr
-      end
+  local n = getnext(curr)
+  while n do
+    local id = n.id
+    if id == glyphid and my_node_props(n).endactualtext or
+       id == kernid and n.subtype ~= userkern then
+    else
+      return curr
     end
-    curr = n
+    curr, n = n, getnext(n)
   end
   return curr
 end
