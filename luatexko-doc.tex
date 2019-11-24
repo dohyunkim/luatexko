@@ -43,10 +43,7 @@
   Expansion, Protrusion=notoserifcjk,
 ]
 \setsanshangulfont{Noto Sans CJK KR}[
-  \directlua{
-    if tex.formatname:find "luahblatex" then
-      tex.sprint "Renderer=OpenType"
-    end },
+  \ifluahbtex Renderer=OpenType\fi,
   Scale=0.98,
   Script=Hangul,
   Language=Korean,
@@ -107,13 +104,15 @@
 \author{Dohyun Kim \normalsize |<nomos at ktug org>| \and
         Soojin Nam \normalsize |<jsunam at gmail com>| \and
   \normalsize <\url{http://github.com/dohyunkim/luatexko}>}
-\date{Version 2.4\quad 2019/08/01}
+\date{Version 2.5\quad 2019/12/01}
 \maketitle
 
 \begin{quote}\small
   For a summary introduction in English, please see |README| file.
 
   \begin{itemize}\linespread{1.1}\selectfont
+    \item[v2.5] ------
+    \item luahbtex 지원
     \item[v2.2] ------
     \item \hyperref[sec:fontoption]{글꼴옵션 |InterCharStretch| 제공}
     \item[v2.0] ------
@@ -687,7 +686,7 @@ v2.0부터는 자동으로 수식 한글을 잡아주지 않는다.%
   \cs{onum} \cs{pnum} \cs{oeng} \cs{peng} \cs{hnum} \cs{Hnum}
   \cs{hroman} \cs{hRoman} \cs{hNum} \cs{hanjanum} 따위를 사용한다. }
 
-\section{입력 변환}\label{sec:noramlize}
+\section{입력 변환}\label{sec:normalize}
 
 \pkgkwd{\luatexhangulnormalize}|=1|이라 지시하면 첫가끝 자모를 완성형 음절로,
 |2|라면 완성형 음절을 첫가끝 자모로 인코딩 변환한다. |0|이 할당되면
@@ -706,6 +705,7 @@ v2.0부터는 자동으로 수식 한글을 잡아주지 않는다.%
   윈도 운영체제에서의 한글 파일이름 불러오기 기능은 v2.0부터는 제공하지 않는다.
   대신 |luatex -cmdx ...|, |lualatex -cmdx ...|와 같이 컴파일시 명령행에
   |-cmdx| 옵션을 주면 된다고 하니 테스트해 보시기 바란다. }
+
 \hfill \fboxsep=-\fboxrule \fbox{\vbox to 1em{\hbox to 1em{\hss}\vss}}
 
 \end{document}
