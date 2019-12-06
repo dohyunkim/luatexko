@@ -1,6 +1,6 @@
 % luatexko.sty
 %
-% Copyright (c) 2013-2019 Dohyun Kim <nomos at ktug org>
+% Copyright (c) 2013-2020 Dohyun Kim <nomos at ktug org>
 %                         Soojin Nam <jsunam at gmail com>
 %
 % This work may be distributed and/or modified under the
@@ -13,7 +13,7 @@
 
 \ifdefined\luatexkohangulfontattr \endinput\fi
 \ifdefined\selectfont
-  \ProvidesPackage{luatexko}[2019/12/01 v2.5 typesetting Korean with LuaTeX]
+  \ProvidesPackage{luatexko}[2020/02/01 v2.6 typesetting Korean with LuaTeX]
   \RequirePackage{luatexbase}
   \RequirePackage{fontspec}
 \else
@@ -31,6 +31,8 @@
 \newattribute\luatexkoclassicattr
 \newattribute\luatexkodotemphattr
 \newattribute\luatexkorubyattr \chardef\luatexkorubyalloc\allocationnumber
+\newattribute\luatexkohangulbyhangulattr
+\newattribute\luatexkohanjabyhanjaattr
 \directlua{ require"luatexko" }
 % classic
 \protected\def\typesetclassic{\luatexkoclassicattr\z@\parindent1em }
@@ -97,22 +99,28 @@
 \def\luatexkohangulpunctuations{\luatexkodoluacode{
   local t = luatexko.forcehangulchars
   for i in pairs(t) do t[i]=\ifcase\count@ false \else true \fi end }}
+% breakable before/after (affects entire paragraph and all after)
 \protected\def\registerbreakableafter#1{%
-  \toks@{}\luatexkotoks@appendchars#1,*,\luatexkodoluacode{
+  \toks@{}\luatexkotoks@appendchars#1,*,\directlua{
     local t = luatexko.breakableafter
     for _,v in ipairs{\the\toks@} do t[v]=true end }}
 \protected\def\registerbreakablebefore#1{%
-  \toks@{}\luatexkotoks@appendchars#1,*,\luatexkodoluacode{
+  \toks@{}\luatexkotoks@appendchars#1,*,\directlua{
     local t = luatexko.breakablebefore
     for _,v in ipairs{\the\toks@} do t[v]=true end }}
+% hangulbyhangul/hanjabyhanja font
 \protected\def\hangulbyhangulfont{%
   \afterassignment\luatexkohangulbyhangulfont\count@ }
-\def\luatexkohangulbyhangulfont{\luatexkodoluacode{
-  luatexko.hangulbyhangulfont=\ifcase\count@ false \else true \fi }}
+\def\luatexkohangulbyhangulfont{%
+  \ifcase\count@ \unsetattribute\luatexkohangulbyhangulattr
+  \else \luatexkohangulbyhangulattr\count@
+  \fi }
 \protected\def\hanjabyhanjafont{%
   \afterassignment\luatexkohanjabyhanjafont\count@ }
-\def\luatexkohanjabyhanjafont{\luatexkodoluacode{
-  luatexko.hanjabyhanjafont=\ifcase\count@ false \else true \fi }}
+\def\luatexkohanjabyhanjafont{%
+  \ifcase\count@ \unsetattribute\luatexkohanjabyhanjaattr
+  \else \luatexkohanjabyhanjaattr\count@
+  \fi }
 % dotemph
 \newcount\luatexkodotemphcount
 \def\dotemphraise{1ex }
@@ -163,7 +171,7 @@
   \lower\dimexpr\ulinedown+.1ex\relax\hbox{\kern.07em .\kern.07em }}}
 \protected\def\uuline#1{\uline{\uline{#1}}}
 \protected\def\sout#1{\begingroup
-  \def\ulinedown{-.5\dimexpr\ulinewidth+1ex\relax}%
+  \def\ulinedown{\dimexpr\ulinewidth-1ex\relax}%
   \uline{#1}\endgroup}
 \protected\def\xout{\markoverwith{\hbox to.4em{\hss/\hss}}}
 \protected\def\uwave{\font\luatexkofontsixly=lasy6\relax
@@ -696,24 +704,35 @@
     \ifnum\count@=\z@
       \let\luatexkomonohangulfont\luatexkosanshangulfont\fi\fi
   \@ifpackageloaded{hyperref}{\pdfstringdefDisableCommands{%
-    \let\ruby\@firstoftwo \let\xxruby\@firstoftwo
+    \let\ruby\@firstoftwo
+    \let\xxruby\@firstoftwo
     \let\dotemph\@firstofone
     \let\markoverwith\@secondoftwo
-    \let\uline\@firstofone \let\sout\@firstofone
-    \let\uuline\@firstofone \let\xout\@firstofone
-    \let\uwave\@firstofone \let\dashuline\@firstofone
+    \let\uline\@firstofone
+    \let\sout\@firstofone
+    \let\uuline\@firstofone
+    \let\xout\@firstofone
+    \let\uwave\@firstofone
+    \let\dashuline\@firstofone
     \let\dotuline\@firstofone
-    \let\typesetclassic\empty \let\typesetmodern\empty
+    \let\typesetclassic\empty
+    \let\typesetmodern\empty
     \let\inhibitglue\empty
     \let\hangulpunctuations\count@
-    \let\registerpunctuations\@gobble \let\unregisterpunctuations\@gobble
+    \let\registerpunctuations\@gobble
+    \let\unregisterpunctuations\@gobble
     \let\registerhangulpunctuations\@gobble
     \let\unregisterhangulpunctuations\@gobble
-    \let\registerbreakableafter\@gobble \let\registerbreakablebefore\@gobble
-    \let\hangulbyhangulfont\count@ \let\hanjabyhanjafont\count@
-    \let\addhangulfontfeature\@gobble \let\addhangulfontfeatures\@gobble
-    \let\addhanjafontfeature\@gobble \let\addhanjafontfeatures\@gobble
-    \let\addfallbackfontfeature\@gobble \let\addfallbackfontfeatures\@gobble
+    \let\registerbreakableafter\@gobble
+    \let\registerbreakablebefore\@gobble
+    \let\hangulbyhangulfont\count@
+    \let\hanjabyhanjafont\count@
+    \let\addhangulfontfeature\@gobble
+    \let\addhangulfontfeatures\@gobble
+    \let\addhanjafontfeature\@gobble
+    \let\addhanjafontfeatures\@gobble
+    \let\addfallbackfontfeature\@gobble
+    \let\addfallbackfontfeatures\@gobble
     \def\는{는}\def\은{은}\def\을{을}\def\를{를}\def\와{와}\def\과{과}%
     \def\가{가}\def\이{이}\def\라{라}\def\으{으}\def\로{로}%
     \def\hellipsis{...}}}{}

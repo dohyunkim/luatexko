@@ -79,7 +79,7 @@
 \usepackage{hologo}
 \def\luatex{\hologo{LuaTeX}}
 \def\XeTeX{\hologo{XeTeX}}
-\usepackage[pdfencoding=auto,bookmarksnumbered,hidelinks]{hyperref}
+\usepackage[hidelinks]{hyperref}
 
 \edef\verbatim{\unexpanded\expandafter{\verbatim\linespread{1.1}\selectfont}}
 \edef\itemize{\unexpanded\expandafter{\itemize\small}}
@@ -104,19 +104,20 @@
 \author{Dohyun Kim \normalsize |<nomos at ktug org>| \and
         Soojin Nam \normalsize |<jsunam at gmail com>| \and
   \normalsize <\url{http://github.com/dohyunkim/luatexko}>}
-\date{Version 2.5\quad 2019/12/01}
+\date{Version 2.6\quad 2020/02/01}
 \maketitle
 
 \begin{quote}\small
   For a summary introduction in English, please see |README| file.
 
   \begin{itemize}\linespread{1.1}\selectfont
+    \item[v2.6] ------
+    \item \cs{hangulbyhangulfont} 및 \cs{hanjabyhanjafont}가 지역적 효력만 가짐
     \item[v2.5] ------
-    \item LuaHB\TeX\ 지원
+    \item LuaHB\TeX\ 지원 (세로쓰기 제외)
     \item[v2.2] ------
     \item \hyperref[sec:fontoption]{글꼴옵션 |InterCharStretch| 제공}
     \item[v2.0] ------
-    \item \hyperref[sec:fontoption]{글꼴옵션 |PunctRaise|, |NoEmbeding| 제거}
     \item \hyperref[sec:mathhangul]{수식 한글 글꼴을 자동으로 잡아주지 않음}
     \item \cs{actualtext} 명령 작동 않음. 대신, 옛한글 텍스트 추출 자동 지원%
       \footnote{%
@@ -155,10 +156,17 @@ CP949 인코딩에 관해서는 제\ref{sec:uhcencoding}절 참조.
 
 \section{글꼴명령}\label{sec:fontcmds}
 
-\luatexko를 로드하면 fontspec 패키지를 자동으로 불러온다. 글꼴 설정은
-fontspec 문서를 참조.
+\luatexko를 부르면 fontspec 패키지도 자동 불러온다. 글꼴 설정은
+fontspec 문서 참조.
 
-한국어 글꼴을 위해 새로 마련한 명령은 다음과 같다.
+한국어 글꼴을 위해 새로 마련한 명령은 다음과 같다.%
+\pkgkwd*{\setmainhangulfont}%
+\pkgkwd*{\setsanshangulfont}%
+\pkgkwd*{\setmonohangulfont}%
+\pkgkwd*{\newhangulfontfamily}%
+\pkgkwd*{\newhangulfontface}%
+\pkgkwd*{\addhangulfontfeature}%
+\pkgkwd*{\hangulfontspec}
 첫 두 줄, 즉 main/sans 글꼴들에는 |Ligatures=TeX| 옵션이 자동으로 주어진다.%
 \footnote{%
   \cs{adhochangulfont} \cs{adhochanjafont} \cs{addhocfallbackfont}는
@@ -169,13 +177,6 @@ fontspec 문서를 참조.
   \cs{hangulfont=UnDotum\relax}\\
   \cs{hanjafont=UnDotum at 14pt}\\
   \cs{fallbackfont=HanaMinB at 12pt} }
-\pkgkwd*{\setmainhangulfont}%
-\pkgkwd*{\setsanshangulfont}%
-\pkgkwd*{\setmonohangulfont}%
-\pkgkwd*{\newhangulfontfamily}%
-\pkgkwd*{\newhangulfontface}%
-\pkgkwd*{\addhangulfontfeature}%
-\pkgkwd*{\hangulfontspec}%
 \begin{verbatim}
   \setmainhangulfont     \setmainhanjafont    \setmainfallbackfont
   \setsanshangulfont     \setsanshanjafont    \setsansfallbackfont
@@ -199,8 +200,8 @@ fontspec 문서를 참조.
 하지만 \pkgkwd{\hangulbyhangulfont}|=1|을 선언하면 한글은 우선 한글폰트로
 식자한다. 또한 \pkgkwd{\hanjabyhanjafont}|=1|을 선언하면 한자는 우선 한자폰트로
 식자한다. 두 경우 모두 |0|을 선언하면 원래 방식으로 되돌아간다.
-문단 중간에서 사용해도 동작한다. 그러나 루아코드가 실행되므로
-텍의 그룹에 의해 영향받지 않는 전역적 효과를 가진다.
+문단 중간에서 사용해도 동작한다. \sout{그러나 루아코드가 실행되므로
+텍의 그룹에 의해 영향받지 않는 전역적 효과를 가진다.}
 
 일정한 영문 문장부호들은 한글 폰트로 식자된다.
 즉, \pkgkwd{\hangulpunctuations}|=1|이 기본으로 작동하고,
@@ -223,22 +224,22 @@ verbatim 코드를 식자할 때는 이 기능이 작동하지 않는다.%
   [0x2015]  ―   [0x2018]  ‘   [0x2019]  ’   [0x201C]  “
   [0x201D]  ”    [0x2026]  …   [0x203B]  ※
 \end{verbatim}
-
-다음과 같은 명령으로 이 목록에 문자를 추가하거나 제거할 수 있다.
-인자는 콤마로 분리된 숫자 형식으로서 유니코드 코드포인트를 뜻한다.
-이들 명령은 문단 중간에서도 쓸 수 있지만, 전역적 효과를 가진다.%
+다음과 같은 명령으로 이 목록에 문자를 추가하거나 제거할 수 있다.%
 \pkgkwd*{\registerpunctuations}%
 \pkgkwd*{\unregisterpunctuations}
+인자는 콤마로 분리된 숫자 형식으로서 유니코드 코드포인트를 뜻한다.
 \begin{verbatim}
   \registerpunctuations{45, "2D, `-}
   \unregisterpunctuations{"2D, "2015}
 \end{verbatim}
+이상 문장부호 관련 명령들은 문단 중간에서도 쓸 수 있지만, 전역적 효과를 가진다.
 
 \section{줄바꿈 허용}\label{sec:break}
 
 어떤 글자 앞이나 뒤에서 줄바꿈을 허용하고 싶을 때 아래와 같이 명령을 준다.%
 \pkgkwd*{\registerbreakableafter}%
 \pkgkwd*{\registerbreakablebefore}
+이들 명령을 문단 중간에서 사용하면 문단의 처음부터 전역적 효력을 가진다.
 \begin{verbatim}
 \registerbreakableafter{"2460, "2461}
 \registerbreakablebefore{"2460, "2461}

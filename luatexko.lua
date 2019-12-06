@@ -1,6 +1,6 @@
 -- luatexko.lua
 --
--- Copyright (c) 2013-2019 Dohyun Kim <nomos at ktug org>
+-- Copyright (c) 2013-2020 Dohyun Kim <nomos at ktug org>
 --                         Soojin Nam <jsunam at gmail com>
 --
 -- This work may be distributed and/or modified under the
@@ -13,8 +13,8 @@
 
 luatexbase.provides_module {
   name        = 'luatexko',
-  date        = '2019/12/01',
-  version     = '2.5',
+  date        = '2020/02/01',
+  version     = '2.6',
   description = 'typesetting Korean with LuaTeX',
   author      = 'Dohyun Kim, Soojin Nam',
   license     = 'LPPL v1.3+',
@@ -113,6 +113,8 @@ local autojosaattr     = attributes.luatexkoautojosaattr
 local classicattr      = attributes.luatexkoclassicattr
 local dotemphattr      = attributes.luatexkodotemphattr
 local rubyattr         = attributes.luatexkorubyattr
+local hangulbyhangulattr = attributes.luatexkohangulbyhangulattr
+local hanjabyhanjaattr   = attributes.luatexkohanjabyhanjaattr
 
 local vert_classic = 1
 local SC_classic   = 2
@@ -395,10 +397,10 @@ local function process_fonts (head)
           local widefont = encode == 2 or format == "opentype" or format == "truetype"
           if hf and widefont and force_hangul[c] and curr.lang ~= nohyphen then
             curr.font = hf
-          elseif hf and luatexko.hangulbyhangulfont and is_hangul_jamo(c) then
+          elseif hf and has_attribute(curr, hangulbyhangulattr) and is_hangul_jamo(c) then
             hangul_space_skip(curr, hf)
             curr.font = hf
-          elseif hjf and luatexko.hanjabyhanjafont and is_hanja(c) then
+          elseif hjf and has_attribute(curr, hanjabyhanjaattr) and is_hanja(c) then
             hangul_space_skip(curr, hjf)
             curr.font = hjf
           elseif not char_in_font(fontdata, c) then
