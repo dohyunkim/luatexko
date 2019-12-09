@@ -171,7 +171,9 @@
   \lower\dimexpr\ulinedown+.1ex\relax\hbox{\kern.07em .\kern.07em }}}
 \protected\def\uuline#1{\uline{\uline{#1}}}
 \protected\def\sout#1{\begingroup
-  \edef\ulinedown{\the\dimexpr.5\dimexpr\ulinedown-1em-\ulinewidth\relax\relax}%
+  \setbox\z@\hbox{#1}%
+  \edef\ulinedown{%
+    \directlua{ tex.sprint(luatexko.get_strike_out_down(tex.box[0])) }sp}%
   \uline{#1}\endgroup}
 \protected\def\xout{\markoverwith{\hbox to.4em{\hss/\hss}}}
 \protected\def\uwave{\font\luatexkofontsixly=lasy6\relax
