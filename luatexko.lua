@@ -515,7 +515,7 @@ local breakable_after = setmetatable({
   [0xFE58] = true, [0xFE5A] = true, [0xFE5C] = true, [0xFE5E] = true,
   [0xFF1E] = true, [0xFF5E] = true, [0xFF70] = true,
 },{ __index = function (_,c)
-  return is_hangul_jamo(c) and not is_chosong(c)
+  return is_hangul_jamo(c) -- chosong also is breakable_after
   or     is_noncjk_char(c)
   or     is_hanja(c)
   or     is_cjk_combining(c)
@@ -569,19 +569,9 @@ local function is_blocking_node (curr)
   return allowbreak_false_nodes[id] or id == kernid and subtype == userkern
 end
 
-local function ruby_char_font (rb)
-  local n = has_glyph(rb.list)
-  if n then
-    local c, f = my_node_props(n).unicode or n.char, n.font
-    if is_chosong(c) or hangul_tonemark[c] then
-      c = 0xAC00
-    end
-    return c, f
-  end
-end
-
-local function hbox_ini_char_font (box, force)
-  local curr = box.list
+local function hbox_char_font (box, init, glyfonly)
+  local mynext = init and getnext  or getprev
+  local curr   = init and box.list or nodeslide(box.list)
   while curr do
     local id = curr.id
     if id == glyphid then
@@ -590,29 +580,11 @@ local function hbox_ini_char_font (box, force)
         return c, curr.font
       end
     elseif id == hlistid and curr.list then
-      return hbox_ini_char_font(curr, force)
-    elseif not force and is_blocking_node(curr) then
+      return hbox_char_font(curr, init, glyfonly)
+    elseif not glyfonly and is_blocking_node(curr) then
       return
     end
-    curr = getnext(curr)
-  end
-end
-
-local function hbox_fin_char_font (box)
-  local curr = nodeslide(box.list)
-  while curr do
-    local id = curr.id
-    if id == glyphid then
-      local c = my_node_props(curr).unicode or curr.char
-      if c and not is_cjk_combining(c) then
-        return c, curr.font
-      end
-    elseif id == hlistid and curr.list then
-      return hbox_fin_char_font(curr)
-    elseif is_blocking_node(curr) then
-      return
-    end
-    curr = getprev(curr)
+    curr = mynext(curr)
   end
 end
 
@@ -656,7 +628,7 @@ end
 local function get_font_opt_dimen (fontid, optionname)
   local t = char_font_options[optionname]
   local dim = t and t[fontid]
-  if dim == nil then
+  if fontid and dim == nil then
     local fd = get_font_data(fontid)
     dim = fontdata_opt_dim(fd, optionname)
     t[fontid] = dim or false -- cache
@@ -718,21 +690,12 @@ local function process_linebreak (head, par)
 
     elseif id == hlistid and curr.list then
       local old = has_attribute(curr, classicattr)
-      if has_attribute(curr, rubyattr) then
-        local c, f = ruby_char_font(curr) -- rubybase
-        if c and f then
-          head, pc, pcl = maybe_linebreak(head, curr, pc, pcl, c, old, f, par)
-        else
-          pc, pcl = false, 0
-        end
-      else
-        local c, f = hbox_ini_char_font(curr)
-        if c and f then
-          head = maybe_linebreak(head, curr, pc, pcl, c, old, f, par)
-        end
-        pc = hbox_fin_char_font(curr)
-        pcl = pc and get_char_class(pc, old) or 0
+      local c, f = hbox_char_font(curr, true)
+      if c and f then
+        head = maybe_linebreak(head, curr, pc, pcl, c, old, f, par)
       end
+      pc = hbox_char_font(curr)
+      pcl = pc and get_char_class(pc, old) or 0
 
     elseif id == whatsitid and curr.mode == directmode then
       local glyf, c, fin = get_actualtext(curr)
@@ -842,21 +805,12 @@ local function process_interhangul (head, par)
       end
 
     elseif id == hlistid and curr.list then
-      if has_attribute(curr, rubyattr) then
-        local c, f = ruby_char_font(curr)
-        if c and f then
-          head, pc = do_interhangul_option(head, curr, pc, c, f, par)
-        else
-          pc = 0
-        end
-      else
-        local c, f = hbox_ini_char_font(curr)
-        if c and f then
-          head = do_interhangul_option(head, curr, pc, c, f, par)
-        end
-        c = hbox_fin_char_font(curr)
-        pc = c and is_hangul_jamo(c) and 1 or 0
+      local c, f = hbox_char_font(curr, true)
+      if c and f then
+        head = do_interhangul_option(head, curr, pc, c, f, par)
       end
+      c = hbox_char_font(curr)
+      pc = c and is_hangul_jamo(c) and 1 or 0
 
     elseif id == whatsitid and curr.mode == directmode then
       local glyf, c = get_actualtext(curr)
@@ -910,27 +864,18 @@ local function process_interlatincjk (head, par)
       end
 
     elseif id == hlistid and curr.list then
-      if has_attribute(curr, rubyattr) then
-        local c, f = ruby_char_font(curr)
-        if c and f then
-          head, pc, pf, pcl = do_interlatincjk_option(head, curr, pc, pf, pcl, c, f, par)
-        else
-          pc, pf, pcl = 0, 0, 0
-        end
-      else
-        local c, f = hbox_ini_char_font(curr)
-        if c and f then
-          head = do_interlatincjk_option(head, curr, pc, pf, pcl, c, f, par)
-        end
-        c, f = hbox_fin_char_font(curr)
-        if c and breakable_after[c] then
-          pc = is_cjk_char(c) and 1 or is_noncjk_char(c) and 2 or 0
-        else
-          pc = 0
-        end
-        pcl = c and get_char_class(c, has_attribute(curr, classicattr)) or 0
-        pf  = f or 0
+      local c, f = hbox_char_font(curr, true)
+      if c and f then
+        head = do_interlatincjk_option(head, curr, pc, pf, pcl, c, f, par)
       end
+      c, f = hbox_char_font(curr)
+      if c and breakable_after[c] then
+        pc = is_cjk_char(c) and 1 or is_noncjk_char(c) and 2 or 0
+      else
+        pc = 0
+      end
+      pcl = c and get_char_class(c, has_attribute(curr, classicattr)) or 0
+      pf  = f or 0
 
     elseif id == whatsitid and curr.mode == directmode then
       local glyf, c = get_actualtext(curr)
@@ -983,13 +928,7 @@ local function process_remove_spaces (head)
                 end
                 vchar, vfont = my_node_props(v).unicode or v.char, v.font
               elseif id == hlistid and v.list then
-                if has_attribute(v, rubyattr) then
-                  vchar, vfont = ruby_char_font(v)
-                elseif k == "p" then
-                  vchar, vfont = hbox_fin_char_font(v)
-                else
-                  vchar, vfont = hbox_ini_char_font(v)
-                end
+                vchar, vfont = hbox_char_font(v, k == "n")
               end
               if vchar and vfont and option_in_font(vfont, opt_name) then
                 ok = is_cjk_char(vchar)
@@ -1234,7 +1173,7 @@ local function get_font_ascender_descender (f)
   local ascender  = char_font_options.ascender
   local descender = char_font_options.descender
   local ascend, descend = ascender[f], descender[f]
-  if ascend == nil or descend == nil then
+  if f and (ascend == nil or descend == nil) then
     local hb = is_harf(f)
     if hb and os2tag then
       local hbface = hb.shared.face
@@ -1267,12 +1206,10 @@ end
 
 local function get_strike_out_down (box)
   local down
-  local _, f = hbox_ini_char_font(box, true) -- true: ignore blocking nodes
-  if f then
-    local ascender, descender = get_font_ascender_descender(f)
-    if ascender and descender then
-      down = descender - (ascender + descender)/2
-    end
+  local _, f = hbox_char_font(box, true, true) -- ignore blocking nodes
+  local ascender, descender = get_font_ascender_descender(f)
+  if ascender and descender then
+    down = descender - (ascender + descender)/2
   end
   down = down or -texsp"0.66ex"
   local raise = get_font_opt_dimen(f, "charraise") or 0
@@ -1383,7 +1320,7 @@ local rubybox = {}
 luatexko.rubybox = rubybox
 
 local function getrubystretchfactor (box)
-  local _, fid = ruby_char_font(box)
+  local _, fid = hbox_char_font(box, true, true)
   local str = get_font_opt_dimen(fid, "intercharstretch")
   if str then
     local em = get_en_size(fid) * 2
@@ -1444,7 +1381,7 @@ local function process_ruby_post_linebreak (head)
           -- consider charraise
           local shift = shift_put_top(curr, ruby)
 
-          local _, f = ruby_char_font(curr)
+          local _, f = hbox_char_font(curr, true, true)
           local ascender = get_font_ascender_descender(f) or curr.height
           ruby.shift = shift - ascender - ruby.depth - ruby_t[2] -- rubysep
           head = insert_before(head, curr, ruby)
