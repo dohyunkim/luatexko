@@ -119,6 +119,227 @@ local hanjabyhanjaattr   = attributes.luatexkohanjabyhanjaattr
 local vert_classic = 1
 local SC_classic   = 2
 
+local stretch_f = 5/100 -- should be consistent for ruby
+
+local function get_font_data (fontid)
+  return fontgetfont(fontid) or fontfonts[fontid] or {}
+end
+
+local function get_font_param (f, key)
+  local t
+  if type(f) == "number" then
+    t = getparameters(f)
+    if t and t[key] then
+      return t[key]
+    end
+    f = get_font_data(f)
+  end
+  if type(f) == "table" then
+    t = f.parameters
+    return t and t[key]
+  end
+end
+
+local function option_in_font (fontdata, optionname)
+  if type(fontdata) == "number" then
+    fontdata = get_font_data(fontdata)
+  end
+  if fontdata.specification then
+    return fontdata.specification.features.normal[optionname]
+  end
+end
+
+local function fontdata_opt_dim (fd, optname)
+  local dim = option_in_font(fd, optname)
+  if dim then
+    local params
+    if type(fd) == "number" then
+      params = getparameters(fd)
+    else
+      params = fd.parameters
+    end
+    local m, u = dim:match"^(.+)(e[mx])%s*$"
+    if m and u and params then
+      if u == "em" then
+        dim = m * params.quad
+      else
+        dim = m * params.x_height
+      end
+    else
+      dim = texsp(dim)
+    end
+    return dim
+  end
+end
+
+local function is_harf (f)
+  if type(f) == "number" then
+    f = get_font_data(f)
+  end
+  return f.hb
+end
+
+local function is_not_harf (f)
+  if option_in_font(f, "mode") == "harf" then -- mode=harf with non-luahbtex
+    return false
+  end
+  return not is_harf(f)
+end
+
+local function harf_reordered_tonemark (curr)
+  if is_harf(curr.font) then
+    local props = getproperty(curr) or {}
+    local actualtext = props.luaotfload_startactualtext or ""
+    return actualtext:find"302[EF]$"
+  end
+end
+
+local os2tag = luaotfload.harfbuzz and luaotfload.harfbuzz.Tag.new"OS/2"
+
+local font_options_table = {
+  charraise = setmetatable( {}, { __index = function(t, fid)
+    local dim = fontdata_opt_dim(fid, "charraise") or false
+    t[fid] = dim
+    return dim
+  end }),
+
+  intercharacter = setmetatable( {}, { __index = function(t, fid)
+    local dim = fontdata_opt_dim(fid, "intercharacter") or false
+    t[fid] = dim
+    return dim
+  end }),
+
+  intercharstretch = setmetatable( {}, { __index = function(t, fid)
+    local dim = fontdata_opt_dim(fid, "intercharstretch") or false
+    t[fid] = dim
+    return dim
+  end }),
+
+  interhangul = setmetatable( {}, { __index = function(t, fid)
+    local dim = fontdata_opt_dim(fid, "interhangul") or false
+    t[fid] = dim
+    return dim
+  end }),
+
+  interlatincjk = setmetatable( {}, { __index = function(t, fid)
+    local dim = fontdata_opt_dim(fid, "interlatincjk") or false
+    t[fid] = dim
+    return dim
+  end }),
+
+  en_size = setmetatable( {}, { __index = function(t, fid)
+    local val = get_font_param(fid, "quad") or false
+    if val then val = val/2 end
+    t[fid] = val
+    return val
+  end } ),
+
+  hangulspaceskip = setmetatable( {}, { __index = function(t, fid)
+    local newwd
+    if is_harf(fid) then
+      newwd = getparameters(fid) or false
+      if newwd then
+        newwd = { newwd.space, newwd.space_stretch, newwd.space_shrink }
+      end
+    else
+      local newsp = nodenew(glyphid)
+      newsp.char, newsp.font = 32, fid
+      newsp = nodes.simple_font_handler(newsp)
+      newwd = newsp and newsp.width or false
+      if newwd then
+        newwd = { texsp(newwd), texsp(newwd/2), texsp(newwd/3) }
+      end
+      if newsp then nodefree(newsp) end
+    end
+    t[fid] = newwd
+    return newwd
+  end } ),
+
+  tonemarkwidth = setmetatable( {}, { __index = function(t, fid)
+    local hwidth
+    -- check horizontal width; vertical width is mostly non-zero
+    local fontdata     = get_font_data(fid)
+    local shared       = fontdata.shared      or {}
+    local rawdata      = shared.rawdata       or {}
+    local descriptions = rawdata.descriptions or {}
+    local description  = descriptions[0x302E] or {}
+    hwidth = description.width or 0
+    t[fid] = hwidth
+    return hwidth
+  end } ),
+
+  asc_desc = setmetatable( {}, { __index = function(t, fid)
+    local asc, desc
+    -- luaharfbuzz's Font:get_h_extents() gets ascender value from hhea table;
+    -- Node mode's parameters.ascender is gotten from OS/2 table.
+    -- TypoAscender in OS/2 table seems to be more suitable for our purpose.
+    local hb = is_harf(fid)
+    if hb and os2tag then
+      local hbface = hb.shared.face
+      local tags = hbface:get_table_tags()
+      local hasos2 = false
+      for _,v in ipairs(tags) do
+        if v == os2tag then
+          hasos2 = true
+          break
+        end
+      end
+      if hasos2 then
+        local os2 = hbface:get_table(os2tag)
+        local length = os2:get_length()
+        if length > 69 then -- sTypoAscender (int16)
+          local data = os2:get_data()
+          local typoascender  = stringunpack(">h", data, 69)
+          local typodescender = stringunpack(">h", data, 71)
+          asc  =  typoascender  * hb.scale
+          desc = -typodescender * hb.scale
+        end
+      end
+    end
+    asc  = asc  or get_font_param(fid, "ascender")  or false
+    desc = desc or get_font_param(fid, "descender") or false
+    t[fid] = { asc, desc }
+    return { asc, desc }
+  end } ),
+}
+
+local function get_font_opt_dimen (fid, name)
+  if fid then
+    return font_options_table[name][fid]
+  end
+end
+
+local function get_en_size (fid)
+  return fid and font_options_table.en_size[fid] or 327680
+end
+
+local function get_font_ascender_descender (fid)
+  if fid then
+    return tableunpack(font_options_table.asc_desc[fid])
+  end
+end
+
+local function char_in_font(fontdata, char)
+  if type(fontdata) == "number" then
+    fontdata = get_font_data(fontdata)
+  end
+  if fontdata.characters then
+    return fontdata.characters[char]
+  end
+end
+
+local function my_node_props (n)
+  local t = getproperty(n)
+  if not t then
+    t = {}
+    setproperty(n, t)
+  end
+  t.luatexko = t.luatexko or {}
+  return t.luatexko
+end
+
+local active_processes = {}
+
 local function is_hanja (c)
   return c >= 0x3400 and c <= 0xA4C6
   or     c >= 0xF900 and c <= 0xFAD9
@@ -197,82 +418,6 @@ local function is_hangul_jamo (c)
   or     is_jongsong(c)
 end
 
-local stretch_f = 5/100 -- should be consistent for ruby
-
-local function get_font_data (fontid)
-  return fontgetfont(fontid) or fontfonts[fontid] or {}
-end
-
-local function get_font_param (f, key)
-  local t
-  if type(f) == "number" then
-    t = getparameters(f)
-    if t and t[key] then
-      return t[key]
-    end
-    f = get_font_data(f)
-  end
-  if type(f) == "table" then
-    t = f.parameters
-    return t and t[key]
-  end
-end
-
-local function get_en_size (f)
-  local quad = get_font_param(f, "quad")
-  return quad and quad/2 or 327680
-end
-
-local function char_in_font(fontdata, char)
-  if type(fontdata) == "number" then
-    fontdata = get_font_data(fontdata)
-  end
-  if fontdata.characters then
-    return fontdata.characters[char]
-  end
-end
-
-local function option_in_font (fontdata, optionname)
-  if type(fontdata) == "number" then
-    fontdata = get_font_data(fontdata)
-  end
-  if fontdata.specification then
-    return fontdata.specification.features.normal[optionname]
-  end
-end
-
-local function my_node_props (n)
-  local t = getproperty(n)
-  if not t then
-    t = {}
-    setproperty(n, t)
-  end
-  t.luatexko = t.luatexko or {}
-  return t.luatexko
-end
-
-local function is_harf (f)
-  if type(f) == "number" then
-    f = get_font_data(f)
-  end
-  return f.hb
-end
-
-local function is_not_harf (f)
-  if option_in_font(f, "mode") == "harf" then -- mode=harf with non-luahbtex
-    return false
-  end
-  return not is_harf(f)
-end
-
-local function harf_reordered_tonemark (curr)
-  if is_harf(curr.font) then
-    local props = getproperty(curr) or {}
-    local actualtext = props.luaotfload_startactualtext or ""
-    return actualtext:find"302[EF]$"
-  end
-end
-
 -- font fallback
 
 local force_hangul = {
@@ -308,20 +453,6 @@ local function update_force_hangul (value)
 end
 luatexko.updateforcehangul = update_force_hangul
 
-local active_processes = {}
-
-local char_font_options = {
-  ascender         = {},
-  charraise        = {},
-  descender        = {},
-  hangulspaceskip  = {},
-  intercharacter   = {},
-  intercharstretch = {},
-  interhangul      = {},
-  interlatincjk    = {},
-  tonemarkwidth    = {},
-}
-
 local function hangul_space_skip (curr, newfont)
   if curr.lang ~= nohyphen and curr.font ~= newfont then
     local n = getnext(curr)
@@ -335,27 +466,7 @@ local function hangul_space_skip (curr, newfont)
         and oldsto == 0
         and oldsho == 0 then -- not user's spaceskip
 
-        local newwd = char_font_options.hangulspaceskip[newfont]
-        if newwd == nil then
-          if is_harf(newfont) then
-            newwd = getparameters(newfont) or false
-            if newwd then
-              newwd = { newwd.space, newwd.space_stretch, newwd.space_shrink }
-            end
-          else
-            local newsp = nodecopy(curr)
-            newsp.char, newsp.font = 32, newfont
-            newsp = nodes.simple_font_handler(newsp)
-            newwd = newsp and newsp.width or false
-            if newwd then
-              newwd = { texsp(newwd), texsp(newwd/2), texsp(newwd/3) }
-            end
-            if newsp then
-              nodefree(newsp)
-            end
-          end
-          char_font_options.hangulspaceskip[newfont] = newwd
-        end
+        local newwd = font_options_table.hangulspaceskip[newfont]
         if newwd then
           setglue(n, newwd[1], newwd[2], newwd[3])
         end
@@ -608,34 +719,6 @@ local function goto_end_actualtext (curr)
   return curr
 end
 
-local function fontdata_opt_dim (fd, optname)
-  local dim = option_in_font(fd, optname)
-  if dim then
-    local m, u = dim:match"^(.+)(e[mx])%s*$"
-    if m and u then
-      if u == "em" then
-        dim = m * fd.parameters.quad
-      else
-        dim = m * fd.parameters.x_height
-      end
-    else
-      dim = texsp(dim)
-    end
-    return dim
-  end
-end
-
-local function get_font_opt_dimen (fontid, optionname)
-  local t = char_font_options[optionname]
-  local dim = t and t[fontid]
-  if fontid and dim == nil then
-    local fd = get_font_data(fontid)
-    dim = fontdata_opt_dim(fd, optionname)
-    t[fontid] = dim or false -- cache
-  end
-  return dim
-end
-
 local function insert_glue_before (head, curr, par, br, brb, classic, ict, dim, fid)
   local pn = nodenew(penaltyid)
   if not br then
@@ -883,6 +966,7 @@ local function process_interlatincjk (head, par)
         head, pc, pf, pcl = do_interlatincjk_option(head, curr, pc, pf, pcl, c, glyf.font, par)
         curr = goto_end_actualtext(curr)
       end
+
     elseif id == mathid then
       if pc == 1 then
         head = do_interlatincjk_option(head, curr, pc, pf, pcl, 0x30, pf, par)
@@ -1164,46 +1248,6 @@ end
 
 -- uline
 
-local os2tag = luaotfload.harfbuzz and luaotfload.harfbuzz.Tag.new"OS/2"
-
--- luaharfbuzz's Font:get_h_extents() gets ascender value from hhea table;
--- Node mode's parameters.ascender is gotten from OS/2 table.
--- TypoAscender in OS/2 table seems to be more suitable for our purpose.
-local function get_font_ascender_descender (f)
-  local ascender  = char_font_options.ascender
-  local descender = char_font_options.descender
-  local ascend, descend = ascender[f], descender[f]
-  if f and (ascend == nil or descend == nil) then
-    local hb = is_harf(f)
-    if hb and os2tag then
-      local hbface = hb.shared.face
-      local tags = hbface:get_table_tags()
-      local hasos2 = false
-      for _,v in ipairs(tags) do
-        if v == os2tag then
-          hasos2 = true
-          break
-        end
-      end
-      if hasos2 then
-        local os2 = hbface:get_table(os2tag)
-        local length = os2:get_length()
-        if length > 69 then -- sTypoAscender (int16)
-          local data = os2:get_data()
-          local typoascender  = stringunpack(">h", data, 69)
-          local typodescender = stringunpack(">h", data, 71)
-          ascend  =  typoascender  * hb.scale
-          descend = -typodescender * hb.scale
-        end
-      end
-    end
-    ascend  = ascend  or get_font_param(f, "ascender")  or false
-    descend = descend or get_font_param(f, "descender") or false
-    ascender[f], descender[f] = ascend, descend
-  end
-  return ascend, descend
-end
-
 local function get_strike_out_down (box)
   local down
   local _, f = hbox_char_font(box, true, true) -- ignore blocking nodes
@@ -1435,20 +1479,8 @@ local function pdfliteral_direct_actual (syllable)
   return what
 end
 
-local function get_tonemark_width (curr, uni)
-  local fontid = curr.font
-  local hwidth = char_font_options.tonemarkwidth[fontid]
-  if not hwidth then
-    -- check horizontal width; vertical width is mostly non-zero
-    local fontdata     = get_font_data(fontid)
-    local shared       = fontdata.shared      or {}
-    local rawdata      = shared.rawdata       or {}
-    local descriptions = rawdata.descriptions or {}
-    local description  = descriptions[uni]    or {}
-    hwidth = description.width or 0
-    char_font_options.tonemarkwidth[fontid] = hwidth
-  end
-  return hwidth
+local function get_tonemark_width (curr)
+  return font_options_table.tonemarkwidth[curr.font]
 end
 
 local function process_reorder_tonemarks (head)
@@ -1476,7 +1508,7 @@ local function process_reorder_tonemarks (head)
             n = getnext(n)
           end
 
-          if #syllable > 1 and get_tonemark_width(curr, uni) ~= 0 then
+          if #syllable > 1 and get_tonemark_width(curr) ~= 0 then
             local TM = curr
 
             local actual    = pdfliteral_direct_actual(syllable)
@@ -1492,7 +1524,7 @@ local function process_reorder_tonemarks (head)
         elseif char_in_font(fontdata, 0x25CC) then -- isolated tone mark
           local dotcircle = nodecopy(curr)
           dotcircle.char = 0x25CC
-          if get_tonemark_width(curr, uni) ~= 0 then
+          if get_tonemark_width(curr) ~= 0 then
             local actual    = pdfliteral_direct_actual{ init = curr, uni }
             local endactual = pdfliteral_direct_actual()
             head = insert_before(head, curr, actual)
