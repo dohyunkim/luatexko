@@ -149,7 +149,7 @@ local function option_in_font (fontdata, optionname)
   end
 end
 
-local function fontdata_opt_dim (fd, optname)
+local function font_opt_dim (fd, optname)
   local dim = option_in_font(fd, optname)
   if dim then
     local params
@@ -196,128 +196,132 @@ end
 
 local os2tag = luaotfload.harfbuzz and luaotfload.harfbuzz.Tag.new"OS/2"
 
-local font_options_table = {
+local font_options = {
   charraise = setmetatable( {}, { __index = function(t, fid)
-    local dim = fontdata_opt_dim(fid, "charraise") or false
-    t[fid] = dim
-    return dim
+    if fid then
+      local dim = font_opt_dim(fid, "charraise") or false
+      t[fid] = dim
+      return dim
+    end
   end }),
 
   intercharacter = setmetatable( {}, { __index = function(t, fid)
-    local dim = fontdata_opt_dim(fid, "intercharacter") or false
-    t[fid] = dim
-    return dim
+    if fid then
+      local dim = font_opt_dim(fid, "intercharacter") or false
+      t[fid] = dim
+      return dim
+    end
   end }),
 
   intercharstretch = setmetatable( {}, { __index = function(t, fid)
-    local dim = fontdata_opt_dim(fid, "intercharstretch") or false
-    t[fid] = dim
-    return dim
+    if fid then
+      local dim = font_opt_dim(fid, "intercharstretch") or false
+      t[fid] = dim
+      return dim
+    end
   end }),
 
   interhangul = setmetatable( {}, { __index = function(t, fid)
-    local dim = fontdata_opt_dim(fid, "interhangul") or false
-    t[fid] = dim
-    return dim
+    if fid then
+      local dim = font_opt_dim(fid, "interhangul") or false
+      t[fid] = dim
+      return dim
+    end
   end }),
 
   interlatincjk = setmetatable( {}, { __index = function(t, fid)
-    local dim = fontdata_opt_dim(fid, "interlatincjk") or false
-    t[fid] = dim
-    return dim
+    if fid then
+      local dim = font_opt_dim(fid, "interlatincjk") or false
+      t[fid] = dim
+      return dim
+    end
   end }),
 
   en_size = setmetatable( {}, { __index = function(t, fid)
-    local val = get_font_param(fid, "quad") or false
-    if val then val = val/2 end
-    t[fid] = val
-    return val
+    if fid then
+      val = (get_font_param(fid, "quad") or 655360)/2
+      t[fid] = val
+      return val
+    end
+    return 327680
   end } ),
 
   hangulspaceskip = setmetatable( {}, { __index = function(t, fid)
-    local newwd
-    if is_harf(fid) then
-      newwd = getparameters(fid) or false
-      if newwd then
-        newwd = { newwd.space, newwd.space_stretch, newwd.space_shrink }
+    if fid then
+      local newwd
+      if is_harf(fid) then
+        newwd = getparameters(fid) or false
+        if newwd then
+          newwd = { newwd.space, newwd.space_stretch, newwd.space_shrink }
+        end
+      else
+        local newsp = nodenew(glyphid)
+        newsp.char, newsp.font = 32, fid
+        newsp = nodes.simple_font_handler(newsp)
+        newwd = newsp and newsp.width or false
+        if newwd then
+          newwd = { texsp(newwd), texsp(newwd/2), texsp(newwd/3) }
+        end
+        if newsp then nodefree(newsp) end
       end
-    else
-      local newsp = nodenew(glyphid)
-      newsp.char, newsp.font = 32, fid
-      newsp = nodes.simple_font_handler(newsp)
-      newwd = newsp and newsp.width or false
-      if newwd then
-        newwd = { texsp(newwd), texsp(newwd/2), texsp(newwd/3) }
-      end
-      if newsp then nodefree(newsp) end
+      t[fid] = newwd
+      return newwd
     end
-    t[fid] = newwd
-    return newwd
   end } ),
 
   tonemarkwidth = setmetatable( {}, { __index = function(t, fid)
-    local hwidth
-    -- check horizontal width; vertical width is mostly non-zero
-    local fontdata     = get_font_data(fid)
-    local shared       = fontdata.shared      or {}
-    local rawdata      = shared.rawdata       or {}
-    local descriptions = rawdata.descriptions or {}
-    local description  = descriptions[0x302E] or {}
-    hwidth = description.width or 0
-    t[fid] = hwidth
-    return hwidth
+    if fid then
+      local hwidth
+      -- check horizontal width; vertical width is mostly non-zero
+      local fontdata     = get_font_data(fid)
+      local shared       = fontdata.shared      or {}
+      local rawdata      = shared.rawdata       or {}
+      local descriptions = rawdata.descriptions or {}
+      local description  = descriptions[0x302E] or {}
+      hwidth = description.width or 0
+      t[fid] = hwidth
+      return hwidth
+    end
+    return 0
   end } ),
 
   asc_desc = setmetatable( {}, { __index = function(t, fid)
-    local asc, desc
-    -- luaharfbuzz's Font:get_h_extents() gets ascender value from hhea table;
-    -- Node mode's parameters.ascender is gotten from OS/2 table.
-    -- TypoAscender in OS/2 table seems to be more suitable for our purpose.
-    local hb = is_harf(fid)
-    if hb and os2tag then
-      local hbface = hb.shared.face
-      local tags = hbface:get_table_tags()
-      local hasos2 = false
-      for _,v in ipairs(tags) do
-        if v == os2tag then
-          hasos2 = true
-          break
+    if fid then
+      local asc, desc
+      -- luaharfbuzz's Font:get_h_extents() gets ascender value from hhea table;
+      -- Node mode's parameters.ascender is gotten from OS/2 table.
+      -- TypoAscender in OS/2 table seems to be more suitable for our purpose.
+      local hb = is_harf(fid)
+      if hb and os2tag then
+        local hbface = hb.shared.face
+        local tags = hbface:get_table_tags()
+        local hasos2 = false
+        for _,v in ipairs(tags) do
+          if v == os2tag then
+            hasos2 = true
+            break
+          end
+        end
+        if hasos2 then
+          local os2 = hbface:get_table(os2tag)
+          local length = os2:get_length()
+          if length > 69 then -- sTypoAscender (int16)
+            local data = os2:get_data()
+            local typoascender  = stringunpack(">h", data, 69)
+            local typodescender = stringunpack(">h", data, 71)
+            asc  =  typoascender  * hb.scale
+            desc = -typodescender * hb.scale
+          end
         end
       end
-      if hasos2 then
-        local os2 = hbface:get_table(os2tag)
-        local length = os2:get_length()
-        if length > 69 then -- sTypoAscender (int16)
-          local data = os2:get_data()
-          local typoascender  = stringunpack(">h", data, 69)
-          local typodescender = stringunpack(">h", data, 71)
-          asc  =  typoascender  * hb.scale
-          desc = -typodescender * hb.scale
-        end
-      end
+      asc  = asc  or get_font_param(fid, "ascender")  or false
+      desc = desc or get_font_param(fid, "descender") or false
+      t[fid] = { asc, desc }
+      return { asc, desc }
     end
-    asc  = asc  or get_font_param(fid, "ascender")  or false
-    desc = desc or get_font_param(fid, "descender") or false
-    t[fid] = { asc, desc }
-    return { asc, desc }
+    return { }
   end } ),
 }
-
-local function get_font_opt_dimen (fid, name)
-  if fid then
-    return font_options_table[name][fid]
-  end
-end
-
-local function get_en_size (fid)
-  return fid and font_options_table.en_size[fid] or 327680
-end
-
-local function get_font_ascender_descender (fid)
-  if fid then
-    return tableunpack(font_options_table.asc_desc[fid])
-  end
-end
 
 local function char_in_font(fontdata, char)
   if type(fontdata) == "number" then
@@ -466,7 +470,7 @@ local function hangul_space_skip (curr, newfont)
         and oldsto == 0
         and oldsho == 0 then -- not user's spaceskip
 
-        local newwd = font_options_table.hangulspaceskip[newfont]
+        local newwd = font_options.hangulspaceskip[newfont]
         if newwd then
           setglue(n, newwd[1], newwd[2], newwd[3])
         end
@@ -733,12 +737,12 @@ local function insert_glue_before (head, curr, par, br, brb, classic, ict, dim, 
 
   dim = dim or 0
   local gl = nodenew(glueid)
-  local en = get_en_size(fid)
+  local en = font_options.en_size[fid]
   if ict then
     en = classic and en or en/4
     setglue(gl, en * ict[1] + dim, nil, en * ict[2])
   else
-    local str = get_font_opt_dimen(fid, "intercharstretch") or stretch_f*en
+    local str = font_options.intercharstretch[fid] or stretch_f*en
     setglue(gl, dim, str, str*0.6)
   end
 
@@ -752,7 +756,7 @@ local function maybe_linebreak (head, curr, pc, pcl, cc, old, fid, par)
     local ict = intercharclass[pcl][ccl]
     local brb = breakable_before[cc]
     local br  = brb and breakable_after[pc]
-    local dim = get_font_opt_dimen(fid, "intercharacter")
+    local dim = font_options.intercharacter[fid]
     if ict or br or dim and (pcl >= 1 or ccl >= 1) then
       head = insert_glue_before(head, curr, par, br, brb, old, ict, dim, fid)
     end
@@ -821,7 +825,7 @@ local function process_glyph_width (head)
           gpos = gpos and gpos.id == kernid and gpos.subtype == fontkern
 
           if not gpos then
-            local wd = get_en_size(curr.font) - curr.width
+            local wd = font_options.en_size[curr.font] - curr.width
             if wd ~= 0 then
               local k = nodenew(kernid) -- fontkern (subtype 0) is default
               k.kern = class == 3 and wd/2 or wd
@@ -862,7 +866,7 @@ local function do_interhangul_option (head, curr, pc, c, fontid, par)
   local cc = (is_hangul(c) or is_compat_jamo(c) or is_chosong(c)) and 1 or 0
 
   if cc*pc == 1 and curr.lang ~= nohyphen then
-    local dim = get_font_opt_dimen(fontid, "interhangul")
+    local dim = font_options.interhangul[fontid]
     if dim then
       head = insert_glue_before(head, curr, par, true, true, false, false, dim, fontid)
     end
@@ -921,11 +925,11 @@ local function do_interlatincjk_option (head, curr, pc, pf, pcl, c, cf, par)
     local brb = cc == 2 or breakable_before[c] -- numletter != br_before
     if brb then
       local f = cc == 1 and cf or pf
-      local dim = get_font_opt_dimen(f, "interlatincjk")
+      local dim = font_options.interlatincjk[f]
       if dim then
         local ict = old and intercharclass[pcl][ccl] -- under classic env. only
         if ict then
-          dim = get_font_opt_dimen(f, "intercharacter") or 0
+          dim = font_options.intercharacter[f] or 0
         end
         head = insert_glue_before(head, curr, par, true, brb, old, ict, dim, f)
       end
@@ -1212,7 +1216,7 @@ local function process_dotemph (head, tofree)
           end
 
           local currwd = curr.width
-          if currwd >= get_en_size(curr.font) then
+          if currwd >= font_options.en_size[curr.font] then
             local box = nodecopy(dotemphbox[dotattr])
             local shift = (currwd - box.width)/2
             if shift ~= 0 then
@@ -1249,15 +1253,24 @@ end
 -- uline
 
 local function get_strike_out_down (box)
-  local down
-  local _, f = hbox_char_font(box, true, true) -- ignore blocking nodes
-  local ascender, descender = get_font_ascender_descender(f)
-  if ascender and descender then
-    down = descender - (ascender + descender)/2
+  local c, f = hbox_char_font(box, true, true) -- ignore blocking nodes
+  if c and f then
+    local down
+    local ex = get_font_param(f, "x_height") or texsp"1ex"
+    if is_cjk_char(c) then
+      local ascender, descender = tableunpack(font_options.asc_desc[f])
+      if ascender and descender then
+        down = descender - (ascender + descender)/2
+      else
+        down = -0.667*ex
+      end
+    else
+      down = -0.5*ex
+    end
+    local raise = font_options.charraise[f] or 0
+    return down - raise
   end
-  down = down or -texsp"0.66ex"
-  local raise = get_font_opt_dimen(f, "charraise") or 0
-  return down - raise
+  return -texsp"0.5ex"
 end
 luatexko.get_strike_out_down = get_strike_out_down
 
@@ -1365,9 +1378,9 @@ luatexko.rubybox = rubybox
 
 local function getrubystretchfactor (box)
   local _, fid = hbox_char_font(box, true, true)
-  local str = get_font_opt_dimen(fid, "intercharstretch")
+  local str = font_options.intercharstretch[fid]
   if str then
-    local em = get_en_size(fid) * 2
+    local em = font_options.en_size[fid] * 2
     set_macro("luatexkostretchfactor", stringformat("%.4f", str/em/2))
   end
 end
@@ -1426,7 +1439,7 @@ local function process_ruby_post_linebreak (head)
           local shift = shift_put_top(curr, ruby)
 
           local _, f = hbox_char_font(curr, true, true)
-          local ascender = get_font_ascender_descender(f) or curr.height
+          local ascender = tableunpack(font_options.asc_desc[f]) or curr.height
           ruby.shift = shift - ascender - ruby.depth - ruby_t[2] -- rubysep
           head = insert_before(head, curr, ruby)
         end
@@ -1479,10 +1492,6 @@ local function pdfliteral_direct_actual (syllable)
   return what
 end
 
-local function get_tonemark_width (curr)
-  return font_options_table.tonemarkwidth[curr.font]
-end
-
 local function process_reorder_tonemarks (head)
   local curr, init = head
   while curr do
@@ -1508,7 +1517,7 @@ local function process_reorder_tonemarks (head)
             n = getnext(n)
           end
 
-          if #syllable > 1 and get_tonemark_width(curr) ~= 0 then
+          if #syllable > 1 and font_options.tonemarkwidth[curr.font] ~= 0 then
             local TM = curr
 
             local actual    = pdfliteral_direct_actual(syllable)
@@ -1524,7 +1533,7 @@ local function process_reorder_tonemarks (head)
         elseif char_in_font(fontdata, 0x25CC) then -- isolated tone mark
           local dotcircle = nodecopy(curr)
           dotcircle.char = 0x25CC
-          if get_tonemark_width(curr) ~= 0 then
+          if font_options.tonemarkwidth[curr.font] ~= 0 then
             local actual    = pdfliteral_direct_actual{ init = curr, uni }
             local endactual = pdfliteral_direct_actual()
             head = insert_before(head, curr, actual)
@@ -1705,7 +1714,7 @@ local function process_vertical_font (fontdata)
   local quad     = parameters.quad or 655360
   local ascender = parameters.ascender or quad*0.8
 
-  local goffset = fontdata_opt_dim(fontdata, "charraise") or
+  local goffset = font_opt_dim(fontdata, "charraise") or
                   (parameters.x_height or quad/2)/2
   -- declare shift amount of horizontal box inside vertical env.
   fontdata.horizboxmoveleftamount = quad/2-goffset
@@ -1797,7 +1806,7 @@ local function process_charraise (head)
   while curr do
     if curr.id == glyphid then
       local f = curr.font
-      local raise = get_font_opt_dimen(f, "charraise")
+      local raise = font_options.charraise[f]
       if raise and not option_in_font(f, "vertical") then
         local props = my_node_props(curr)
         if not props.charraised then
