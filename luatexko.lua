@@ -1958,16 +1958,14 @@ local font_opt_procs = {
 
 local font_opt_procs_single = {
   expansion = function()
-    if not active_processes.expansion then
+    if tex.adjustspacing == 0 then
       texset("global", "adjustspacing", 2)
-      active_processes.expansion = true
     end
   end,
 
   protrusion = function(fontdata)
-    if not active_processes.protrusion then
+    if tex.protrudechars == 0 then
       texset("global", "protrudechars", 2)
-      active_processes.protrusion = true
     end
     if option_in_font(fontdata, "compresspunctuations") then
       local fullname = fontdata.fullname
