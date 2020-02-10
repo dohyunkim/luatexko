@@ -269,6 +269,24 @@ local font_options = {
     end
   end } ),
 
+  monospaced = setmetatable( {}, { __index = function(t, fid)
+    if fid then
+      -- space_stretch has been set to zero by fontloader
+      if get_font_param(fid, "space_stretch") == 0 then
+        t[fid] = true; return true
+      end
+      -- but not in harf mode; so we simply test widths of some glyphs
+      if is_harf(fid) then
+        local chars = get_font_data(fid).characters or {}
+        local i_wd, M_wd = chars[0x69].width, chars[0x4D].width
+        if i_wd and i_wd == M_wd then
+          t[fid] = true; return true
+        end
+      end
+      t[fid] = false; return false
+    end
+  end } ),
+
   tonemarkwidth = setmetatable( {}, { __index = function(t, fid)
     if fid then
       local hwidth
@@ -511,7 +529,8 @@ local function process_fonts (head)
           local format   = fontdata.format
           local encode   = fontdata.encodingbytes
           local widefont = encode == 2 or format == "opentype" or format == "truetype"
-          if hf and widefont and force_hangul[c] and curr.lang ~= nohyphen then
+
+          if hf and widefont and force_hangul[c] and curr.lang ~= nohyphen and not font_options.monospaced[curr.font] then
             curr.font = hf
           elseif hf and has_attribute(curr, hangulbyhangulattr) and is_hangul_jamo(c) then
             hangul_space_skip(curr, hf)

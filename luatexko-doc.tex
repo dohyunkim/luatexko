@@ -207,14 +207,15 @@ fontspec 문서 참조.
 일정한 영문 문장부호들은 한글 폰트로 식자된다.
 즉, \pkgkwd{\hangulpunctuations}|=1|이 기본으로 작동하고,
 |0|을 지시해야 이 기능이 비로소 꺼진다.
-verbatim 코드를 식자할 때는 이 기능이 작동하지 않는다.%
+verbatim 코드를 식자할 때는 이 기능이 작동하지 않으며,%
 \footnote{%
   정확히 말하자면 |\\language=\\l@nohyphenation|, 즉 하이프네이션이
   허용 안 되는  상황에서는 작동하지 않는다.
   부연하건대, |\\language=\\l@nohyphenation| 상황에서 작동하지 않는
   그밖의 기능은 다음과 같다: 줄바꿈 허용, InterCharacter, InterHangul,
   InterLatinCJK, CompressPunctuations, RemoveClassicSpaces,
-  한글^^b7한자 폰트 문자 다음의 공백 크기 조정 등. }\,%
+  한글^^b7한자 폰트 문자 다음의 공백 크기 조정 등. }
+문장부호가 고정폭 글꼴일 때에도 작동하지 않는다.%
 \footnote{%
   또한 플레인텍에서는 영문글꼴을 트루타입/오픈타입으로 지정해야만 작동한다. }
 영향 받는 문장부호들의 기본값은 다음과 같다:
