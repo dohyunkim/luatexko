@@ -727,7 +727,8 @@
 }
 \protected\def\addhangulfontfeature#1{%
   \begingroup
-  \ifdefined\luatexkohangulfont \luatexkohangulfont \fi
+  \ifdefined\luatexkohangulfont
+    \fontseries\mddefault\fontshape\shapedefault \luatexkohangulfont \fi
   \addfontfeature{#1}%
   \luatexkopacifybfseries
   \edef\x{\endgroup
@@ -738,7 +739,8 @@
 \let\addhangulfontfeatures\addhangulfontfeature
 \protected\def\addhanjafontfeature#1{%
   \begingroup
-  \ifdefined\luatexkohanjafont \luatexkohanjafont \fi
+  \ifdefined\luatexkohanjafont
+    \fontseries\mddefault\fontshape\shapedefault \luatexkohanjafont \fi
   \addfontfeature{#1}%
   \luatexkopacifybfseries
   \edef\x{\endgroup
@@ -749,7 +751,8 @@
 \let\addhanjafontfeatures\addhanjafontfeature
 \protected\def\addfallbackfontfeature#1{%
   \begingroup
-  \ifdefined\luatexkofallbackfont \luatexkofallbackfont \fi
+  \ifdefined\luatexkofallbackfont
+    \fontseries\mddefault\fontshape\shapedefault \luatexkofallbackfont \fi
   \addfontfeature{#1}%
   \luatexkopacifybfseries
   \edef\x{\endgroup
