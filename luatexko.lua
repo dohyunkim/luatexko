@@ -278,8 +278,8 @@ local font_options = {
       -- but not in harf mode; so we simply test widths of some glyphs
       if is_harf(fid) then
         local chars = get_font_data(fid).characters or {}
-        local i_wd, M_wd = chars[0x69].width, chars[0x4D].width
-        if i_wd and i_wd == M_wd then
+        local i, M = chars[0x69], chars[0x4D]
+        if i and M and i.width == M.width then
           t[fid] = true; return true
         end
       end
