@@ -439,34 +439,26 @@
 % fontspec-like
 \ExplSyntaxOn
 \cs_new_nopar:Npn \l_luatexko_pacify_bfseries {
-  \cs_if_exist:cF
-    { \g_fontspec_encoding_tl/\l_fontspec_family_tl/bx/\shapedefault }
+  \tl_map_inline:nn { \mddefault \bfdefault }
+  {
+    \cs_if_exist:cF
+    { \g_fontspec_encoding_tl/\l_fontspec_family_tl/##1/\updefault }
     {
       \cs_set_eq:cc
-        { \g_fontspec_encoding_tl/\l_fontspec_family_tl/bx/\shapedefault }
-        { \g_fontspec_encoding_tl/\l_fontspec_family_tl/\bfdefault/\shapedefault }
+      { \g_fontspec_encoding_tl/\l_fontspec_family_tl/##1/\updefault }
+      { \g_fontspec_encoding_tl/\l_fontspec_family_tl/##1/\shapedefault }
     }
-  \cs_if_exist:cF
-    { \g_fontspec_encoding_tl/\l_fontspec_family_tl/bx/\itdefault }
+  }
+  \tl_map_inline:nn { \shapedefault \updefault \itdefault \sldefault }
+  {
+    \cs_if_exist:cF
+    { \g_fontspec_encoding_tl/\l_fontspec_family_tl/bx/##1 }
     {
       \cs_set_eq:cc
-        { \g_fontspec_encoding_tl/\l_fontspec_family_tl/bx/\itdefault }
-        { \g_fontspec_encoding_tl/\l_fontspec_family_tl/\bfdefault/\itdefault }
+      { \g_fontspec_encoding_tl/\l_fontspec_family_tl/bx/##1 }
+      { \g_fontspec_encoding_tl/\l_fontspec_family_tl/\bfdefault/##1 }
     }
-  \cs_if_exist:cF
-    { \g_fontspec_encoding_tl/\l_fontspec_family_tl/bx/\sldefault }
-    {
-      \cs_set_eq:cc
-        { \g_fontspec_encoding_tl/\l_fontspec_family_tl/bx/\sldefault }
-        { \g_fontspec_encoding_tl/\l_fontspec_family_tl/\bfdefault/\sldefault }
-    }
-  \cs_if_exist:cF
-    { \g_fontspec_encoding_tl/\l_fontspec_family_tl/\mddefault/\updefault }
-    {
-      \cs_set_eq:cc
-        { \g_fontspec_encoding_tl/\l_fontspec_family_tl/\mddefault/\updefault }
-        { \g_fontspec_encoding_tl/\l_fontspec_family_tl/\mddefault/\shapedefault }
-    }
+  }
 }
 \DeclareDocumentCommand \setmainhangulfont { O{} m O{} }
 {
@@ -718,26 +710,20 @@
 \let\adhocfallbackfont\fallbackfontspec
 % interhangul, interlatincjk, charraise
 \def\luatexkopacifybfseries{%
-  \ifcsname \f@encoding/\f@family/bx/\shapedefault\endcsname \else
-    \global \expandafter\let
-      \csname \f@encoding/\f@family/bx/\shapedefault \expandafter\endcsname
-      \csname \f@encoding/\f@family/\bfdefault/\shapedefault\endcsname
-  \fi
-  \ifcsname \f@encoding/\f@family/bx/\itdefault\endcsname \else
-    \global \expandafter\let
-      \csname \f@encoding/\f@family/bx/\itdefault \expandafter\endcsname
-      \csname \f@encoding/\f@family/\bfdefault/\itdefault\endcsname
-  \fi
-  \ifcsname \f@encoding/\f@family/bx/\sldefault\endcsname \else
-    \global \expandafter\let
-      \csname \f@encoding/\f@family/bx/\sldefault \expandafter\endcsname
-      \csname \f@encoding/\f@family/\bfdefault/\sldefault\endcsname
-  \fi
-  \ifcsname \f@encoding/\f@family/\mddefault/\updefault\endcsname \else
-    \global \expandafter\let
-      \csname \f@encoding/\f@family/\mddefault/\updefault \expandafter\endcsname
-      \csname \f@encoding/\f@family/\mddefault/\shapedefault\endcsname
-  \fi
+  \@tfor \@tempa := \mddefault \bfdefault \do {%
+    \ifcsname \f@encoding/\f@family/\@tempa/\updefault\endcsname \else
+      \global \expandafter\let
+        \csname \f@encoding/\f@family/\@tempa/\updefault \expandafter\endcsname
+        \csname \f@encoding/\f@family/\@tempa/\shapedefault\endcsname
+    \fi
+  }%
+  \@tfor \@tempa := \shapedefault \updefault \itdefault \sldefault \do {%
+    \ifcsname \f@encoding/\f@family/bx/\@tempa\endcsname \else
+      \global \expandafter\let
+        \csname \f@encoding/\f@family/bx/\@tempa \expandafter\endcsname
+        \csname \f@encoding/\f@family/\bfdefault/\@tempa\endcsname
+    \fi
+  }%
 }
 \protected\def\addhangulfontfeature#1{%
   \begingroup
