@@ -13,7 +13,7 @@
 
 luatexbase.provides_module {
   name        = 'luatexko',
-  date        = '2020/02/01',
+  date        = '2020/02/17',
   version     = '2.6',
   description = 'typesetting Korean with LuaTeX',
   author      = 'Dohyun Kim, Soojin Nam',

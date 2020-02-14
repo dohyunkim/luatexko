@@ -1,3 +1,14 @@
+2020-02-17	Dohyun Kim <nomos at ktug org>
+
+	Version 2.6
+
+	* luatexko.lua:
+	discourage font substitution of monospaced ascii punctuations
+
+	* luatexko.sty:
+	use latex's newly introduced \@{rm|sf|tt|default}familyhook;
+	suppress bx-font-not-found warnings and make \bfseries work again
+
 2019-12-01	Dohyun Kim <nomos at ktug org>
 
 	Version 2.5

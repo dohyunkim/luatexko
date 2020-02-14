@@ -1,6 +1,6 @@
 -- luatexko-uhc2utf8.lua
 --
--- Copyright (c) 2013-2019  Dohyun Kim  <nomos at ktug org>
+-- Copyright (c) 2013-2020  Dohyun Kim  <nomos at ktug org>
 --                          Soojin Nam  <jsunam at gmail com>
 --
 -- This work may be distributed and/or modified under the
@@ -13,8 +13,8 @@
 
 luatexbase.provides_module({
   name        = "luatexko-uhc2utf8",
-  version     = "2.5",
-  date        = "2019/12/01",
+  version     = "2.6",
+  date        = "2020/02/17",
   author      = "Dohyun Kim, Soojin Nam",
   description = "UHC (CP949) input encoding",
   license     = "LPPL v1.3+",
