@@ -395,32 +395,25 @@
 % latex
 \RequirePackage{everysel}
 \EverySelectfont{%
-  \ifx\f@encoding\UTFencname
-    \luatexkohangulselectfont
-    \luatexkohanjaselectfont
-    \luatexkofallbackselectfont
-  \fi }
+  \luatexkohangulselectfont
+  \luatexkohanjaselectfont
+  \luatexkofallbackselectfont
+}
 \edef\@rmfamilyhook{\unexpanded\expandafter{\@rmfamilyhook
-  \ifx\f@encoding\UTFencname
-  \ifluatexkoselectfontrunning \else
-    \let\luatexkohangulfont  \luatexkomainhangulfont
-    \let\luatexkohanjafont   \luatexkomainhanjafont
-    \let\luatexkofallbackfont\luatexkomainfallbackfont
-  \fi\fi }}
+  \let\luatexkohangulfont  \luatexkomainhangulfont
+  \let\luatexkohanjafont   \luatexkomainhanjafont
+  \let\luatexkofallbackfont\luatexkomainfallbackfont
+}}
 \edef\@sffamilyhook{\unexpanded\expandafter{\@sffamilyhook
-  \ifx\f@encoding\UTFencname
-  \ifluatexkoselectfontrunning \else
-    \let\luatexkohangulfont  \luatexkosanshangulfont
-    \let\luatexkohanjafont   \luatexkosanshanjafont
-    \let\luatexkofallbackfont\luatexkosansfallbackfont
-  \fi\fi }}
+  \let\luatexkohangulfont  \luatexkosanshangulfont
+  \let\luatexkohanjafont   \luatexkosanshanjafont
+  \let\luatexkofallbackfont\luatexkosansfallbackfont
+}}
 \edef\@ttfamilyhook{\unexpanded\expandafter{\@ttfamilyhook
-  \ifx\f@encoding\UTFencname
-  \ifluatexkoselectfontrunning \else
-    \let\luatexkohangulfont  \luatexkomonohangulfont
-    \let\luatexkohanjafont   \luatexkomonohanjafont
-    \let\luatexkofallbackfont\luatexkomonofallbackfont
-  \fi\fi }}
+  \let\luatexkohangulfont  \luatexkomonohangulfont
+  \let\luatexkohanjafont   \luatexkomonohanjafont
+  \let\luatexkofallbackfont\luatexkomonofallbackfont
+}}
 %%%%% temporary >>
 \ifdefined\@defaultfamilyhook\else
   \expandafter\edef\csname normalfont \endcsname{%
@@ -431,12 +424,10 @@
 \fi
 %%%%% << temporary
 \edef\@defaultfamilyhook{\unexpanded\expandafter{\@defaultfamilyhook
-  \ifx\f@encoding\UTFencname
-  \ifluatexkoselectfontrunning \else
-    \let\luatexkohangulfont  \luatexkodefaulthangulfont
-    \let\luatexkohanjafont   \luatexkodefaulthanjafont
-    \let\luatexkofallbackfont\luatexkodefaultfallbackfont
-  \fi\fi }}
+  \let\luatexkohangulfont  \luatexkodefaulthangulfont
+  \let\luatexkohanjafont   \luatexkodefaulthanjafont
+  \let\luatexkofallbackfont\luatexkodefaultfallbackfont
+}}
 % fontspec-like
 \ExplSyntaxOn
 \cs_new_nopar:Npn \l_luatexko_pacify_bfseries {
@@ -467,6 +458,7 @@
   \l_luatexko_pacify_bfseries
   \cs_set_protected_nopar:Npn \luatexkomainhangulfont
   {
+    \fontencoding \g_fontspec_encoding_tl
     \fontfamily \luatexkomainhangulfamily \selectfont
   }
   \str_if_eq:eeT \familydefault \rmdefault
@@ -483,6 +475,7 @@
   \l_luatexko_pacify_bfseries
   \cs_set_protected_nopar:Npn \luatexkosanshangulfont
   {
+    \fontencoding \g_fontspec_encoding_tl
     \fontfamily \luatexkosanshangulfamily \selectfont
   }
   \str_if_eq:eeT \familydefault \sfdefault
@@ -499,6 +492,7 @@
   \l_luatexko_pacify_bfseries
   \cs_set_protected_nopar:Npn \luatexkomonohangulfont
   {
+    \fontencoding \g_fontspec_encoding_tl
     \fontfamily \luatexkomonohangulfamily \selectfont
   }
   \str_if_eq:eeT \familydefault \ttdefault
@@ -517,6 +511,7 @@
   {
     \cs_set_nopar:Npn \luatexkohangulfont
     {
+      \fontencoding \g_fontspec_encoding_tl
       \exp_args:Nc \fontfamily { luatexko_user_family_ \cs_to_str:N #1 } \selectfont
     }
     \luatexkohangulselectfont
@@ -533,6 +528,7 @@
   \l_luatexko_pacify_bfseries
   \cs_set_nopar:Npn \luatexkohangulfont
   {
+    \fontencoding \g_fontspec_encoding_tl
     \fontfamily \luatexkohangulfontfamily \selectfont
   }
   \luatexkohangulselectfont
@@ -544,6 +540,7 @@
   \l_luatexko_pacify_bfseries
   \cs_set_protected_nopar:Npn \luatexkomainhanjafont
   {
+    \fontencoding \g_fontspec_encoding_tl
     \fontfamily \luatexkomainhanjafamily \selectfont
   }
   \str_if_eq:eeT \familydefault \rmdefault
@@ -560,6 +557,7 @@
   \l_luatexko_pacify_bfseries
   \cs_set_protected_nopar:Npn \luatexkosanshanjafont
   {
+    \fontencoding \g_fontspec_encoding_tl
     \fontfamily \luatexkosanshanjafamily \selectfont
   }
   \str_if_eq:eeT \familydefault \sfdefault
@@ -576,6 +574,7 @@
   \l_luatexko_pacify_bfseries
   \cs_set_protected_nopar:Npn \luatexkomonohanjafont
   {
+    \fontencoding \g_fontspec_encoding_tl
     \fontfamily \luatexkomonohanjafamily \selectfont
   }
   \str_if_eq:eeT \familydefault \ttdefault
@@ -594,6 +593,7 @@
   {
     \cs_set_nopar:Npn \luatexkohanjafont
     {
+      \fontencoding \g_fontspec_encoding_tl
       \exp_args:Nc \fontfamily { luatexko_user_family_ \cs_to_str:N #1 } \selectfont
     }
     \luatexkohanjaselectfont
@@ -610,6 +610,7 @@
   \l_luatexko_pacify_bfseries
   \cs_set_nopar:Npn \luatexkohanjafont
   {
+    \fontencoding \g_fontspec_encoding_tl
     \fontfamily \luatexkohanjafontfamily \selectfont
   }
   \luatexkohanjaselectfont
@@ -622,6 +623,7 @@
   \l_luatexko_pacify_bfseries
   \cs_set_protected_nopar:Npn \luatexkomainfallbackfont
   {
+    \fontencoding \g_fontspec_encoding_tl
     \fontfamily \luatexkomainfallbackfamily \selectfont
   }
   \str_if_eq:eeT \familydefault \rmdefault
@@ -638,6 +640,7 @@
   \l_luatexko_pacify_bfseries
   \cs_set_protected_nopar:Npn \luatexkosansfallbackfont
   {
+    \fontencoding \g_fontspec_encoding_tl
     \fontfamily \luatexkosansfallbackfamily \selectfont
   }
   \str_if_eq:eeT \familydefault \sfdefault
@@ -654,6 +657,7 @@
   \l_luatexko_pacify_bfseries
   \cs_set_protected_nopar:Npn \luatexkomonofallbackfont
   {
+    \fontencoding \g_fontspec_encoding_tl
     \fontfamily \luatexkomonofallbackfamily \selectfont
   }
   \str_if_eq:eeT \familydefault \ttdefault
@@ -672,6 +676,7 @@
   {
     \cs_set_nopar:Npn \luatexkofallbackfont
     {
+      \fontencoding \g_fontspec_encoding_tl
       \exp_args:Nc \fontfamily { luatexko_user_family_ \cs_to_str:N #1 } \selectfont
     }
     \luatexkofallbackselectfont
@@ -688,6 +693,7 @@
   \l_luatexko_pacify_bfseries
   \cs_set_nopar:Npn \luatexkofallbackfont
   {
+    \fontencoding \g_fontspec_encoding_tl
     \fontfamily \luatexkofallbackfontfamily \selectfont
   }
   \luatexkofallbackselectfont
@@ -734,6 +740,7 @@
   \luatexkopacifybfseries
   \edef\x{\endgroup
     \def\noexpand\luatexkohangulfont{%
+      \noexpand\fontencoding{\UTFencname}%
       \noexpand\fontfamily{\f@family}\noexpand\selectfont}}\x
   \luatexkohangulselectfont
   \ignorespaces}
@@ -746,6 +753,7 @@
   \luatexkopacifybfseries
   \edef\x{\endgroup
     \def\noexpand\luatexkohanjafont{%
+      \noexpand\fontencoding{\UTFencname}%
       \noexpand\fontfamily{\f@family}\noexpand\selectfont}}\x
   \luatexkohanjaselectfont
   \ignorespaces}
@@ -758,6 +766,7 @@
   \luatexkopacifybfseries
   \edef\x{\endgroup
     \def\noexpand\luatexkofallbackfont{%
+      \noexpand\fontencoding{\UTFencname}%
       \noexpand\fontfamily{\f@family}\noexpand\selectfont}}\x
   \luatexkofallbackselectfont
   \ignorespaces}
