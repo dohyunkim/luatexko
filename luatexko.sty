@@ -13,9 +13,10 @@
 
 \ifdefined\luatexkohangulfontattr \endinput\fi
 \ifdefined\selectfont
+  \NeedsTeXFormat{LaTeX2e}[2020/02/02]
   \ProvidesPackage{luatexko}[2020/02/01 v2.6 typesetting Korean with LuaTeX]
   \RequirePackage{luatexbase}
-  \RequirePackage{fontspec}
+  \RequirePackage{fontspec}[2020/02/03]
 \else
   \input luatexbase.sty
   \input luaotfload.sty
@@ -168,7 +169,7 @@
     \vrule width.3em height-\ulinedown depth\dimexpr\ulinedown+\ulinewidth\relax
     \kern.125em }}}
 \protected\def\dotuline{\markoverwith*{%
-  \lower\dimexpr\ulinedown+.1ex\relax\hbox{\kern.07em .\kern.07em }}}
+  \lower\dimexpr\ulinedown+.2ex\relax\hbox{\kern.07em .\kern.07em }}}
 \protected\def\uuline#1{\uline{\uline{#1}}}
 \protected\def\sout#1{\begingroup
   \setbox\z@\hbox{#1}%
@@ -399,34 +400,78 @@
     \luatexkohanjaselectfont
     \luatexkofallbackselectfont
   \fi }
-\protected\def\fontfamily#1{\edef\f@family{#1}% redefine \fontfamily
+\edef\@rmfamilyhook{\unexpanded\expandafter{\@rmfamilyhook
   \ifx\f@encoding\UTFencname
   \ifluatexkoselectfontrunning \else
-    \ifx\f@family\rmdefault
-      \let\luatexkohangulfont\luatexkomainhangulfont
-      \let\luatexkohanjafont\luatexkomainhanjafont
-      \let\luatexkofallbackfont\luatexkomainfallbackfont
-    \else\ifx\f@family\sfdefault
-      \let\luatexkohangulfont\luatexkosanshangulfont
-      \let\luatexkohanjafont\luatexkosanshanjafont
-      \let\luatexkofallbackfont\luatexkosansfallbackfont
-    \else\ifx\f@family\ttdefault
-      \let\luatexkohangulfont\luatexkomonohangulfont
-      \let\luatexkohanjafont\luatexkomonohanjafont
-      \let\luatexkofallbackfont\luatexkomonofallbackfont
-    \fi\fi\fi
-  \fi\fi }
+    \let\luatexkohangulfont  \luatexkomainhangulfont
+    \let\luatexkohanjafont   \luatexkomainhanjafont
+    \let\luatexkofallbackfont\luatexkomainfallbackfont
+  \fi\fi }}
+\edef\@sffamilyhook{\unexpanded\expandafter{\@sffamilyhook
+  \ifx\f@encoding\UTFencname
+  \ifluatexkoselectfontrunning \else
+    \let\luatexkohangulfont  \luatexkosanshangulfont
+    \let\luatexkohanjafont   \luatexkosanshanjafont
+    \let\luatexkofallbackfont\luatexkosansfallbackfont
+  \fi\fi }}
+\edef\@ttfamilyhook{\unexpanded\expandafter{\@ttfamilyhook
+  \ifx\f@encoding\UTFencname
+  \ifluatexkoselectfontrunning \else
+    \let\luatexkohangulfont  \luatexkomonohangulfont
+    \let\luatexkohanjafont   \luatexkomonohanjafont
+    \let\luatexkofallbackfont\luatexkomonofallbackfont
+  \fi\fi }}
+%%%%% temporary >>
+\ifdefined\@defaultfamilyhook\else
+  \expandafter\edef\csname normalfont \endcsname{%
+    \expandafter\unexpanded
+    \expandafter\expandafter\expandafter{\csname normalfont \endcsname
+      \@defaultfamilyhook }}
+  \let\@defaultfamilyhook\@empty
+\fi
+%%%%% << temporary
+\edef\@defaultfamilyhook{\unexpanded\expandafter{\@defaultfamilyhook
+  \ifx\f@encoding\UTFencname
+  \ifluatexkoselectfontrunning \else
+    \let\luatexkohangulfont  \luatexkodefaulthangulfont
+    \let\luatexkohanjafont   \luatexkodefaulthanjafont
+    \let\luatexkofallbackfont\luatexkodefaultfallbackfont
+  \fi\fi }}
 % fontspec-like
 \ExplSyntaxOn
+\cs_new_nopar:Npn \l_luatexko_pacify_bfseries {
+  \tl_map_inline:nn { \mddefault \bfdefault }
+  {
+    \cs_if_exist:cF
+    { \g_fontspec_encoding_tl/\l_fontspec_family_tl/##1/\updefault }
+    {
+      \cs_set_eq:cc
+      { \g_fontspec_encoding_tl/\l_fontspec_family_tl/##1/\updefault }
+      { \g_fontspec_encoding_tl/\l_fontspec_family_tl/##1/\shapedefault }
+    }
+  }
+  \tl_map_inline:nn { \shapedefault \updefault \itdefault \sldefault }
+  {
+    \cs_if_exist:cF
+    { \g_fontspec_encoding_tl/\l_fontspec_family_tl/bx/##1 }
+    {
+      \cs_set_eq:cc
+      { \g_fontspec_encoding_tl/\l_fontspec_family_tl/bx/##1 }
+      { \g_fontspec_encoding_tl/\l_fontspec_family_tl/\bfdefault/##1 }
+    }
+  }
+}
 \DeclareDocumentCommand \setmainhangulfont { O{} m O{} }
 {
   \fontspec_set_family:Nnn \luatexkomainhangulfamily { Ligatures=TeX, #1, #3 } { #2 }
+  \l_luatexko_pacify_bfseries
   \cs_set_protected_nopar:Npn \luatexkomainhangulfont
   {
     \fontfamily \luatexkomainhangulfamily \selectfont
   }
   \str_if_eq:eeT \familydefault \rmdefault
   {
+    \cs_set_eq:NN \luatexkodefaulthangulfont \luatexkomainhangulfont
     \cs_set_eq:NN \luatexkohangulfont \luatexkomainhangulfont
     \luatexkohangulselectfont
   }
@@ -435,12 +480,14 @@
 \DeclareDocumentCommand \setsanshangulfont { O{} m O{} }
 {
   \fontspec_set_family:Nnn \luatexkosanshangulfamily { Ligatures=TeX, #1, #3 } { #2 }
+  \l_luatexko_pacify_bfseries
   \cs_set_protected_nopar:Npn \luatexkosanshangulfont
   {
     \fontfamily \luatexkosanshangulfamily \selectfont
   }
   \str_if_eq:eeT \familydefault \sfdefault
   {
+    \cs_set_eq:NN \luatexkodefaulthangulfont \luatexkosanshangulfont
     \cs_set_eq:NN \luatexkohangulfont \luatexkosanshangulfont
     \luatexkohangulselectfont
   }
@@ -449,12 +496,14 @@
 \DeclareDocumentCommand \setmonohangulfont { O{} m O{} }
 {
   \fontspec_set_family:Nnn \luatexkomonohangulfamily { #1, #3 } { #2 }
+  \l_luatexko_pacify_bfseries
   \cs_set_protected_nopar:Npn \luatexkomonohangulfont
   {
     \fontfamily \luatexkomonohangulfamily \selectfont
   }
   \str_if_eq:eeT \familydefault \ttdefault
   {
+    \cs_set_eq:NN \luatexkodefaulthangulfont \luatexkomonohangulfont
     \cs_set_eq:NN \luatexkohangulfont \luatexkomonohangulfont
     \luatexkohangulselectfont
   }
@@ -463,6 +512,7 @@
 \DeclareDocumentCommand \newhangulfontfamily { m O{} m O{} }
 {
   \fontspec_set_family:cnn { luatexko_user_family_ \cs_to_str:N #1 } { #2, #4 } { #3 }
+  \l_luatexko_pacify_bfseries
   \cs_set_protected_nopar:Npn #1
   {
     \cs_set_nopar:Npn \luatexkohangulfont
@@ -480,6 +530,7 @@
 \DeclareDocumentCommand \hangulfontspec { O{} m O{} }
 {
   \fontspec_set_family:Nnn \luatexkohangulfontfamily { #1, #3 } { #2 }
+  \l_luatexko_pacify_bfseries
   \cs_set_nopar:Npn \luatexkohangulfont
   {
     \fontfamily \luatexkohangulfontfamily \selectfont
@@ -490,12 +541,14 @@
 \DeclareDocumentCommand \setmainhanjafont { O{} m O{} }
 {
   \fontspec_set_family:Nnn \luatexkomainhanjafamily { Ligatures=TeX, #1, #3 } { #2 }
+  \l_luatexko_pacify_bfseries
   \cs_set_protected_nopar:Npn \luatexkomainhanjafont
   {
     \fontfamily \luatexkomainhanjafamily \selectfont
   }
   \str_if_eq:eeT \familydefault \rmdefault
   {
+    \cs_set_eq:NN \luatexkodefaulthanjafont \luatexkomainhanjafont
     \cs_set_eq:NN \luatexkohanjafont \luatexkomainhanjafont
     \luatexkohanjaselectfont
   }
@@ -504,12 +557,14 @@
 \DeclareDocumentCommand \setsanshanjafont { O{} m O{} }
 {
   \fontspec_set_family:Nnn \luatexkosanshanjafamily { Ligatures=TeX, #1, #3 } { #2 }
+  \l_luatexko_pacify_bfseries
   \cs_set_protected_nopar:Npn \luatexkosanshanjafont
   {
     \fontfamily \luatexkosanshanjafamily \selectfont
   }
   \str_if_eq:eeT \familydefault \sfdefault
   {
+    \cs_set_eq:NN \luatexkodefaulthanjafont \luatexkosanshanjafont
     \cs_set_eq:NN \luatexkohanjafont \luatexkosanshanjafont
     \luatexkohanjaselectfont
   }
@@ -518,12 +573,14 @@
 \DeclareDocumentCommand \setmonohanjafont { O{} m O{} }
 {
   \fontspec_set_family:Nnn \luatexkomonohanjafamily { #1, #3 } { #2 }
+  \l_luatexko_pacify_bfseries
   \cs_set_protected_nopar:Npn \luatexkomonohanjafont
   {
     \fontfamily \luatexkomonohanjafamily \selectfont
   }
   \str_if_eq:eeT \familydefault \ttdefault
   {
+    \cs_set_eq:NN \luatexkodefaulthanjafont \luatexkomonohanjafont
     \cs_set_eq:NN \luatexkohanjafont \luatexkomonohanjafont
     \luatexkohanjaselectfont
   }
@@ -532,6 +589,7 @@
 \DeclareDocumentCommand \newhanjafontfamily { m O{} m O{} }
 {
   \fontspec_set_family:cnn { luatexko_user_family_ \cs_to_str:N #1 } { #2, #4 } { #3 }
+  \l_luatexko_pacify_bfseries
   \cs_set_protected_nopar:Npn #1
   {
     \cs_set_nopar:Npn \luatexkohanjafont
@@ -549,6 +607,7 @@
 \DeclareDocumentCommand \hanjafontspec { O{} m O{} }
 {
   \fontspec_set_family:Nnn \luatexkohanjafontfamily { #1, #3 } { #2 }
+  \l_luatexko_pacify_bfseries
   \cs_set_nopar:Npn \luatexkohanjafont
   {
     \fontfamily \luatexkohanjafontfamily \selectfont
@@ -560,12 +619,14 @@
 \DeclareDocumentCommand \setmainfallbackfont { O{} m O{} }
 {
   \fontspec_set_family:Nnn \luatexkomainfallbackfamily { Ligatures=TeX, #1, #3 } { #2 }
+  \l_luatexko_pacify_bfseries
   \cs_set_protected_nopar:Npn \luatexkomainfallbackfont
   {
     \fontfamily \luatexkomainfallbackfamily \selectfont
   }
   \str_if_eq:eeT \familydefault \rmdefault
   {
+    \cs_set_eq:NN \luatexkodefaultfallbackfont \luatexkomainfallbackfont
     \cs_set_eq:NN \luatexkofallbackfont \luatexkomainfallbackfont
     \luatexkofallbackselectfont
   }
@@ -574,12 +635,14 @@
 \DeclareDocumentCommand \setsansfallbackfont { O{} m O{} }
 {
   \fontspec_set_family:Nnn \luatexkosansfallbackfamily { Ligatures=TeX, #1, #3 } { #2 }
+  \l_luatexko_pacify_bfseries
   \cs_set_protected_nopar:Npn \luatexkosansfallbackfont
   {
     \fontfamily \luatexkosansfallbackfamily \selectfont
   }
   \str_if_eq:eeT \familydefault \sfdefault
   {
+    \cs_set_eq:NN \luatexkodefaultfallbackfont \luatexkosansfallbackfont
     \cs_set_eq:NN \luatexkofallbackfont \luatexkosansfallbackfont
     \luatexkofallbackselectfont
   }
@@ -588,12 +651,14 @@
 \DeclareDocumentCommand \setmonofallbackfont { O{} m O{} }
 {
   \fontspec_set_family:Nnn \luatexkomonofallbackfamily { #1, #3 } { #2 }
+  \l_luatexko_pacify_bfseries
   \cs_set_protected_nopar:Npn \luatexkomonofallbackfont
   {
     \fontfamily \luatexkomonofallbackfamily \selectfont
   }
   \str_if_eq:eeT \familydefault \ttdefault
   {
+    \cs_set_eq:NN \luatexkodefaultfallbackfont \luatexkomonofallbackfont
     \cs_set_eq:NN \luatexkofallbackfont \luatexkomonofallbackfont
     \luatexkofallbackselectfont
   }
@@ -602,6 +667,7 @@
 \DeclareDocumentCommand \newfallbackfontfamily { m O{} m O{} }
 {
   \fontspec_set_family:cnn { luatexko_user_family_ \cs_to_str:N #1 } { #2, #4 } { #3 }
+  \l_luatexko_pacify_bfseries
   \cs_set_protected_nopar:Npn #1
   {
     \cs_set_nopar:Npn \luatexkofallbackfont
@@ -619,6 +685,7 @@
 \DeclareDocumentCommand \fallbackfontspec { O{} m O{} }
 {
   \fontspec_set_family:Nnn \luatexkofallbackfontfamily { #1, #3 } { #2 }
+  \l_luatexko_pacify_bfseries
   \cs_set_nopar:Npn \luatexkofallbackfont
   {
     \fontfamily \luatexkofallbackfontfamily \selectfont
@@ -629,6 +696,7 @@
 \DeclareDocumentCommand \setmathhangulfont { O{} m O{} }
 {
   \fontspec_set_family:Nnn \luatexkomathhangulfamily { #1, #3 } { #2 }
+  \l_luatexko_pacify_bfseries
   \DeclareSymbolFont { mathhangul }
     \g_fontspec_encoding_tl \luatexkomathhangulfamily \mddefault \updefault
   \int_compare:nNnF { \Umathcharfam"AC00 } = { \symmathhangul }
@@ -642,10 +710,28 @@
 \let\adhochanjafont\hanjafontspec
 \let\adhocfallbackfont\fallbackfontspec
 % interhangul, interlatincjk, charraise
+\def\luatexkopacifybfseries{%
+  \@tfor \@tempa := \mddefault \bfdefault \do {%
+    \ifcsname \f@encoding/\f@family/\@tempa/\updefault\endcsname \else
+      \global \expandafter\let
+        \csname \f@encoding/\f@family/\@tempa/\updefault \expandafter\endcsname
+        \csname \f@encoding/\f@family/\@tempa/\shapedefault\endcsname
+    \fi
+  }%
+  \@tfor \@tempa := \shapedefault \updefault \itdefault \sldefault \do {%
+    \ifcsname \f@encoding/\f@family/bx/\@tempa\endcsname \else
+      \global \expandafter\let
+        \csname \f@encoding/\f@family/bx/\@tempa \expandafter\endcsname
+        \csname \f@encoding/\f@family/\bfdefault/\@tempa\endcsname
+    \fi
+  }%
+}
 \protected\def\addhangulfontfeature#1{%
   \begingroup
-  \ifdefined\luatexkohangulfont \luatexkohangulfont \fi
+  \ifdefined\luatexkohangulfont
+    \fontseries\mddefault\fontshape\shapedefault \luatexkohangulfont \fi
   \addfontfeature{#1}%
+  \luatexkopacifybfseries
   \edef\x{\endgroup
     \def\noexpand\luatexkohangulfont{%
       \noexpand\fontfamily{\f@family}\noexpand\selectfont}}\x
@@ -654,8 +740,10 @@
 \let\addhangulfontfeatures\addhangulfontfeature
 \protected\def\addhanjafontfeature#1{%
   \begingroup
-  \ifdefined\luatexkohanjafont \luatexkohanjafont \fi
+  \ifdefined\luatexkohanjafont
+    \fontseries\mddefault\fontshape\shapedefault \luatexkohanjafont \fi
   \addfontfeature{#1}%
+  \luatexkopacifybfseries
   \edef\x{\endgroup
     \def\noexpand\luatexkohanjafont{%
       \noexpand\fontfamily{\f@family}\noexpand\selectfont}}\x
@@ -664,8 +752,10 @@
 \let\addhanjafontfeatures\addhanjafontfeature
 \protected\def\addfallbackfontfeature#1{%
   \begingroup
-  \ifdefined\luatexkofallbackfont \luatexkofallbackfont \fi
+  \ifdefined\luatexkofallbackfont
+    \fontseries\mddefault\fontshape\shapedefault \luatexkofallbackfont \fi
   \addfontfeature{#1}%
+  \luatexkopacifybfseries
   \edef\x{\endgroup
     \def\noexpand\luatexkofallbackfont{%
       \noexpand\fontfamily{\f@family}\noexpand\selectfont}}\x
@@ -689,23 +779,47 @@
 \DeclareOption{hangul}{\@hangultrue}
 \DeclareOption{hanja}{\@hangultrue\@hanjatrue}
 \ProcessOptions\relax
-% default hangul font
 \AtBeginDocument{
+  % default hangul fonts
   \ifdefined\luatexkomainhangulfont\else
     \begingroup\rmfamily
     \directlua{ luatexko.currenthashangulchars(255) }\expandafter\endgroup
     \ifnum\count@=\z@
-      \setmainhangulfont{UnBatang}[Script=Hangul,Language=Korean]\fi\fi
+      \IfFontExistsTF{UnBatang.ttf}
+        {\setmainhangulfont{UnBatang}[Script=Hangul,Language=Korean]}
+        {}
+    \fi
+  \fi
   \ifdefined\luatexkosanshangulfont\else
     \begingroup\sffamily
     \directlua{ luatexko.currenthashangulchars(255) }\expandafter\endgroup
     \ifnum\count@=\z@
-      \setsanshangulfont{UnDotum}\fi\fi
+      \IfFontExistsTF{UnDotum.ttf}{\setsanshangulfont{UnDotum}}{}
+    \fi
+  \fi
   \ifdefined\luatexkomonohangulfont\else
     \begingroup\ttfamily
     \directlua{ luatexko.currenthashangulchars(255) }\expandafter\endgroup
     \ifnum\count@=\z@
-      \let\luatexkomonohangulfont\luatexkosanshangulfont\fi\fi
+      \let\luatexkomonohangulfont\luatexkosanshangulfont
+    \fi
+  \fi
+  % just in case, reset luatexkodefault...font
+  \edef\famdef@ult{\familydefault}
+  \ifx\famdef@ult\sfdefault
+    \let\luatexkodefaulthangulfont  \luatexkosanshangulfont
+    \let\luatexkodefaulthanjafont   \luatexkosanshanjafont
+    \let\luatexkodefaultfallbackfont\luatexkosansfallbackfont
+  \else\ifx\famdef@ult\ttdefault
+    \let\luatexkodefaulthangulfont  \luatexkomonohangulfont
+    \let\luatexkodefaulthanjafont   \luatexkomonohanjafont
+    \let\luatexkodefaultfallbackfont\luatexkomonofallbackfont
+  \else
+    \let\luatexkodefaulthangulfont  \luatexkomainhangulfont
+    \let\luatexkodefaulthanjafont   \luatexkomainhanjafont
+    \let\luatexkodefaultfallbackfont\luatexkomainfallbackfont
+  \fi\fi
+  % hyperref
   \@ifpackageloaded{hyperref}{\pdfstringdefDisableCommands{%
     \let\ruby\@firstoftwo
     \let\xxruby\@firstoftwo
