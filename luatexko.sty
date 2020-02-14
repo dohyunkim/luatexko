@@ -13,9 +13,10 @@
 
 \ifdefined\luatexkohangulfontattr \endinput\fi
 \ifdefined\selectfont
+  \NeedsTeXFormat{LaTeX2e}[2020/02/02]
   \ProvidesPackage{luatexko}[2020/02/01 v2.6 typesetting Korean with LuaTeX]
   \RequirePackage{luatexbase}
-  \RequirePackage{fontspec}
+  \RequirePackage{fontspec}[2020/02/03]
 \else
   \input luatexbase.sty
   \input luaotfload.sty
@@ -784,17 +785,25 @@
     \begingroup\rmfamily
     \directlua{ luatexko.currenthashangulchars(255) }\expandafter\endgroup
     \ifnum\count@=\z@
-      \setmainhangulfont{UnBatang}[Script=Hangul,Language=Korean]\fi\fi
+      \IfFontExistsTF{UnBatang.ttf}
+        {\setmainhangulfont{UnBatang}[Script=Hangul,Language=Korean]}
+        {}
+    \fi
+  \fi
   \ifdefined\luatexkosanshangulfont\else
     \begingroup\sffamily
     \directlua{ luatexko.currenthashangulchars(255) }\expandafter\endgroup
     \ifnum\count@=\z@
-      \setsanshangulfont{UnDotum}\fi\fi
+      \IfFontExistsTF{UnDotum.ttf}{\setsanshangulfont{UnDotum}}{}
+    \fi
+  \fi
   \ifdefined\luatexkomonohangulfont\else
     \begingroup\ttfamily
     \directlua{ luatexko.currenthashangulchars(255) }\expandafter\endgroup
     \ifnum\count@=\z@
-      \let\luatexkomonohangulfont\luatexkosanshangulfont\fi\fi
+      \let\luatexkomonohangulfont\luatexkosanshangulfont
+    \fi
+  \fi
   % just in case, reset luatexkodefault...font
   \edef\famdef@ult{\familydefault}
   \ifx\famdef@ult\sfdefault
