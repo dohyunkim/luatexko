@@ -424,9 +424,9 @@
 %%%%% temporary >>
 \ifdefined\@defaultfamilyhook\else
   \expandafter\edef\csname normalfont \endcsname{%
+    \noexpand\@defaultfamilyhook
     \expandafter\unexpanded
-    \expandafter\expandafter\expandafter{\csname normalfont \endcsname
-      \@defaultfamilyhook }}
+    \expandafter\expandafter\expandafter{\csname normalfont \endcsname}}
   \let\@defaultfamilyhook\@empty
 \fi
 %%%%% << temporary
