@@ -414,15 +414,6 @@
   \let\luatexkohanjafont   \luatexkomonohanjafont
   \let\luatexkofallbackfont\luatexkomonofallbackfont
 }}
-%%%%% temporary >>
-\ifdefined\@defaultfamilyhook\else
-  \expandafter\edef\csname normalfont \endcsname{%
-    \noexpand\@defaultfamilyhook
-    \expandafter\unexpanded
-    \expandafter\expandafter\expandafter{\csname normalfont \endcsname}}
-  \let\@defaultfamilyhook\@empty
-\fi
-%%%%% << temporary
 \edef\@defaultfamilyhook{\unexpanded\expandafter{\@defaultfamilyhook
   \let\luatexkohangulfont  \luatexkodefaulthangulfont
   \let\luatexkohanjafont   \luatexkodefaulthanjafont
