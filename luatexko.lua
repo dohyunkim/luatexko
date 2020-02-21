@@ -36,11 +36,9 @@ local insert_before   = node.insert_before
 local nodecopy        = node.copy
 local nodecount       = node.count
 local nodefree        = node.free
-local nodeid          = node.id
 local nodenew         = node.new
 local noderemove      = node.remove
 local nodeslide       = node.slide
-local nodesubtype     = node.subtype
 local nodewrite       = node.write
 local rangedimensions = node.rangedimensions
 local setglue         = node.setglue
@@ -83,19 +81,19 @@ local function warning (...)
   return module_warning("luatexko", stringformat(...))
 end
 
-local dirid     = nodeid"dir"
-local discid    = nodeid"disc"
-local glueid    = nodeid"glue"
-local glyphid   = nodeid"glyph"
-local hlistid   = nodeid"hlist"
-local kernid    = nodeid"kern"
-local mathid    = nodeid"math"
-local penaltyid = nodeid"penalty"
-local ruleid    = nodeid"rule"
-local vlistid   = nodeid"vlist"
-local whatsitid = nodeid"whatsit"
-local literal_whatsit = nodesubtype"pdf_literal"
-local user_whatsit    = nodesubtype"user_defined"
+local dirid     = node.id"dir"
+local discid    = node.id"disc"
+local glueid    = node.id"glue"
+local glyphid   = node.id"glyph"
+local hlistid   = node.id"hlist"
+local kernid    = node.id"kern"
+local mathid    = node.id"math"
+local penaltyid = node.id"penalty"
+local ruleid    = node.id"rule"
+local vlistid   = node.id"vlist"
+local whatsitid = node.id"whatsit"
+local literal_whatsit = node.subtype"pdf_literal"
+local user_whatsit    = node.subtype"user_defined"
 local directmode = 2
 local fontkern   = 0
 local userkern   = 1
@@ -1125,10 +1123,8 @@ local josa_code = setmetatable({
   end
 end })
 
-local ignore_parens = false
-
-local function prevjosacode (n, parenlevel)
-  local parenlevel, josacode = parenlevel or 0
+local function prevjosacode (n, parenlevel, ignore_parens)
+  local josacode
   while n do
     local id = n.id
     if id == glyphid then
@@ -1144,7 +1140,7 @@ local function prevjosacode (n, parenlevel)
     elseif id == hlistid or id == vlistid then
       local list = n.list
       if list then
-        josacode, parenlevel = prevjosacode(nodeslide(list), parenlevel)
+        josacode, parenlevel = prevjosacode(nodeslide(list), parenlevel, ignore_parens)
         if josacode then break end
       end
     end
@@ -1170,8 +1166,7 @@ local function process_josa (head)
         end
         local t = josa_table[cc]
         if t then
-          ignore_parens = autojosaattr > 0
-          cc = t[prevjosacode(getprev(curr)) or 3]
+          cc = t[prevjosacode(getprev(curr), 0, autojosaattr > 0) or 3]
           if cc then
             curr.char = cc
           else
