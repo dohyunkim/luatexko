@@ -2038,17 +2038,17 @@ add_to_callback("luaotfload.patch_font_unsafe", process_patch_font,
 
 local auxiliary_procs = {
   dotemph = {
-    hpack_filter = process_dotemph,
-    vpack_filter = process_dotemph,
+    hpack_filter          = process_dotemph,
+    post_linebreak_filter = process_dotemph,
   },
   uline   = {
-    hpack_filter = process_uline,
-    vpack_filter = process_uline,
+    hpack_filter          = process_uline,
+    post_linebreak_filter = process_uline,
   },
   ruby    = {
-    pre_linebreak_filter = process_ruby_pre_linebreak,
-    hpack_filter         = process_ruby_post_linebreak,
-    vpack_filter         = process_ruby_post_linebreak,
+    pre_linebreak_filter  = process_ruby_pre_linebreak,
+    hpack_filter          = process_ruby_post_linebreak,
+    post_linebreak_filter = process_ruby_post_linebreak,
   },
   autojosa = {
     luatexko_hpack_first        = process_josa,
@@ -2065,7 +2065,7 @@ local function activate (name)
     local fun
     if cbnam == "hpack_filter" then
       fun = function(h, gc)
-        if gc == "align_set" then
+        if gc == "adjusted_hbox" or gc == "align_set" then
           h = cbfun(h)
         end
         return h
@@ -2113,7 +2113,7 @@ local function deactivate_all (str)
   luatexko.deactivated = {}
   for _, name in ipairs{ "hpack_filter",
                          "pre_linebreak_filter",
-                         "vpack_filter",
+                         "post_linebreak_filter",
                          "hyphenate",
                          "luaotfload.patch_font_unsafe", -- added for harf
                          "luaotfload.patch_font" } do
