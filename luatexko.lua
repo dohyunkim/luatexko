@@ -2065,7 +2065,7 @@ local function activate (name)
     local fun
     if cbnam == "hpack_filter" then
       fun = function(h, gc)
-        if gc == "adjusted_hbox" or gc == "align_set" then
+        if gc == "hbox" or gc == "adjusted_hbox" or gc == "align_set" then
           h = cbfun(h)
         end
         return h
