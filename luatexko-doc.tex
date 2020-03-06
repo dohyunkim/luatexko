@@ -14,24 +14,42 @@
 \usepackage{luacolor}
 \usepackage[hangul]{luatexko}
 \directlua{
-  fonts.protrusions.setups.notoserifcjk = {
-    [171]     = { 0.5, 0   },
-    [187]     = { 0,   0.5 },
-    [1002965] = { 0,   0.5 },
-    [1002968] = { 0.5, 0   },
-    [1002969] = { 0,   0.5 },
-    [1002970] = { 0,   1   },
-    [1002971] = { 0,   0.5 },
-    [1002972] = { 0,   1   },
-    [1002974] = { 0,   0.5 },
-    [1002975] = { 0,   0.5 },
-    [1002976] = { 0,   0.5 },
-    [1002985] = { 1,   0   },
-    [1002986] = { 0,   1   },
-    [1002988] = { 0.5, 0   },
-    [1002989] = { 0,   0.5 },
+  local gidoffset = 0x120000
+  local notoserifcjk_kr = {
+    [171]     = { 0.5, 0   }, % «
+    [187]     = { 0,   0.5 }, % »
+    [62253+gidoffset] = { 0.5, 0   }, % (
+    [62254+gidoffset] = { 0,   0.5 }, % )
+    [62255+gidoffset] = { 0,   1   }, % ,
+    [62257+gidoffset] = { 0,   1   }, % .
+    [62259+gidoffset] = { 0,   0.5 }, % :
+    [62260+gidoffset] = { 0,   0.5 }, % ;
+    [62270+gidoffset] = { 1,   0   }, % ‘
+    [62271+gidoffset] = { 0,   1   }, % ’
+    [62273+gidoffset] = { 0.5, 0   }, % “
+    [62274+gidoffset] = { 0,   0.5 }, % ”
   }
+  luatexbase.add_to_callback("luaotfload.patch_font_unsafe",
+  function(data)
+    if type(data) == "table" and data.hb then else return end
+    local expansion  = data.specification.features.normal.expansion
+    local protrusion = data.specification.features.normal.protrusion
+    if expansion == "default" then
+      data.stretch = 20
+      data.shrink  = 20
+      data.step    = 1
+    end
+    if protrusion == "notoserifcjk" then
+      local quad = data.parameters.quad
+      for i,v in pairs(notoserifcjk_kr) do
+        local char = data.characters[i]
+        char.left_protruding  = char.width/quad * v[1] * 1000
+        char.right_protruding = char.width/quad * v[2] * 1000
+      end
+    end
+  end, "luatexko.harf_expansion_protrusion")
 }
+\defaultfontfeatures{Renderer=OpenType}
 \setmainhangulfont{Noto Serif CJK KR}[
   Scale=0.98,
   AutoFakeSlant,
@@ -44,7 +62,6 @@
   Expansion, Protrusion=notoserifcjk,
 ]
 \setsanshangulfont{Noto Sans CJK KR}[
-  \ifluahbtex Renderer=OpenType\fi,
   Scale=0.98,
   Script=Hangul,
   Language=Korean,
@@ -367,7 +384,12 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
 
 \item[Protrusion] \pkgkwd*{Protrusion}%
   특정 글자가 행 끝에 왔을 때 판면 바깥으로 끌어내는
-  기능이다. Lua\TeX은 기본값으로 온점 반점 등을 완전 글자내밀기 한다.
+  기능이다.%
+  \footnote{%
+    HarfBuzz 모드에서는 (아직) 동작하지 않는다. 필요하다면 이 매뉴얼의
+    소스 앞부분를 참고하라.
+  }
+  Lua\TeX은 기본값으로 온점 반점 등을 완전 글자내밀기 한다.
   |Protrusion|은 |Protrusion=default|와 같은 뜻이다.%
   \footnote{%
     플레인텍에서는 |protrusion=default|. }
@@ -379,7 +401,12 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
 
 \item[Expansion] \pkgkwd*{Expansion}%
   판면의 균일한 조판을 위해 글자들을 미세하게 늘이거나
-  줄이는 기능이다. |Expansion|은 |Expansion=default|와 마찬가지 뜻이다.%
+  줄이는 기능이다.%
+  \footnote{%
+    HarfBuzz 모드에서는 (아직) 동작하지 않는다. 필요하다면 이 매뉴얼의
+    소스 앞부분를 참고하라.
+  }
+  |Expansion|은 |Expansion=default|와 마찬가지 뜻이다.%
   \footnote{%
     플레인텍에서는 |expansion=default|. }
 
