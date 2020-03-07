@@ -37,7 +37,7 @@
     if expansion == "default" then
       data.stretch = 20
       data.shrink  = 20
-      data.step    = 1
+      data.step    = 5
     end
     if protrusion == "notoserifcjk" then
       local quad = data.parameters.quad
@@ -469,8 +469,9 @@ v2.0부터는 고문헌 조판에서 한글^^b7한자와 영문자가 붙어 나
   |vmtx| 정보를 가지고 있지 않은 글꼴은 세로쓰기에 적합치 않은 글꼴이다.
   |otfinfo -t <파일>| 명령으로 글꼴에 들어있는 테이블 정보를 알 수 있다. }\,%
 \footnote{%
-  폰트 옵션 |Renderer=OpenType| 등(플레인텍에서는 |mode=harf| 옵션)을 주고
-  |luahblatex|으로 컴파일하여 Harfbuzz 모듈을 이용하려는 경우 세로쓰기가
+  폰트 옵션 |Renderer=OpenType| 또는 |Renderer=HarfBuzz| 등
+  (플레인텍에서는 |mode=harf| 옵션)을 주고
+  컴파일하여 Harfbuzz 모듈을 이용하려는 경우 세로쓰기가
   현재로서는 지원되지 않는다. 세로쓰기를 하려면 이 옵션을 빼고 디폴트 값인
   |Renderer=Node| (플레인텍에서는 |mode=node|)를 사용하라.}
 세로쓰기에서 |CharRaise| 옵션의 효과에 대해서는 제\ref{sec:fontoption}절을
