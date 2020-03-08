@@ -15,7 +15,7 @@
 \usepackage[hangul]{luatexko}
 \directlua{
   local gidoffset = 0x120000
-  local notoserifcjk_kr = {
+  local notoserifcjkkr_hb = {
     [171]     = { 0.5, 0   }, % «
     [187]     = { 0,   0.5 }, % »
     [62253+gidoffset] = { 0.5, 0   }, % (
@@ -29,25 +29,7 @@
     [62273+gidoffset] = { 0.5, 0   }, % “
     [62274+gidoffset] = { 0,   0.5 }, % ”
   }
-  luatexbase.add_to_callback("luaotfload.patch_font_unsafe",
-  function(data)
-    if type(data) == "table" and data.hb then else return end
-    local expansion  = data.specification.features.normal.expansion
-    local protrusion = data.specification.features.normal.protrusion
-    if expansion == "default" then
-      data.stretch = 20
-      data.shrink  = 20
-      data.step    = 5
-    end
-    if protrusion == "notoserifcjk" then
-      local quad = data.parameters.quad
-      for i,v in pairs(notoserifcjk_kr) do
-        local char = data.characters[i]
-        char.left_protruding  = char.width/quad * v[1] * 1000
-        char.right_protruding = char.width/quad * v[2] * 1000
-      end
-    end
-  end, "luatexko.harf_expansion_protrusion")
+  fonts.protrusions.setups.notoserifcjk = notoserifcjkkr_hb
 }
 \defaultfontfeatures+{Renderer=OpenType}
 \setmainfont{Latin Modern Roman}[Expansion] % for hb tlig

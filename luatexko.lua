@@ -1971,13 +1971,33 @@ local font_opt_procs = {
 }
 
 local font_opt_procs_single = {
-  expansion = function()
+  expansion = function(fontdata)
+    if is_harf(fontdata) then -- for now, no support in harf mode
+      local val   = option_in_font(fontdata, "expansion")
+      local setup = fonts.expansions.setups[val] or {}
+      fontdata.stretch = fontdata.stretch or (setup.stretch or 2)*10
+      fontdata.shrink  = fontdata.shrink  or (setup.shrink  or 2)*10
+      fontdata.step    = fontdata.step    or (setup.step    or .5)*10
+    end
     if tex.adjustspacing == 0 then
       texset("global", "adjustspacing", 2)
     end
   end,
 
   protrusion = function(fontdata)
+    if is_harf(fontdata) then -- for now, no support in harf mode
+      local val   = option_in_font(fontdata, "protrusion")
+      local setup = fonts.protrusions.setups[val] or {}
+      local quad  = fontdata.parameters.quad
+      for i, v in pairs(setup) do
+        local chr = fontdata.characters[i]
+        if chr then
+          local wdq = chr.width/quad
+          chr.left_protruding  = chr.left_protruding  or wdq*v[1]*1000
+          chr.right_protruding = chr.right_protruding or wdq*v[2]*1000
+        end
+      end
+    end
     if tex.protrudechars == 0 then
       texset("global", "protrudechars", 2)
     end
