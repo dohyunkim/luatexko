@@ -49,18 +49,19 @@
     end
   end, "luatexko.harf_expansion_protrusion")
 }
-\defaultfontfeatures{Renderer=OpenType}
+\defaultfontfeatures+{Renderer=OpenType}
+\setmainfont{Latin Modern Roman}[Expansion] % for hb tlig
 \setmainhangulfont{Noto Serif CJK KR}[
   Scale=0.98,
   AutoFakeSlant,
   Script=Hangul,
   Language=Korean,
-  LocalForms=On,
   UprightFont=* Light,
   BoldFont=* Bold,
   InterLatinCJK=.125em,
   Expansion, Protrusion=notoserifcjk,
 ]
+\setsansfont{Latin Modern Sans}
 \setsanshangulfont{Noto Sans CJK KR}[
   Scale=0.98,
   Script=Hangul,
@@ -274,9 +275,8 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
 \footnote{%
   옛한글 식자를 위해서는 적어도 |Script=Hangul|
   (플레인텍이라면 |script=hang|)을 주어야 한다.
-  옛한글이 아니더라도 한글을 쓴다면 이 옵션은 주는 것이 좋다.
-  또한 폰트가 지원한다면 |LocalForms=On| (플레인텍이라면 |+locl|)과
-  함께 쓰는 것이 권장된다. }\,%
+  옛한글이 아니더라도 한글을 쓴다면 이 옵션과 |Language=Korean|
+  (플레인텍은 |language=KOR|)을 주는 것이 좋다. }\,%
 \footnote{%
   |PunctRaise|, |NoEmbedding| 옵션은 v2.0부터 더는 제공하지 않는다. }
 
@@ -498,7 +498,7 @@ v2.0부터는 고문헌 조판에서 한글^^b7한자와 영문자가 붙어 나
   \analectstext
 \end{vertical}}
 \caption{세로쓰기의 다른 예. 박스 높이 |19em|을 지시했다.
-  글꼴옵션으로 |RemoveClassicSpaces|, |CompressPunctuations|와 더불어
+  글꼴옵션은 |RemoveClassicSpaces|, |CompressPunctuations|와 더불어
   |InterCharStretch=1pt|를 추가했다. 공백이 없는 문서는 자간늘이기 값을
   넉넉하게 주는 것이 좋다.}\label{fig:vertical3}
 \end{figure}
