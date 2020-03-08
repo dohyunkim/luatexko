@@ -366,29 +366,20 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
 
 \item[Protrusion] \pkgkwd*{Protrusion}%
   특정 글자가 행 끝에 왔을 때 판면 바깥으로 끌어내는
-  기능이다.%
-  \footnote{%
-    HarfBuzz 모드에서는 (아직) 동작하지 않는다. 필요하다면 이 매뉴얼의
-    소스 앞부분를 참고하라.
-  }
-  Lua\TeX은 기본값으로 온점 반점 등을 완전 글자내밀기 한다.
+  기능이다. Lua\TeX은 기본값으로 온점 반점 등을 완전 글자내밀기 한다.
   |Protrusion|은 |Protrusion=default|와 같은 뜻이다.%
   \footnote{%
     플레인텍에서는 |protrusion=default|. }
   자신만의 설정을 만들어 지정할 수 있다.%
   \footnote{%
-    default 설정을 고치는 방법은 이를테면 다음과 같다:\par
+    default 설정을 고치는 방법은 이를테면 다음과 같다
+    (이 매뉴얼의 소스 앞부분을 참고하라):\par
     \leftskip=3em\noindent
     \cs{directlua{ fonts.protrusions.setups.default[0x201C] = { 1, 0 } }} }
 
 \item[Expansion] \pkgkwd*{Expansion}%
   판면의 균일한 조판을 위해 글자들을 미세하게 늘이거나
-  줄이는 기능이다.%
-  \footnote{%
-    HarfBuzz 모드에서는 (아직) 동작하지 않는다. 필요하다면 이 매뉴얼의
-    소스 앞부분를 참고하라.
-  }
-  |Expansion|은 |Expansion=default|와 마찬가지 뜻이다.%
+  줄이는 기능이다. |Expansion|은 |Expansion=default|와 마찬가지 뜻이다.%
   \footnote{%
     플레인텍에서는 |expansion=default|. }
 
