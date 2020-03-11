@@ -1,3 +1,11 @@
+2020-03-14	Dohyun Kim <nomos at ktug org>
+
+	Version 2.7
+
+	* luatexko.lua:
+	use post_linebreak_filter callback;
+	support expansion/protrusion in harf mode
+
 2020-02-17	Dohyun Kim <nomos at ktug org>
 
 	Version 2.6

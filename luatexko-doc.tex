@@ -51,6 +51,7 @@
   UprightFont=* DemiLight,
   BoldFont=* Bold,
   InterLatinCJK=.125em,
+  CompressPunctuations,
 ]
 \setmonofont{Inconsolatazi4}[
   Scale=0.98,
@@ -72,6 +73,20 @@
     {Size=6-9, Font=* Regular},
     {Size=9-,  Font=* DemiLight},
   },
+]
+\newhangulfontfamily\verticalhangulfont{Noto Sans CJK KR}[
+  Renderer=Node,
+  Script=Hangul,
+  Language=Korean,
+  UprightFont=* DemiLight,
+  BoldFont=* Bold,
+  InterLatinCJK=.125em,
+  Vertical=Alternates,
+  RawFeature=vertical,
+  CompressPunctuations,
+  InterCharStretch=1pt,
+  CharRaise=3.6pt,
+  CharacterWidth=Full,
 ]
 \newhangulfontface\rubyfont{Noto Serif CJK KR Medium}[
   Script=Hangul,
@@ -105,7 +120,7 @@
 \author{Dohyun Kim \normalsize |<nomos at ktug org>| \and
         Soojin Nam \normalsize |<jsunam at gmail com>| \and
   \normalsize <\url{http://github.com/dohyunkim/luatexko}>}
-\date{Version 2.6\quad 2020/02/17}
+\date{Version 2.7\quad 2020/03/14}
 \maketitle
 
 \begin{quote}\small
@@ -266,9 +281,9 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
   \noindent\textbf{%
   世솅〮宗조ᇰ御ᅌᅥᆼ〮製졩〮訓훈〮民민正져ᇰ〮音ᅙᅳᆷ
   }\par
-  製졩〮ᄂᆞᆫ〮글〮지ᅀᅳᆯ〮씨〮니〮御ᅌᅥᆼ〮製졩〮ᄂᆞᆫ〮님〯금〮지〯ᅀᅳ샨〮그〮리라〮訓훈〮은〮ᄀᆞᄅᆞ칠〮씨〮오〮民%
-  민ᄋᆞᆫ〮百ᄇᆡᆨ〮姓셔ᇰ〮이〮오〮音ᅙᅳᆷ은〮소리〮니〮訓훈〮民%
-  민正져ᇰ〮音ᅙᅳᆷ은〮百ᄇᆡᆨ〮姓셔ᇰ〮ᄀᆞᄅᆞ치〮시논〮正져ᇰ〮ᄒᆞᆫ소리〮라〮
+  製졩〮ᄂᆞᆫ〮글〮지ᅀᅳᆯ〮씨〮니〮御ᅌᅥᆼ〮製졩〮ᄂᆞᆫ〮님〯금〮지〯ᅀᅳ샨〮그〮리라〮%
+  訓훈〮은〮ᄀᆞᄅᆞ칠〮씨〮오〮民민ᄋᆞᆫ〮百ᄇᆡᆨ〮姓셔ᇰ〮이〮오〮音ᅙᅳᆷ은〮소리〮니〮%
+  訓훈〮民민正져ᇰ〮音ᅙᅳᆷ은〮百ᄇᆡᆨ〮姓셔ᇰ〮ᄀᆞᄅᆞ치〮시논〮正져ᇰ〮ᄒᆞᆫ소리〮라〮
   \par\medskip
   \noindent\textbf{%
   國귁〮之징語ᅌᅥᆼ〯音ᅙᅳᆷ이〮
@@ -280,8 +295,9 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
   \noindent\textbf{%
   異잉〮乎ᅘᅩᆼ中듀ᇰ國귁〮ᄒᆞ〮야〮
   }\par
-  異잉〮ᄂᆞᆫ〮다ᄅᆞᆯ씨라乎ᅘᅩᆼᄂᆞᆫ〮아〯모〮그ᅌᅦᄒᆞ〮논겨〮체ᄡᅳ〮는字ᄍᆞᆼ〮ㅣ라〮中듀ᇰ國귁〮ᄋᆞᆫ〮%
-  皇ᅘᅪᇰ帝뎽〮겨〯신나라〮히니〮우〮리〮나랏〮常쌰ᇰ談땀애〮江가ᇰ南남이〮라〮ᄒᆞ〮ᄂᆞ〮니라〮
+  異잉〮ᄂᆞᆫ〮다ᄅᆞᆯ씨라乎ᅘᅩᆼᄂᆞᆫ〮아〯모〮그ᅌᅦᄒᆞ〮논겨〮체ᄡᅳ〮는字ᄍᆞᆼ〮ㅣ라〮%
+  中듀ᇰ國귁〮ᄋᆞᆫ〮皇ᅘᅪᇰ帝뎽〮겨〯신나라〮히니〮우〮리〮나랏〮常쌰ᇰ談땀애〮%
+  江가ᇰ南남이〮라〮ᄒᆞ〮ᄂᆞ〮니라〮
   \par
   中듀ᇰ國귁〮에〮달아〮
 }
@@ -289,10 +305,10 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
 \begin{figure}
   \fboxsep=1em
   \fbox{\parbox{\dimexpr\linewidth-2.1em\relax}{\sffamily
-  \parindent1em
-  \hunmintxt
-}}
-\caption{옛한글 조판 보기}\label{fig:yethangul}
+      \parindent1em
+      \hunmintxt
+  }}
+  \caption{옛한글 조판 보기}\label{fig:yethangul}
 \end{figure}
 
 \begin{description}
@@ -366,7 +382,7 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
 
 \item[Protrusion] \pkgkwd*{Protrusion}%
   특정 글자가 행 끝에 왔을 때 판면 바깥으로 끌어내는
-  기능이다. Lua\TeX은 기본값으로 온점 반점 등을 완전 글자내밀기 한다.
+  기능이다. \luatex은 기본값으로 온점 반점 등을 완전 글자내밀기 한다.
   |Protrusion|은 |Protrusion=default|와 같은 뜻이다.%
   \footnote{%
     플레인텍에서는 |protrusion=default|. }
@@ -388,23 +404,21 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
 \section{고문헌}\label{sec:classic}
 
 \def\analectstext{%
-子曰：「學而時習之，不亦說乎？有朋自遠方來，不亦樂乎？人不知而不慍，
-不亦君子乎？」\par
-有子曰：「其爲人也孝弟，而好犯上者，鮮矣！不好犯上，而好作亂者，未之有也！
-君子務本，本立而道生；孝弟也者，其爲仁之本與？」\par
+子曰：「學而時習之，不亦說乎？有朋自遠方來，不亦樂乎？人不知而不慍，不亦君子乎？」\par
+有子曰：「其爲人也孝弟，而好犯上者，鮮矣！不好犯上，而好作亂者，未之有也！君子務本，本立而道生；孝弟也者，其爲仁之本與？」\par
 子曰：「巧言令色，鮮矣仁！」\par
-曾子曰：「吾日三省吾身：爲人謀，而不忠乎？與朋友交，而不信乎？傳，
-不習乎？」\par
+曾子曰：「吾日三省吾身：爲人謀，而不忠乎？與朋友交，而不信乎？傳，不習乎？」\par
 子曰：「道千乘之國，敬事而信，節用而愛人，使民以時。」\par
 子曰：「弟子入則孝，出則弟；謹而信，汎愛衆；而親仁，行有餘力，則以學文。」
 }
 \begin{figure}
   \centering
   \fbox{\parbox{37em}{\typesetclassic\sffamily
-  \addhangulfontfeature{CompressPunctuations}
-  \analectstext
+      \analectstext
   }}
-\caption{고문헌 조판 보기. typesetclassic 환경을 이용했다.}\label{fig:gomun}
+  \caption{고문헌 조판 보기. typesetclassic 환경을 이용했다.
+    글꼴에 |CompressPunctuations| 옵션을 주었다.
+  }\label{fig:gomun}
 \end{figure}
 
 고문헌 조판을 위해 \pkgkwd{typesetclassic} 환경을 제공한다.%
@@ -454,26 +468,28 @@ v2.0부터는 고문헌 조판에서 한글^^b7한자와 영문자가 붙어 나
 기본으로 셋팅되어 있다. 일종의 고문헌 조판으로 보는 것이다.
 
 \begin{figure}
-\framebox[\linewidth]{\begin{vertical}{19.6em}\sffamily
-  \addhangulfontfeature{Renderer=Node, Vertical=Alternates, RawFeature=vertical}
-  \linespread{1.5}\selectfont
-  \hunmintxt
-\end{vertical}}
-\caption{세로쓰기의 예. 박스 높이 |20em|을 지시했다.}\label{fig:vertical}
+  \framebox[\linewidth]{
+    \begin{vertical}{20em}
+      \sffamily \verticalhangulfont \linespread{1.5}\selectfont
+      \hunmintxt
+    \end{vertical}
+  }
+  \caption{세로쓰기의 예. 박스 높이 |20em|을 지시했다.}\label{fig:vertical}
 \end{figure}
 
 \begin{figure}
-\framebox[\linewidth]{\begin{vertical}{18.62em}\sffamily
-  \addhangulfontfeature{Renderer=Node, Vertical=Alternates, RemoveClassicSpaces,
-  InterCharStretch=1pt, CompressPunctuations, RawFeature=vertical}
-  \linespread{1.5}\selectfont
-  \parindent=-1em \leftskip=1em
-  \analectstext
-\end{vertical}}
-\caption{세로쓰기의 다른 예. 박스 높이 |19em|을 지시했다.
-  글꼴옵션은 |RemoveClassicSpaces|, |CompressPunctuations|와 더불어
-  |InterCharStretch=1pt|를 추가했다. 공백이 없는 문서는 자간늘이기 값을
-  넉넉하게 주는 것이 좋다.}\label{fig:vertical3}
+  \framebox[\linewidth]{
+    \begin{vertical}{19em}
+      \sffamily \verticalhangulfont \linespread{1.5}\selectfont
+      \parindent0pt \everypar{\hangindent1em \hangafter1 }
+      \analectstext
+    \end{vertical}
+  }
+  \caption{세로쓰기의 다른 예. 박스 높이 |19em|을 지시했다.
+    글꼴에 |CompressPunctuations|와 더불어
+    |InterCharStretch=1pt|를 옵션으로 주었다. 공백이 없는 문서는 자간늘이기 값을
+    넉넉하게 주는 것이 좋다.
+  }\label{fig:vertical3}
 \end{figure}
 
 문서의 일부를 세로쓰기하려면
@@ -496,29 +512,31 @@ v2.0부터는 고문헌 조판에서 한글^^b7한자와 영문자가 붙어 나
 \footnote{폰트 지시는 |horizontal| 환경 안에서 행하는 것을 권장한다.}
 
 \begin{figure}
-\framebox[\linewidth]{\begin{vertical}{16.66em}\sffamily
-  \addhangulfontfeature{Renderer=Node, Vertical=Alternates, CharRaise=3.2pt,
-  CompressPunctuations, CharacterWidth=Full, RawFeature=vertical}
-  \parindent-1em\leftskip1em \linespread{1.5}\selectfont
-  \spaceskip=.5em plus.25em minus.125em
-  \noindent 님의 침묵(The Silent Beloved)
-  \smallbreak
-  \hfil\hfil 한 용 운\hfil
-  \bigbreak
-  님은 갓슴니다 아아 사랑하는나의님은 갓슴니다\par
-  푸른산빗을깨치고 단풍나무숩을향하야난 적은길을 거러서 참어떨치고
-  갓슴니다\par
-  黃金의꽃가티 굿고빗나든 옛盟誓는 차듸찬띠끌이되야서 한숨의 微風에
-  나러갓슴니다\par
-  날카로은 첫〈키쓰〉의追憶은 나의運命의指針을 돌너노코 뒷거름처서 사러젓슴니다\par
-  \hellipsis\par
-  아아 님은갓지마는 나는 님을보내지 아니하얏슴니다\par
-  제곡조를못이기는 사랑의노래는 님의沈默을 휩싸고돔니다\par
-\end{vertical}}
-\caption{세로쓰기의 또 다른 예.  박스 높이 |17em|을 지시했다.
-  Noto Sans CJK 글꼴의 세로쓰기 공백은 원래 |1em|,
-  즉 전각크기로 매우 크기 때문에, 여기서는 \cs{spaceskip} 명령을 이용하여
-  반각 크기로 강제했다.}\label{fig:vertical2}
+  \framebox[\linewidth]{
+    \begin{vertical}{17em}
+      \sffamily \verticalhangulfont \linespread{1.5}\selectfont
+      \parindent0pt \everypar{\hangindent1em \hangafter1 }
+      \spaceskip=.5em plus.25em minus.125em
+      \quad 님의 침묵(The Silent Beloved)
+      \smallbreak
+      \hfil\hfil 한 용 운\hfil
+      \bigbreak
+      님은 갓슴니다 아아 사랑하는나의님은 갓슴니다\par
+      푸른산빗을깨치고 단풍나무숩을향하야난 적은길을 거러서 참어떨치고
+      갓슴니다\par
+      黃金의꽃가티 굿고빗나든 옛盟誓는 차듸찬띠끌이되야서 한숨의 微風에
+      나러갓슴니다\par
+      날카로은 첫〈키쓰〉의追憶은 나의運命의指針을 돌너노코 뒷거름처서 사러젓슴니다\par
+      \hellipsis\par
+      아아 님은갓지마는 나는 님을보내지 아니하얏슴니다\par
+      제곡조를못이기는 사랑의노래는 님의沈默을 휩싸고돔니다\par
+    \end{vertical}
+  }
+  \caption{세로쓰기의 또 다른 예.  박스 높이 |17em|을 지시했다.
+    Noto Sans CJK 글꼴의 세로쓰기 공백은 원래 |1em|,
+    즉 전각크기로 매우 크기 때문에, 여기서는 \cs{spaceskip} 명령을 이용하여
+    반각 크기로 강제했다.
+  }\label{fig:vertical2}
 \end{figure}
 
 \section{드러냄표}\label{sec:dotemph}
