@@ -33,6 +33,7 @@
 \newattribute\luatexkoautojosaattr
 \newattribute\luatexkoclassicattr
 \newattribute\luatexkodotemphattr
+\newattribute\luatexkoulineattr
 \newattribute\luatexkorubyattr \chardef\luatexkorubyalloc\allocationnumber
 \newattribute\luatexkohangulbyhangulattr
 \newattribute\luatexkohanjabyhanjaattr
@@ -161,18 +162,17 @@
 \def\luatexkomarkoverwith#1#2{%
   \global\advance\luatexkoulinecount\@ne
   \begingroup
-  \count@\luatexkoulinecount
-  \ifx\luatexkoulinerunning\relax
-    \edef\ulinedown{\the\dimexpr\ulinedown+\ulinewidth+.15ex\relax}\fi
-  \let\luatexkoulinerunning\relax
   \leavevmode
   \setbox\z@\hbox{#1}%
   \directlua{
     if \the\luatexkoulinecount == 1 then luatexko.activate("uline") end
-    luatexko.ulboundary(\the\count@, tex.box[0].list, \luatexkoleaderstype)
-  }#2\relax
+    luatexko.ulboundary(\the\luatexkoulinecount,
+                        tex.box[0].list,
+                        \luatexkoleaderstype)
+  }%
+  \luatexkoulineattr\luatexkoulinecount #2\relax
   \directlua{
-    luatexko.ulboundary(\the\count@)
+    luatexko.ulboundary(\the\luatexkoulinecount)
   }\endgroup }
 \protected\def\uline{\markoverwith{%
   \vrule width\z@ height-\ulinedown depth\dimexpr\ulinedown+\ulinewidth\relax }}
@@ -182,7 +182,15 @@
     \kern.125em }}}
 \protected\def\dotuline{\markoverwith*{%
   \lower\dimexpr\ulinedown+.2ex\relax\hbox{\kern.07em .\kern.07em }}}
-\protected\def\uuline#1{\uline{\uline{#1}}}
+\protected\def\uuline{\markoverwith{%
+    \lower\ulinedown\hbox{%
+      \vtop{%
+        \hrule width .2em height\z@ depth\ulinewidth
+        \kern .15ex
+        \hrule width .2em height\z@ depth\ulinewidth
+      }%
+    }%
+}}
 \protected\def\sout#1{\begingroup
   \setbox\z@\hbox{#1}%
   \edef\ulinedown{\the\dimexpr

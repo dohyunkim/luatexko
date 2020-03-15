@@ -110,6 +110,7 @@ local fallbackfontattr = attributes.luatexkofallbackfontattr
 local autojosaattr     = attributes.luatexkoautojosaattr
 local classicattr      = attributes.luatexkoclassicattr
 local dotemphattr      = attributes.luatexkodotemphattr
+local ulineattr        = attributes.luatexkoulineattr
 local rubyattr         = attributes.luatexkorubyattr
 local hangulbyhangulattr = attributes.luatexkohangulbyhangulattr
 local hanjabyhanjaattr   = attributes.luatexkohanjabyhanjaattr
@@ -1351,42 +1352,55 @@ local function draw_uline (head, curr, parent, t, final)
 end
 
 local ulitems = {}
+luatexko.ulitems = ulitems
 
-local function process_uline (head, parent, level)
-  local curr, level = head, level or 0
+local function process_uline (head, parent)
+  local curr, ulattr = head
   while curr do
     local id = curr.id
-    if id == whatsitid
-      and curr.subtype == user_whatsit
-      and curr.user_id == uline_id then
+    if curr.list and (id == hlistid or id == vlistid) then
+      curr.list = process_uline(curr.list, curr)
+
+    elseif      id == whatsitid    and
+      curr.subtype == user_whatsit and
+      curr.user_id == uline_id     then
 
       local value = curr.value
       if curr.type == lua_value then
         local count, list, subtype = tableunpack(value)
         ulitems[count] = {
-          start   = curr,
           list    = list,
           subtype = subtype,
-          level   = level,
         }
-      elseif ulitems[value] then
-        head = draw_uline(head, curr, parent, ulitems[value], true)
-        ulitems[value] = nil
+      else
+        local item = ulitems[value]
+        if ulattr and item then
+          head = draw_uline(head, curr, parent, item, true)
+          ulitems[value] = nil
+          ulattr = nil
+        end
       end
 
-    elseif curr.list and (id == hlistid or id == vlistid) then
-      curr.list = process_uline(curr.list, curr, level+1)
+    else
+      local attr = has_attribute(curr, ulineattr)
+      if attr then
+        local item = ulitems[attr]
+        if item and not item.start then
+          item.start = curr
+        end
+        ulattr = attr
+      end
+
     end
     curr = getnext(curr)
   end
 
-  curr = nodeslide(head)
-  for i, t in pairs(ulitems) do
-    if level == t.level then
-      head = draw_uline(head, curr, parent, t)
-      t.start = nil
-    end
+  if ulattr then
+    local item = ulitems[ulattr]
+    head = draw_uline(head, nodeslide(head), parent, item)
+    item.start = nil
   end
+
   return head
 end
 
