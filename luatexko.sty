@@ -17,9 +17,11 @@
   \ProvidesPackage{luatexko}[2020/03/14 v2.7 typesetting Korean with LuaTeX]
   \RequirePackage{luatexbase}
   \RequirePackage{fontspec}[2020/02/03]
+  \RequirePackage{atbegshi}
 \else
   \input luatexbase.sty
   \input luaotfload.sty
+  \input atbegshi.sty
   \chardef\luatexkoatcatcode=\catcode`\@
   \catcode`\@=11
 \fi
@@ -35,6 +37,16 @@
 \newattribute\luatexkohangulbyhangulattr
 \newattribute\luatexkohanjabyhanjaattr
 \directlua{ require"luatexko" }
+\edef\AtBegShi@Hook{% occupy the first position
+  \unexpanded{%
+    \AtBegShi@Item{%
+      \directlua{%
+        luatexko.process_atbegshi(tex.getbox(\the\AtBeginShipoutBox))
+      }%
+    }%
+  }%
+  \unexpanded\expandafter{\AtBegShi@Hook}%
+}
 % classic
 \protected\def\typesetclassic{\luatexkoclassicattr\z@\parindent1em }
 \protected\def\typesetvertical{\luatexkoclassicattr\@ne\parindent1em }
@@ -133,7 +145,7 @@
   \setbox\z@\hbox{\raise\dotemphraise\hbox{\dotemphchar}}%
   \directlua{
     if \the\luatexkodotemphcount == 1 then luatexko.activate("dotemph") end
-    luatexko.dotemphbox[\the\luatexkodotemphcount] = node.copy(tex.box[0].list)
+    luatexko.dotemphbox[\the\luatexkodotemphcount] = node.copy(tex.box[0])
   }\luatexkodotemphattr\luatexkodotemphcount #1%
   \endgroup }
 % uline

@@ -1231,7 +1231,11 @@ local function process_dotemph (head, tofree)
 
           local currwd = curr.width
           if currwd >= font_options.en_size[curr.font] then
-            local box = nodecopy(dotemphbox[dotattr])
+            local box = nodecopy(dotemphbox[dotattr]).list
+            if box.id ~= hlistid then
+              warning[[\dotemph should be an hbox]]
+              box = getnext(box) or box
+            end
             local shift = (currwd - box.width)/2
             if shift ~= 0 then
               local list = box.list
@@ -1289,11 +1293,14 @@ end
 luatexko.get_strike_out_down = get_strike_out_down
 
 local uline_f, uline_id = new_user_whatsit("uline","luatexko")
-local no_uline_id = new_user_whatsit_id("no_uline","luatexko")
 
 local function ulboundary (i, n, subtype)
   local what = uline_f()
   if n then
+    if n.id ~= ruleid and n.id ~= hlistid then
+      warning[[\markoverwith should be a rule or an hbox]]
+      n = getnext(n) or n
+    end
     what.type  = lua_value -- table
     what.value = { i, nodecopy(n), subtype }
   else
@@ -1322,11 +1329,11 @@ end
 
 local function draw_uline (head, curr, parent, t, final)
   local start, list, subtype = t.start or head, t.list, t.subtype
-  start = skip_white_nodes(start, true)
+  start = skip_white_nodes(start, true) or start
   if final then
     nodeslide(start) -- to get correct getprev.
   end
-  curr  = skip_white_nodes(curr)
+  curr  = skip_white_nodes(curr) or curr
   curr  = getnext(curr) or curr
   local len = parent and rangedimensions(parent, start, curr)
                      or  dimensions(start, curr) -- it works?!
@@ -1343,8 +1350,10 @@ local function draw_uline (head, curr, parent, t, final)
   return head
 end
 
-local function process_uline (head, parent, items, level)
-  local curr, items, level = head, items or {}, level or 0
+local ulitems = {}
+
+local function process_uline (head, parent, level)
+  local curr, level = head, level or 0
   while curr do
     local id = curr.id
     if id == whatsitid
@@ -1354,35 +1363,31 @@ local function process_uline (head, parent, items, level)
       local value = curr.value
       if curr.type == lua_value then
         local count, list, subtype = tableunpack(value)
-        items[count] = {
+        ulitems[count] = {
           start   = curr,
           list    = list,
           subtype = subtype,
           level   = level,
         }
-      elseif items[value] then
-        head = draw_uline(head, curr, parent, items[value], true)
-        items[value] = nil
+      elseif ulitems[value] then
+        head = draw_uline(head, curr, parent, ulitems[value], true)
+        ulitems[value] = nil
       end
 
-      curr.user_id = no_uline_id -- avoid multiple run
-    elseif id == hlistid then
-      local list = curr.list
-      if list then
-        curr.list, items = process_uline(list, curr, items, level+1)
-      end
+    elseif curr.list and (id == hlistid or id == vlistid) then
+      curr.list = process_uline(curr.list, curr, level+1)
     end
     curr = getnext(curr)
   end
 
   curr = nodeslide(head)
-  for i, t in pairs(items) do
+  for i, t in pairs(ulitems) do
     if level == t.level then
       head = draw_uline(head, curr, parent, t)
       t.start = nil
     end
   end
-  return head, items
+  return head
 end
 
 -- ruby
@@ -1928,6 +1933,13 @@ create_callback("luatexko_hpack_first",         "data", pass_fun)
 create_callback("luatexko_prelinebreak_first",  "data", pass_fun)
 create_callback("luatexko_hpack_second",        "data", pass_fun)
 create_callback("luatexko_prelinebreak_second", "data", pass_fun)
+create_callback("luatexko_do_atbegshi",         "data", pass_fun)
+
+luatexko.process_atbegshi = function (box)
+  if box and box.list then
+    box.list = call_callback("luatexko_do_atbegshi", box.list)
+  end
+end
 
 add_to_callback("hpack_filter", function(h)
   h = process_fonts(h)
@@ -2062,8 +2074,7 @@ local auxiliary_procs = {
     post_linebreak_filter = process_dotemph,
   },
   uline   = {
-    hpack_filter          = process_uline,
-    post_linebreak_filter = process_uline,
+    luatexko_do_atbegshi = process_uline,
   },
   ruby    = {
     pre_linebreak_filter  = process_ruby_pre_linebreak,
@@ -2135,6 +2146,7 @@ local function deactivate_all (str)
                          "pre_linebreak_filter",
                          "post_linebreak_filter",
                          "hyphenate",
+                         "luatexko_do_atbegshi", -- might not work properly
                          "luaotfload.patch_font_unsafe", -- added for harf
                          "luaotfload.patch_font" } do
     local t = {}
