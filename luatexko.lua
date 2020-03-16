@@ -73,7 +73,6 @@ local callback_descriptions = luatexbase.callback_descriptions
 local create_callback       = luatexbase.create_callback
 local module_warning        = luatexbase.module_warning
 local new_user_whatsit      = luatexbase.new_user_whatsit
-local new_user_whatsit_id   = luatexbase.new_user_whatsit_id
 local registernumber        = luatexbase.registernumber
 local remove_from_callback  = luatexbase.remove_from_callback
 
@@ -93,7 +92,6 @@ local ruleid    = node.id"rule"
 local vlistid   = node.id"vlist"
 local whatsitid = node.id"whatsit"
 local literal_whatsit = node.subtype"pdf_literal"
-local user_whatsit    = node.subtype"user_defined"
 local directmode = 2
 local fontkern   = 0
 local userkern   = 1
@@ -556,10 +554,9 @@ local function process_fonts (head)
       curr.replace = process_fonts(curr.replace)
     elseif id == mathid then
       curr = end_of_math(curr)
-    elseif id == whatsitid
-      and curr.subtype == user_whatsit
-      and curr.user_id == forcehf_id
-      and curr.type == lua_value then
+    elseif id      == whatsitid  and
+      curr.user_id == forcehf_id and
+      curr.type    == lua_value  then
 
       local value = curr.value
       if type(value) == "function" then
@@ -1208,11 +1205,22 @@ end
 local dotemphbox = {}
 luatexko.dotemphbox = dotemphbox
 
-local function process_dotemph (head, tofree)
-  local curr, outer, tofree = head, not tofree, tofree or {}
+local dotemph_f, dotemph_id = new_user_whatsit("dotemph","luatexko")
+
+function luatexko.dotemphboundary (i)
+  local what = dotemph_f()
+  what.type  = lua_number
+  what.value = i
+  nodewrite(what)
+end
+
+local function process_dotemph (head)
+  local curr = head
   while curr do
-    local id = curr.id
-    if id == glyphid then
+    if curr.list then
+      curr.list = process_dotemph(curr.list)
+
+    elseif curr.id == glyphid then
       local dotattr = has_attribute(curr, dotemphattr)
       if dotattr then
         local c = my_node_props(curr).unicode or curr.char
@@ -1247,23 +1255,21 @@ local function process_dotemph (head, tofree)
 
             box.width = 0
             head = insert_before(head, curr, box)
-            tofree[dotattr] = true
           end
         end
-        unset_attribute(curr, dotemphattr)
       end
-    elseif id == hlistid then
-      local list = curr.list
-      if list then
-        curr.list, tofree = process_dotemph(list, tofree)
-      end
+
+    elseif curr.id == whatsitid  and
+      curr.user_id == dotemph_id and
+      curr.type    == lua_number then
+
+      local val = curr.value
+      nodefree(dotemphbox[val])
+      dotemphbox[val] = nil
     end
     curr = getnext(curr)
   end
-  if outer then
-    for k in pairs(tofree) do nodefree(dotemphbox[k]) end
-  end
-  return head, tofree
+  return head
 end
 
 -- uline
@@ -1357,9 +1363,7 @@ local function process_uline (head, parent, level)
     if curr.list then
       curr.list = process_uline(curr.list, curr, level+1)
 
-    elseif      id == whatsitid    and
-      curr.subtype == user_whatsit and
-      curr.user_id == uline_id     then
+    elseif id == whatsitid and curr.user_id == uline_id then
 
       local value = curr.value
       if curr.type == lua_value then
@@ -1379,11 +1383,12 @@ local function process_uline (head, parent, level)
       end
 
     else
-      attr = has_attribute(curr, ulineattr)
-      if attr then
-        local item = ulitems[attr]
+      local currattr = has_attribute(curr, ulineattr)
+      if currattr then
+        local item = ulitems[currattr]
         if item and not item.start then
           item.start = curr
+          attr = currattr
         end
       end
 
@@ -2080,8 +2085,7 @@ add_to_callback("luaotfload.patch_font_unsafe", process_patch_font,
 
 local auxiliary_procs = {
   dotemph = {
-    hpack_filter          = process_dotemph,
-    post_linebreak_filter = process_dotemph,
+    luatexko_do_atbegshi = process_dotemph,
   },
   uline   = {
     luatexko_do_atbegshi = process_uline,

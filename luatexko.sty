@@ -148,6 +148,9 @@
     if \the\luatexkodotemphcount == 1 then luatexko.activate("dotemph") end
     luatexko.dotemphbox[\the\luatexkodotemphcount] = node.copy(tex.box[0])
   }\luatexkodotemphattr\luatexkodotemphcount #1%
+  \directlua{
+    luatexko.dotemphboundary(\the\luatexkodotemphattr)
+  }%
   \endgroup }
 % uline
 \newcount\luatexkoulinecount
