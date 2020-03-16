@@ -466,13 +466,12 @@ luatexko.forcehangulchars = force_hangul
 
 local forcehf_f, forcehf_id = new_user_whatsit("forcehf","luatexko")
 
-local function update_force_hangul (value)
+function luatexko.updateforcehangul (value)
   local what = forcehf_f()
   what.type  = lua_value -- function
   what.value = value
   nodewrite(what)
 end
-luatexko.updateforcehangul = update_force_hangul
 
 local function hangul_space_skip (curr, newfont)
   if curr.lang ~= nohyphen and curr.font ~= newfont then
@@ -902,9 +901,7 @@ local function process_interhangul (head, par)
       if c and not is_unicode_var_sel(c) then
         head, pc = do_interhangul_option(head, curr, pc, c, curr.font, par)
 
-        if is_chosong(c) then
-          pc = 0
-        elseif is_jungsong(c) or is_jongsong(c) or hangul_tonemark[c] then
+        if is_jungsong(c) or is_jongsong(c) or hangul_tonemark[c] then
           pc = 1
         end
       end
@@ -1271,7 +1268,7 @@ end
 
 -- uline
 
-local function get_strike_out_down (box)
+function luatexko.get_strike_out_down (box)
   local c, f = hbox_char_font(box, true, true) -- ignore blocking nodes
   if c and f then
     local down
@@ -1291,15 +1288,14 @@ local function get_strike_out_down (box)
   end
   return -texsp"0.5ex"
 end
-luatexko.get_strike_out_down = get_strike_out_down
 
 local uline_f, uline_id = new_user_whatsit("uline","luatexko")
 
-local function ulboundary (i, n, subtype)
+function luatexko.ulboundary (i, n, subtype)
   local what = uline_f()
   if n then
-    if n.id ~= ruleid and n.id ~= hlistid then
-      warning[[\markoverwith should be a rule or an hbox]]
+    if n.id ~= ruleid and n.id ~= hlistid and n.id ~= vlistid then
+      warning[[\markoverwith should be a rule or a box]]
       n = getnext(n) or n
     end
     what.type  = lua_value -- table
@@ -1310,7 +1306,6 @@ local function ulboundary (i, n, subtype)
   end
   nodewrite(what)
 end
-luatexko.ulboundary = ulboundary
 
 local white_nodes = {
   [glueid]    = true,
@@ -1319,7 +1314,7 @@ local white_nodes = {
   [whatsitid] = true,
 }
 
-function skip_white_nodes (n, ltr)
+local function skip_white_nodes (n, ltr)
   local nextnode = ltr and getnext or getprev
   while n do
     if not white_nodes[n.id] then break end
@@ -1330,36 +1325,37 @@ end
 
 local function draw_uline (head, curr, parent, t, final)
   local start, list, subtype = t.start or head, t.list, t.subtype
-  start = skip_white_nodes(start, true) or start
-  if final then
+  start = skip_white_nodes(start, true)
+  if final and start then
     nodeslide(start) -- to get correct getprev.
   end
-  curr  = skip_white_nodes(curr) or curr
-  curr  = getnext(curr) or curr
-  local len = parent and rangedimensions(parent, start, curr)
-                     or  dimensions(start, curr) -- it works?!
-  if len and len ~= 0 then
-    local g = nodenew(glueid)
-    setglue(g, len)
-    g.subtype = subtype
-    g.leader = final and list or nodecopy(list)
-    local k = nodenew(kernid)
-    k.kern = -len
-    head = insert_before(head, start, g)
-    head = insert_before(head, start, k)
+  curr  = skip_white_nodes(curr)
+  if start and curr then
+    curr = getnext(curr) or curr
+    local len = parent and rangedimensions(parent, start, curr)
+                       or  dimensions(start, curr)
+    if len and len ~= 0 then
+      local g = nodenew(glueid)
+      setglue(g, len)
+      g.subtype = subtype
+      g.leader  = final and list or nodecopy(list)
+      local k = nodenew(kernid)
+      k.kern = -len
+      head = insert_before(head, start, g)
+      head = insert_before(head, start, k)
+    end
   end
   return head
 end
 
 local ulitems = {}
-luatexko.ulitems = ulitems
 
-local function process_uline (head, parent)
-  local curr, ulattr = head
+local function process_uline (head, parent, level)
+  local curr, level, attr = head, level or 0
   while curr do
     local id = curr.id
-    if curr.list and (id == hlistid or id == vlistid) then
-      curr.list = process_uline(curr.list, curr)
+    if curr.list then
+      curr.list = process_uline(curr.list, curr, level+1)
 
     elseif      id == whatsitid    and
       curr.subtype == user_whatsit and
@@ -1371,34 +1367,36 @@ local function process_uline (head, parent)
         ulitems[count] = {
           list    = list,
           subtype = subtype,
+          level   = level,
         }
       else
         local item = ulitems[value]
-        if ulattr and item then
+        if item then
           head = draw_uline(head, curr, parent, item, true)
           ulitems[value] = nil
-          ulattr = nil
+          attr = nil
         end
       end
 
     else
-      local attr = has_attribute(curr, ulineattr)
+      attr = has_attribute(curr, ulineattr)
       if attr then
         local item = ulitems[attr]
         if item and not item.start then
           item.start = curr
         end
-        ulattr = attr
       end
 
     end
     curr = getnext(curr)
   end
 
-  if ulattr then
-    local item = ulitems[ulattr]
-    head = draw_uline(head, nodeslide(head), parent, item)
-    item.start = nil
+  if attr then
+    local item = ulitems[attr]
+    if item and item.level == level then
+      head = draw_uline(head, nodeslide(head), parent, item)
+      item.start = nil
+    end
   end
 
   return head
@@ -1409,7 +1407,7 @@ end
 local rubybox = {}
 luatexko.rubybox = rubybox
 
-local function getrubystretchfactor (box)
+function luatexko.getrubystretchfactor (box)
   local _, fid = hbox_char_font(box, true, true)
   local str = font_options.intercharstretch[fid]
   if str then
@@ -1417,7 +1415,6 @@ local function getrubystretchfactor (box)
     set_macro("luatexkostretchfactor", stringformat("%.4f", str/em/2))
   end
 end
-luatexko.getrubystretchfactor = getrubystretchfactor
 
 local function process_ruby_pre_linebreak (head)
   local curr = head
@@ -1816,7 +1813,7 @@ local function process_vertical_font (fontdata)
   end
 end
 
-local function get_horizbox_moveleft ()
+function luatexko.gethorizboxmoveleft ()
   for _, v in ipairs{ fontcurrent(),
                       texattribute.luatexkohangulfontattr,
                       texattribute.luatexkohanjafontattr,
@@ -1830,7 +1827,6 @@ local function get_horizbox_moveleft ()
     end
   end
 end
-luatexko.gethorizboxmoveleft = get_horizbox_moveleft
 
 -- charraise
 
@@ -1949,7 +1945,7 @@ create_callback("luatexko_hpack_second",        "data", pass_fun)
 create_callback("luatexko_prelinebreak_second", "data", pass_fun)
 create_callback("luatexko_do_atbegshi",         "data", pass_fun)
 
-luatexko.process_atbegshi = function (box)
+function luatexko.process_atbegshi (box)
   if box and box.list then
     box.list = call_callback("luatexko_do_atbegshi", box.list)
   end
@@ -2105,7 +2101,7 @@ local auxiliary_procs = {
   },
 }
 
-local function activate (name)
+function luatexko.activate (name)
   for cbnam, cbfun in pairs( auxiliary_procs[name] ) do
     local fun
     if cbnam == "hpack_filter" then
@@ -2124,7 +2120,6 @@ local function activate (name)
     add_to_callback(cbnam, fun, "luatexko."..cbnam.."."..name)
   end
 end
-luatexko.activate = activate
 
 add_to_callback ("hyphenate",
 function(head)
@@ -2154,7 +2149,7 @@ end,
 
 -- aux functions
 
-local function deactivate_all (str)
+function luatexko.deactivateall (str)
   luatexko.deactivated = {}
   for _, name in ipairs{ "hpack_filter",
                          "pre_linebreak_filter",
@@ -2173,9 +2168,8 @@ local function deactivate_all (str)
     luatexko.deactivated[name] = t
   end
 end
-luatexko.deactivateall = deactivate_all
 
-local function reactivate_all ()
+function luatexko.reactivateall ()
   for name, v in pairs(luatexko.deactivated or {}) do
     for _, vv in ipairs(v) do
       add_to_callback(name, tableunpack(vv))
@@ -2183,10 +2177,8 @@ local function reactivate_all ()
   end
   luatexko.deactivated = nil
 end
-luatexko.reactivateall = reactivate_all
 
-local function current_has_hangul_chars (cnt)
+function luatexko.currenthashangulchars (cnt)
   texcount[cnt] = char_in_font(fontcurrent(), 0xAC00) and 1 or 0
 end
-luatexko.currenthashangulchars = current_has_hangul_chars
 

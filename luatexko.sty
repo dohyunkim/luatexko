@@ -172,7 +172,7 @@
   }%
   \luatexkoulineattr\luatexkoulinecount #2\relax
   \directlua{
-    luatexko.ulboundary(\the\luatexkoulinecount)
+    luatexko.ulboundary(\the\luatexkoulineattr)
   }\endgroup }
 \protected\def\uline{\markoverwith{%
   \vrule width\z@ height-\ulinedown depth\dimexpr\ulinedown+\ulinewidth\relax }}
@@ -191,12 +191,22 @@
       }%
     }%
 }}
-\protected\def\sout#1{\begingroup
+\protected\def\sout#1{%
+  \begingroup
   \setbox\z@\hbox{#1}%
-  \edef\ulinedown{\the\dimexpr
+  \edef\soutdown{%
+    \the\dimexpr
     \directlua{ tex.sprint(luatexko.get_strike_out_down(tex.box[0])) }sp
-    -.5\dimexpr\ulinewidth\relax \relax }%
-  \uline{#1}\endgroup}
+    -.5\dimexpr\ulinewidth\relax \relax
+  }%
+  \markoverwith{%
+    \vrule width  \z@
+    height-\soutdown
+    depth  \dimexpr\soutdown+\ulinewidth\relax
+  }%
+  {#1}%
+  \endgroup
+}
 \protected\def\xout{\markoverwith{\hbox to.4em{\hss/\hss}}}
 \protected\def\uwave{\font\luatexkofontsixly=lasy6\relax
   \markoverwith{\lower4\p@\hbox{\luatexkofontsixly\char58}}}
