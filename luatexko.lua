@@ -13,8 +13,8 @@
 
 luatexbase.provides_module {
   name        = 'luatexko',
-  date        = '2020/03/14',
-  version     = '2.7',
+  date        = '2020/03/20',
+  version     = '2.8',
   description = 'typesetting Korean with LuaTeX',
   author      = 'Dohyun Kim, Soojin Nam',
   license     = 'LPPL v1.3+',
@@ -515,7 +515,6 @@ local function process_fonts (head)
              is_not_harf(curr.font) and
              option_in_font(curr.font, "script") == "hang" then
             luatexko.activate("reorderTM") -- activate reorderTM here
-            active_processes.reorderTM = true
           end
 
         else
@@ -2108,6 +2107,7 @@ function luatexko.activate (name)
   for cbnam, cbfun in pairs( auxiliary_procs[name] ) do
     add_to_callback(cbnam, cbfun, "luatexko."..cbnam.."."..name)
   end
+  active_processes[name] = true
 end
 
 add_to_callback ("hyphenate",

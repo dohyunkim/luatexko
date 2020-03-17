@@ -1,3 +1,10 @@
+2020-03-20	Dohyun Kim <nomos at ktug org>
+
+	Version 2.8
+
+	* luatexko.lua, luatexko.sty:
+	use atbegshi package for dotemph, uline, and ruby
+
 2020-03-14	Dohyun Kim <nomos at ktug org>
 
 	Version 2.7
