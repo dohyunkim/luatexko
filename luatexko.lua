@@ -1238,10 +1238,12 @@ local function process_dotemph (head)
           local currwd = curr.width
           if currwd >= font_options.en_size[curr.font] then
             local box = nodecopy(dotemphbox[dotattr]).list
-            if box.id ~= hlistid then
+            -- bypass unwanted nodes injected by some other packages
+            while box.id ~= hlistid do
               warning[[\dotemph should be an hbox]]
-              box = getnext(box) or box
+              box = getnext(box)
             end
+
             local shift = (currwd - box.width)/2
             if shift ~= 0 then
               local list = box.list
@@ -1300,9 +1302,9 @@ local uline_f, uline_id = new_user_whatsit("uline","luatexko")
 function luatexko.ulboundary (i, n, subtype)
   local what = uline_f()
   if n then
-    if n.id ~= ruleid and n.id ~= hlistid and n.id ~= vlistid then
+    while n.id ~= ruleid and n.id ~= hlistid and n.id ~= vlistid do
       warning[[\markoverwith should be a rule or a box]]
-      n = getnext(n) or n
+      n = getnext(n)
     end
     what.type  = lua_value -- table
     what.value = { i, nodecopy(n), subtype }
@@ -1479,13 +1481,11 @@ local function process_ruby_post_linebreak (head)
           head = insert_before(head, curr, ruby)
         end
         ruby_t = nil
-        unset_attribute(curr, rubyattr)
-      else
-        local list = curr.list
-        if list then
-          curr.list = process_ruby_post_linebreak(list)
-        end
+      elseif curr.list then
+        curr.list = process_ruby_post_linebreak(curr.list)
       end
+    elseif curr.list then
+      curr.list = process_ruby_post_linebreak(curr.list)
     end
     curr = getnext(curr)
   end
@@ -2091,9 +2091,8 @@ local auxiliary_procs = {
     luatexko_do_atbegshi = process_uline,
   },
   ruby    = {
-    pre_linebreak_filter  = process_ruby_pre_linebreak,
-    hpack_filter          = process_ruby_post_linebreak,
-    post_linebreak_filter = process_ruby_post_linebreak,
+    pre_linebreak_filter = process_ruby_pre_linebreak,
+    luatexko_do_atbegshi = process_ruby_post_linebreak,
   },
   autojosa = {
     luatexko_hpack_first        = process_josa,
@@ -2107,21 +2106,7 @@ local auxiliary_procs = {
 
 function luatexko.activate (name)
   for cbnam, cbfun in pairs( auxiliary_procs[name] ) do
-    local fun
-    if cbnam == "hpack_filter" then
-      fun = function(h, gc)
-        if gc == "hbox" or gc == "adjusted_hbox" or gc == "align_set" then
-          h = cbfun(h)
-        end
-        return h
-      end
-    else
-      fun = function(h)
-        h = cbfun(h)
-        return h
-      end
-    end
-    add_to_callback(cbnam, fun, "luatexko."..cbnam.."."..name)
+    add_to_callback(cbnam, cbfun, "luatexko."..cbnam.."."..name)
   end
 end
 
@@ -2157,7 +2142,6 @@ function luatexko.deactivateall (str)
   luatexko.deactivated = {}
   for _, name in ipairs{ "hpack_filter",
                          "pre_linebreak_filter",
-                         "post_linebreak_filter",
                          "hyphenate",
                          "luatexko_do_atbegshi", -- might not work properly
                          "luaotfload.patch_font_unsafe", -- added for harf
