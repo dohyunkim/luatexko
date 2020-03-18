@@ -1904,10 +1904,13 @@ local function process_fake_slant_font (fontdata)
   local fsl = fontdata.slant
   if fsl and fsl > 0 then
     fsl = fsl/1000
-    local params = fontdata.parameters or {}
-    params.slant = (params.slant or 0) + fsl*65536 -- slant per point
-
     local hb = is_harf(fontdata)
+
+    local params = fontdata.parameters or {}
+    if not hb then -- hb done by luaotfload
+      params.slant = (params.slant or 0) + fsl*65536 -- slant per point
+    end
+
     local scale  = hb and hb.scale or params.factor or 655.36
 
     local shared = fontdata.shared or {}
