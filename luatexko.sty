@@ -186,12 +186,10 @@
 \protected\def\dotuline{\markoverwith*{%
   \lower\dimexpr\ulinedown+.2ex\relax\hbox{\kern.07em .\kern.07em }}}
 \protected\def\uuline{\markoverwith{%
-    \lower\ulinedown\hbox{%
-      \vtop{%
-        \hrule width .2em height\z@ depth\ulinewidth
-        \kern .15ex
-        \hrule width .2em height\z@ depth\ulinewidth
-      }%
+    \lower\ulinedown\vtop{%
+      \hrule width .2em height\z@ depth\ulinewidth
+      \kern .15ex
+      \hrule width .2em height\z@ depth\ulinewidth
     }%
 }}
 \protected\def\sout#1{%
