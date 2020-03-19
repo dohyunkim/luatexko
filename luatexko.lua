@@ -1360,11 +1360,10 @@ local ulitems = {}
 local function process_uline (head, parent, level)
   local curr, level, attr = head, level or 0
   while curr do
-    local id = curr.id
     if curr.list then
       curr.list = process_uline(curr.list, curr, level+1)
 
-    elseif id == whatsitid and curr.user_id == uline_id then
+    elseif curr.id == whatsitid and curr.user_id == uline_id then
 
       local value = curr.value
       if curr.type == lua_value then
