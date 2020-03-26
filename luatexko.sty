@@ -301,17 +301,18 @@
       \pdfliteral{q 0 -1 1 0 0 0 cm}\box#1\pdfliteral{Q}%
       \vfil }}}
 % horizontal box inside vertical writing
-\def\luatexkohorizboxmoveleft{0.5ex}
+\def\luatexkohorizboxmoveright{0.5ex}
 \protected\def\horizontal#1{%
-  \directlua{ luatexko.gethorizboxmoveleft() }%
+  \directlua{ luatexko.gethorizboxmoveright() }%
   \leavevmode
   \setbox\z@\vbox\bgroup
     \hsize#1\relax
     \typesetmodern }
 \protected\def\endhorizontal{%
   \egroup
+  \dimen@=\dimexpr.5\wd\z@-\luatexkohorizboxmoveright\relax
   \luatexkounrotatebox\z@
-  \lower\luatexkohorizboxmoveleft\box\z@ }
+  \lower\dimen@\box\z@ }
 \protected\def\luatexkounrotatebox#1{%
   \setbox#1\hbox to\dimexpr\ht#1+\dp#1{%
     \vbox to\wd#1{%

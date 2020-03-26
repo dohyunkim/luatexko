@@ -1750,7 +1750,7 @@ local function process_vertical_font (fontdata)
   local goffset = font_opt_dim(fontdata, "charraise") or
                   (parameters.x_height or quad/2)/2
   -- declare shift amount of horizontal box inside vertical env.
-  fontdata.horizboxmoveleftamount = quad/2-goffset
+  fontdata.horizboxmoverightamount = goffset
 
   for i,v in pairs(fontdata.characters) do
     local voff = goffset - (v.width or 0)/2
@@ -1816,15 +1816,15 @@ local function process_vertical_font (fontdata)
   end
 end
 
-function luatexko.gethorizboxmoveleft ()
+function luatexko.gethorizboxmoveright ()
   for _, v in ipairs{ fontcurrent(),
                       texattribute.luatexkohangulfontattr,
                       texattribute.luatexkohanjafontattr,
                       texattribute.luatexkofallbackfontattr } do
     if v and v > 0 then
-      local amount = get_font_data(v).horizboxmoveleftamount
+      local amount = get_font_data(v).horizboxmoverightamount
       if amount then
-        set_macro("luatexkohorizboxmoveleft", texsp(amount).."sp")
+        set_macro("luatexkohorizboxmoveright", texsp(amount).."sp")
         break
       end
     end
