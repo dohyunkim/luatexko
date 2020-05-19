@@ -115,6 +115,9 @@
 \def\hemph#1{\textsf{\bfseries #1}}
 \def\ldots{$\dots$}
 
+\widowpenalty5000
+\clubpenalty5000
+
 \begin{document}
 \title{\luatexko\ 간단 매뉴얼}
 \author{Dohyun Kim \normalsize |<nomos at ktug org>| \and
@@ -123,28 +126,8 @@
 \date{Version 2.8\quad 2020/03/20}
 \maketitle
 
-\begin{quote}\small
+\begin{quote}
   For a summary introduction in English, please see |README| file.
-
-  \begin{itemize}\linespread{1.1}\selectfont
-    \item[v2.6] ------
-    \item \hyperref[sec:fontswitch]{\cs{hangulbyhangulfont} 및
-      \cs{hanjabyhanjafont}가 지역적 효력만 가짐}
-    \item[v2.5] ------
-    \item LuaHB\TeX\ 지원 (세로쓰기 제외)
-    \item[v2.2] ------
-    \item \hyperref[sec:fontoption]{글꼴옵션 |InterCharStretch| 제공}
-    \item[v2.0] ------
-    \item \hyperref[sec:mathhangul]{수식 한글 글꼴을 자동으로 잡아주지 않음}
-    \item \cs{actualtext} 명령 작동 않음. 대신, 옛한글 텍스트 추출 자동 지원%
-      \footnote{%
-        PDF 리더 어플리케이션이 ActualText 기능을 지원해야 가능하다.
-        어도비 리더는 확실히 가능할 것이다. }
-    \item \hyperref[sec:fontoption]{글꼴옵션 |CompressPunctuations|,
-      |RemoveClassicSpaces|, |InterCharacter| 추가}
-    \item \hyperref[sec:break]{\cs{registerbreakableafter},
-      \cs{registerbreakablebefore} 명령 추가}
-  \end{itemize}
 \end{quote}
 
 \smallskip
@@ -458,7 +441,7 @@ v2.0부터는 고문헌 조판에서 한글^^b7한자와 영문자가 붙어 나
 \footnote{%
   폰트 옵션 |Renderer=OpenType| 또는 |Renderer=HarfBuzz| 등
   (플레인텍에서는 |mode=harf| 옵션)을 주고
-  컴파일하여 Harfbuzz 모듈을 이용하려는 경우 세로쓰기가
+  컴파일하여 HarfBuzz 모듈을 이용하려는 경우 세로쓰기가
   현재로서는 지원되지 않는다. 세로쓰기를 하려면 이 옵션을 빼고 디폴트 값인
   |Renderer=Node| (플레인텍에서는 |mode=node|)를 사용하라.}
 세로쓰기에서 |CharRaise| 옵션의 효과에 대해서는 제\ref{sec:fontoption}절을
@@ -714,7 +697,11 @@ v2.0부터는 자동으로 수식 한글을 잡아주지 않는다.%
 \pkgkwd{\luatexhangulnormalize}|=1|이라 지시하면 첫가끝 자모를 완성형 음절로,
 |2|라면 완성형 음절을 첫가끝 자모로 인코딩 변환한다. |0|이 할당되면
 인코딩 변환 기능이 꺼진다. \XeTeX의 \cs{XeTeXinputnormalization} 명령과
-유사하나, 오직 한글과 일부 한자에 대해서만 정규화가 작동할 뿐이다.
+유사하다.%
+\footnote{%
+  변환기능은 |lua-uni-algos| 패키지를 이용하므로
+  이 패키지를 설치해두어야 한다. 또한 HarfBuzz 모드에서는
+  입력변환한 것이 효과를 못볼 수도 있으니 유의할 것.}
 
 \section{UHC 입력 인코딩}\label{sec:uhcencoding}
 
@@ -729,6 +716,35 @@ v2.0부터는 자동으로 수식 한글을 잡아주지 않는다.%
   대신 |luatex -cmdx ...|, |lualatex -cmdx ...|와 같이 컴파일시 명령행에
   |-cmdx| 옵션을 주면 된다고 하니 테스트해 보시기 바란다. }
 
-\hfill \fboxsep=-\fboxrule \fbox{\vbox to 1em{\hbox to 1em{\hss}\vss}}
+\smallskip
+\hbox to\linewidth{\hss\vrule width .4\linewidth height.4pt \hss}
+\smallskip
+
+\section*{주요 변경 이력}
+
+\begin{itemize}\linespread{1.1}\selectfont
+  \item[v2.6] ------
+  \item \hyperref[sec:fontswitch]{\cs{hangulbyhangulfont} 및
+    \cs{hanjabyhanjafont}가 지역적 효력만 가짐}
+
+  \item[v2.5] ------
+  \item LuaHB\TeX\ 지원 (세로쓰기 제외)
+
+  \item[v2.2] ------
+  \item \hyperref[sec:fontoption]{글꼴옵션 |InterCharStretch| 제공}
+
+  \item[v2.0] ------
+  \item \hyperref[sec:mathhangul]{수식 한글 글꼴을 자동으로 잡아주지 않음}
+  \item \cs{actualtext} 명령 작동 않음. 대신, 옛한글 텍스트 추출 자동 지원%
+    \footnote{%
+      PDF 리더 어플리케이션이 ActualText 기능을 지원해야 가능하다.
+    어도비 리더는 확실히 가능할 것이다. }
+  \item \hyperref[sec:fontoption]{글꼴옵션 |CompressPunctuations|,
+    |RemoveClassicSpaces|, |InterCharacter| 추가}
+  \item \hyperref[sec:break]{\cs{registerbreakableafter},
+    \cs{registerbreakablebefore} 명령 추가}
+\end{itemize}
+
+%\hfill \fboxsep=-\fboxrule \fbox{\vbox to 1em{\hbox to 1em{\hss}\vss}}
 
 \end{document}
