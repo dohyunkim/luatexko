@@ -1,6 +1,11 @@
 	* luatexko.lua, luatexko.sty:
 	center-align horizontal writing box inside vertical writing
 
+	* luatexko-normalize.lua:
+	use lua-uni-algos package, which means that normalization
+	will not be confined to Hangul characters but applied to
+	all the Unicode ranges.
+
 2020-03-20	Dohyun Kim <nomos at ktug org>
 
 	Version 2.8
