@@ -812,12 +812,13 @@
 \ifnum\count@=\z@
   \newfontfeature{Expansion}{expansion=\ifx\empty#1\empty default\else #1\fi }
 \else
-  \newfontfeature{Expansion}{expansion=%
-    \ifx\empty#1\empty 20 20 5%
-    \else
-      \directlua{ if "#1"=="default" then tex.sprint("20 20 5")
-        else tex.sprint("#1") end }%
-    \fi
+  \newfontfeature{Expansion}{expansion=\directlua{
+      if "#1" == "" or "#1" == "default" then
+        tex.sprint "20 20 5"
+      else
+        tex.sprint "#1"
+      end
+    }%
   }
 \fi
 \newfontfeature{Protrusion}{protrusion=\ifx\empty#1\empty default\else #1\fi }

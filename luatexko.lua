@@ -2000,12 +2000,10 @@ local font_opt_procs = {
 
 -- luaotfload expansion feature, committed at 2020.06.08
 luatexko.plug_expansion_loaded = false
-do
-  for _,v in next, fonts.handlers.otf.features.manipulators.plug do
-    if v.name == "expansion" then
-      luatexko.plug_expansion_loaded = true
-      break
-    end
+for _,v in next, fonts.handlers.otf.features.manipulators.plug do
+  if v.name == "expansion" then
+    luatexko.plug_expansion_loaded = true
+    break
   end
 end
 
