@@ -1,4 +1,10 @@
+2020-07-27	Dohyun Kim <nomos at ktug org>
+
+	Version 2.9
+
 	* luatexko.lua, luatexko.sty:
+	adapt to latex-base-dev's new shipout hooks;
+	adapt to luaotfload's (not yet released) new expansion feature;
 	center-align horizontal writing box inside vertical writing
 
 	* luatexko-normalize.lua:
