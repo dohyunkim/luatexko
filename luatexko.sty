@@ -38,16 +38,23 @@
 \newattribute\luatexkohangulbyhangulattr
 \newattribute\luatexkohanjabyhanjaattr
 \directlua{ require"luatexko" }
-\edef\AtBegShi@Hook{% occupy the first position
-  \unexpanded{%
-    \AtBegShi@Item{%
-      \directlua{%
-        luatexko.process_atbegshi(tex.getbox(\the\AtBeginShipoutBox))
+\ifdefined\AtBegShi@Hook
+  \edef\AtBegShi@Hook{% occupy the first position
+    \unexpanded{%
+      \AtBegShi@Item{%
+        \directlua{%
+          luatexko.process_atbegshi(tex.getbox(\the\AtBeginShipoutBox))
+        }%
       }%
     }%
-  }%
-  \unexpanded\expandafter{\AtBegShi@Hook}%
-}
+    \unexpanded\expandafter{\AtBegShi@Hook}%
+  }
+\else
+  \AddToHook{shipout/before}{%
+    \directlua{ luatexko.process_atbegshi(tex.getbox(\the\ShipoutBox)) }%
+  }
+  \DeclareHookRule{shipout/before}{.}{before}{luacolor}
+\fi
 % classic
 \protected\def\typesetclassic{\luatexkoclassicattr\z@\parindent1em }
 \protected\def\typesetvertical{\luatexkoclassicattr\@ne\parindent1em }
