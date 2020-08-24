@@ -1998,18 +1998,9 @@ local font_opt_procs = {
   },
 }
 
--- luaotfload expansion feature, committed at 2020.06.08
-luatexko.plug_expansion_loaded = false
-for _,v in next, fonts.handlers.otf.features.manipulators.plug do
-  if v.name == "expansion" then
-    luatexko.plug_expansion_loaded = true
-    break
-  end
-end
-
 local font_opt_procs_single = {
   expansion = function(fontdata)
-    if not luatexko.plug_expansion_loaded and is_harf(fontdata) then
+    if is_harf(fontdata) then
       local val   = option_in_font(fontdata, "expansion")
       local setup = fonts.expansions.setups[val] or {}
       fontdata.stretch = fontdata.stretch or (setup.stretch or 2)*10
