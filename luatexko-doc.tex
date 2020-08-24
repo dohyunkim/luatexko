@@ -97,8 +97,9 @@
 \def\XeTeX{\hologo{XeTeX}}
 \usepackage[hidelinks]{hyperref}
 
-\edef\verbatim{\unexpanded\expandafter{\verbatim\linespread{1.1}\selectfont}}
-\edef\itemize{\unexpanded\expandafter{\itemize\small}}
+\AddToHook{env/itemize/begin}{\small}
+\AddToHook{env/verbatim/begin}{\linespread{1.1}}
+
 \catcode`|=13 \protected\def|{\verb|\let\\=\textbackslash}
 \def\nohyphen{\language\csname l@nohyphenation\endcsname}
 \protected\def\cs#1{\texttt{\nohyphen \textbackslash\detokenize{#1}}}
