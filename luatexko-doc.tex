@@ -97,8 +97,13 @@
 \def\XeTeX{\hologo{XeTeX}}
 \usepackage[hidelinks]{hyperref}
 
-\AddToHook{env/itemize/begin}{\small}
-\AddToHook{env/verbatim/begin}{\linespread{1.1}}
+\ifdefined\AddToHook
+  \AddToHook{env/itemize/begin}{\small}
+  \AddToHook{env/verbatim/begin}{\linespread{1.1}}
+\else
+  \edef\verbatim{\unexpanded\expandafter{\verbatim\linespread{1.1}\selectfont}}
+  \edef\itemize{\unexpanded\expandafter{\itemize\small}}
+\fi
 
 \catcode`|=13 \protected\def|{\verb|\let\\=\textbackslash}
 \def\nohyphen{\language\csname l@nohyphenation\endcsname}
