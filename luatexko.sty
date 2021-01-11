@@ -13,11 +13,10 @@
 
 \ifdefined\luatexkohangulfontattr \endinput\fi
 \ifdefined\selectfont
-  \NeedsTeXFormat{LaTeX2e}[2020/02/02]
+  \NeedsTeXFormat{LaTeX2e}[2020/10/01]
   \ProvidesPackage{luatexko}[2020/07/27 v2.9 typesetting Korean with LuaTeX]
   \RequirePackage{luatexbase}
   \RequirePackage{fontspec}[2020/02/03]
-  \RequirePackage{atbegshi}
 \else
   \input luatexbase.sty
   \input luaotfload.sty
@@ -432,11 +431,17 @@
   \catcode`\@=\luatexkoatcatcode
 \endinput\fi
 % latex
-\RequirePackage{everysel}
-\EverySelectfont{%
-  \luatexkohangulselectfont
-  \luatexkohanjaselectfont
-  \luatexkofallbackselectfont
+\IfFormatAtLeastTF{2021/05/01}{
+  \AddToHook{selectfont}{%
+    \luatexkohangulselectfont
+    \luatexkohanjaselectfont
+    \luatexkofallbackselectfont }
+}{
+  \RequirePackage{everysel}
+  \EverySelectfont{%
+    \luatexkohangulselectfont
+    \luatexkohanjaselectfont
+    \luatexkofallbackselectfont }
 }
 \edef\@rmfamilyhook{\unexpanded\expandafter{\@rmfamilyhook
   \let\luatexkohangulfont  \luatexkomainhangulfont
