@@ -431,7 +431,7 @@
   \catcode`\@=\luatexkoatcatcode
 \endinput\fi
 % latex
-\IfFormatAtLeastTF{2021/05/01}{
+\IfHookExistsTF{selectfont}{
   \AddToHook{selectfont}{%
     \luatexkohangulselectfont
     \luatexkohanjaselectfont
@@ -443,26 +443,26 @@
     \luatexkohanjaselectfont
     \luatexkofallbackselectfont }
 }
-\edef\@rmfamilyhook{\unexpanded\expandafter{\@rmfamilyhook
+\AddToHook{rmfamily}{%
   \let\luatexkohangulfont  \luatexkomainhangulfont
   \let\luatexkohanjafont   \luatexkomainhanjafont
   \let\luatexkofallbackfont\luatexkomainfallbackfont
-}}
-\edef\@sffamilyhook{\unexpanded\expandafter{\@sffamilyhook
+}
+\AddToHook{sffamily}{%
   \let\luatexkohangulfont  \luatexkosanshangulfont
   \let\luatexkohanjafont   \luatexkosanshanjafont
   \let\luatexkofallbackfont\luatexkosansfallbackfont
-}}
-\edef\@ttfamilyhook{\unexpanded\expandafter{\@ttfamilyhook
+}
+\AddToHook{ttfamily}{%
   \let\luatexkohangulfont  \luatexkomonohangulfont
   \let\luatexkohanjafont   \luatexkomonohanjafont
   \let\luatexkofallbackfont\luatexkomonofallbackfont
-}}
-\edef\@defaultfamilyhook{\unexpanded\expandafter{\@defaultfamilyhook
+}
+\AddToHook{normalfont}{%
   \let\luatexkohangulfont  \luatexkodefaulthangulfont
   \let\luatexkohanjafont   \luatexkodefaulthanjafont
   \let\luatexkofallbackfont\luatexkodefaultfallbackfont
-}}
+}
 % fontspec-like
 \ExplSyntaxOn
 \cs_new_nopar:Npn \l_luatexko_pacify_bfseries {
