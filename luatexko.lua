@@ -1945,9 +1945,7 @@ end
 -- wrap up
 
 local pass_fun = function(...) return ... end
-create_callback("luatexko_hpack_first",         "data", pass_fun)
 create_callback("luatexko_prelinebreak_first",  "data", pass_fun)
-create_callback("luatexko_hpack_second",        "data", pass_fun)
 create_callback("luatexko_prelinebreak_second", "data", pass_fun)
 create_callback("luatexko_do_atbegshi",         "data", pass_fun)
 
@@ -1957,44 +1955,36 @@ function luatexko.process_atbegshi (box)
   end
 end
 
-add_to_callback("hpack_filter", function(h)
+add_to_callback("pre_shaping_filter", function(h, gc)
+  local par = gc == ""
+           or gc == "vbox"
+           or gc == "vtop"
+           or gc == "insert"
+           or gc == "vcenter"
   h = process_fonts(h)
-  h = call_callback("luatexko_hpack_first", h)
-  h = call_callback("luatexko_hpack_second", h)
-  return process_linebreak(h)
-end, "luatexko.hpack_filter.pre_rendering", 1)
-
-add_to_callback("pre_linebreak_filter", function(h)
-  h = process_fonts(h)
-  h = call_callback("luatexko_prelinebreak_first", h, true)
-  h = call_callback("luatexko_prelinebreak_second", h, true)
-  return process_linebreak(h, true)
-end, "luatexko.pre_linebreak_filter.pre_rendering", 1)
+  h = call_callback("luatexko_prelinebreak_first", h, par)
+  h = call_callback("luatexko_prelinebreak_second", h, par)
+  return process_linebreak(h, par)
+end, "luatexko.pre_shaping_filter")
 
 local font_opt_procs = {
   removeclassicspaces = {
-    luatexko_hpack_first        = process_remove_spaces,
     luatexko_prelinebreak_first = process_remove_spaces,
   },
   interhangul = {
-    luatexko_hpack_second        = process_interhangul,
     luatexko_prelinebreak_second = process_interhangul,
   },
   interlatincjk = {
-    luatexko_hpack_second        = process_interlatincjk,
     luatexko_prelinebreak_second = process_interlatincjk,
   },
   charraise = {
-    hpack_filter         = process_charraise,
-    pre_linebreak_filter = process_charraise,
+    post_shaping_filter = process_charraise,
   },
   compresspunctuations = {
-    hpack_filter         = process_glyph_width,
-    pre_linebreak_filter = process_glyph_width,
+    post_shaping_filter = process_glyph_width,
   },
   slant = {
-    hpack_filter         = process_fake_slant_corr,
-    pre_linebreak_filter = process_fake_slant_corr,
+    post_shaping_filter = process_fake_slant_corr,
   },
 }
 
@@ -2096,11 +2086,9 @@ local auxiliary_procs = {
     luatexko_do_atbegshi = process_ruby_post_linebreak,
   },
   autojosa = {
-    luatexko_hpack_first        = process_josa,
     luatexko_prelinebreak_first = process_josa,
   },
   reorderTM = {
-    luatexko_hpack_first        = process_reorder_tonemarks,
     luatexko_prelinebreak_first = process_reorder_tonemarks,
   },
 }
@@ -2142,7 +2130,8 @@ end,
 
 function luatexko.deactivateall (str)
   luatexko.deactivated = {}
-  for _, name in ipairs{ "hpack_filter",
+  for _, name in ipairs{ "pre_shaping_filter",
+                         "post_shaping_filter",
                          "pre_linebreak_filter",
                          "hyphenate",
                          "luatexko_do_atbegshi", -- might not work properly
