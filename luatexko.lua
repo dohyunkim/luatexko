@@ -1730,11 +1730,18 @@ local function fontdata_warning(activename, ...)
 end
 
 local function process_vertical_font (fontdata)
+  local fullname = fontdata.fullname
+
+  if fontdata.type == "virtual" then
+    fontdata_warning("vitrual."..fullname,
+    "Virtual font `%s' cannot be\nused for vertical writing.", fullname)
+    return
+  end
+
   local subfont = fontdata.specification and fontdata.specification.sub
   local tsb_tab = get_tsb_table(fontdata.filename, subfont)
 
   if not tsb_tab then
-    local fullname = fontdata.fullname
     fontdata_warning("vertical."..fullname,
     "Vertical metrics table (vmtx) not found in the font\n`%s'", fullname)
     return
@@ -1899,10 +1906,9 @@ local function process_fake_slant_corr (head) -- for font fallback
   return head
 end
 
-local function process_fake_slant_font (fontdata)
-  local fsl = fontdata.slant
+local function process_fake_slant_font (fontdata, fsl)
+  -- fontdata.slant will be set by luaotfload
   if fsl and fsl > 0 then
-    fsl = fsl/1000
     local hb = is_harf(fontdata)
 
     local params = fontdata.parameters or {}
@@ -1967,112 +1973,173 @@ add_to_callback("pre_shaping_filter", function(h, gc)
   return process_linebreak(h, par)
 end, "luatexko.pre_shaping_filter")
 
-local font_opt_procs = {
-  removeclassicspaces = {
-    luatexko_prelinebreak_first = process_remove_spaces,
-  },
-  interhangul = {
-    luatexko_prelinebreak_second = process_interhangul,
-  },
-  interlatincjk = {
-    luatexko_prelinebreak_second = process_interlatincjk,
-  },
-  charraise = {
-    post_shaping_filter = process_charraise,
-  },
-  compresspunctuations = {
-    post_shaping_filter = process_glyph_width,
-  },
-  slant = {
-    post_shaping_filter = process_fake_slant_corr,
-  },
-}
+local otfregister = fonts.constructors.features.otf.register
 
-local font_opt_procs_single = {
-  expansion = function(fontdata)
-    if is_harf(fontdata) then
-      local val   = option_in_font(fontdata, "expansion")
-      local setup = fonts.expansions.setups[val] or {}
-      fontdata.stretch = fontdata.stretch or (setup.stretch or 2)*10
-      fontdata.shrink  = fontdata.shrink  or (setup.shrink  or 2)*10
-      fontdata.step    = fontdata.step    or (setup.step    or .5)*10
-    end
-    if tex.adjustspacing == 0 then
-      texset("global", "adjustspacing", 2)
-    end
-  end,
-
-  protrusion = function(fontdata)
-    if is_harf(fontdata) then -- for now, no support in harf mode
-      local val   = option_in_font(fontdata, "protrusion")
-      local setup = fonts.protrusions.setups[val] or {}
-      local quad  = fontdata.parameters.quad
-      for i, v in pairs(setup) do
-        local chr = fontdata.characters[i]
-        if chr then
-          local wdq = chr.width/quad
-          chr.left_protruding  = chr.left_protruding  or wdq*v[1]*1000
-          chr.right_protruding = chr.right_protruding or wdq*v[2]*1000
-        end
-      end
-    end
-    if tex.protrudechars == 0 then
-      texset("global", "protrudechars", 2)
-    end
-    if option_in_font(fontdata, "compresspunctuations") then
-      local fullname = fontdata.fullname
-      fontdata_warning("protrude."..fullname,
-      "Both `compresspunctuations' and `protrusion' are\nenabled for `%s'.\n"..
-      "Beware bad justifications.", fullname)
-    end
-  end,
-
-  slant = process_fake_slant_font,
-
-  vertical = function(fontdata)
-    local fullname = fontdata.fullname
-    if is_harf(fontdata) then
-      fontdata_warning("vertical."..fullname,
-      "Currently, vertical writing is not supported\nby harf mode."..
-      "`Renderer=Node' option is needed for\n`%s'", fullname)
-    elseif fontdata.type == "virtual" then
-      fontdata_warning("vitrual."..fullname,
-      "Virtual font `%s' cannot be\nused for vertical writing.", fullname)
-    else
-      process_vertical_font(fontdata)
-    end
-  end,
-}
-
-local function process_patch_font (fontdata)
-  if type(fontdata) ~= "table" or
-     fontdata.format ~= "opentype" and fontdata.format ~= "truetype" then
-    return
-  end -- as we have called patch_font_unsafe for hb fonts
-
-  for name, procs in pairs( font_opt_procs ) do
-    if not active_processes[name] and option_in_font(fontdata, name) then
-      if name == "charraise" and option_in_font(fontdata, "vertical") then
-      else
-        for cbnam, cbfun in pairs( procs ) do
-          add_to_callback(cbnam, cbfun, "luatexko."..cbnam.."."..name)
-        end
-        active_processes[name] = true
-      end
-    end
-  end
-
-  for name, func in pairs( font_opt_procs_single ) do
-    if option_in_font(fontdata, name) then
-      func(fontdata)
-    end
+local function activate_process (cbnam, cbfun, name)
+  if not active_processes[name] then
+    add_to_callback(cbnam, cbfun, "luatexko."..cbnam.."."..name)
+    active_processes[name] = true
   end
 end
 
-add_to_callback("luaotfload.patch_font", process_patch_font,
-"luatexko.patch_font")
-add_to_callback("luaotfload.patch_font_unsafe", process_patch_font,
-"luatexko.patch_font")
+otfregister {
+  name = "removeclassicspaces",
+  description = "remove spaces in classic typesetting",
+  default = false,
+  manipulators = {
+    node = function()
+      activate_process("luatexko_prelinebreak_first", process_remove_spaces, "removeclassicspaces")
+    end,
+    plug = function()
+      activate_process("luatexko_prelinebreak_first", process_remove_spaces, "removeclassicspaces")
+    end,
+  },
+}
+
+otfregister {
+  name = "interhangul",
+  description = "insert more glue between Hangul chars",
+  default = false,
+  manipulators = {
+    node = function()
+      activate_process("luatexko_prelinebreak_second", process_interhangul, "interhangul")
+    end,
+    plug = function()
+      activate_process("luatexko_prelinebreak_second", process_interhangul, "interhangul")
+    end,
+  },
+}
+
+otfregister {
+  name = "interlatincjk",
+  description = "insert glue between CJK and Latin",
+  default = false,
+  manipulators = {
+    node = function()
+      activate_process("luatexko_prelinebreak_second", process_interlatincjk, "interlatincjk")
+    end,
+    plug = function()
+      activate_process("luatexko_prelinebreak_second", process_interlatincjk, "interlatincjk")
+    end,
+  },
+}
+
+otfregister {
+  name = "charraise",
+  description = "raise chars",
+  default = false,
+  manipulators = {
+    node = function(fontdata)
+      if not option_in_font(fontdata, "vertical") then
+        activate_process("post_shaping_filter", process_charraise, "charraise")
+      end
+    end,
+    plug = function(fontdata)
+      if not option_in_font(fontdata, "vertical") then
+        activate_process("post_shaping_filter", process_charraise, "charraise")
+      end
+    end,
+  },
+}
+
+otfregister {
+  name = "compresspunctuations",
+  description = "compress width of CJK punctuations",
+  default = false,
+  manipulators = {
+    node = function()
+      activate_process("post_shaping_filter", process_glyph_width, "compresspunctuations")
+    end,
+    plug = function()
+      activate_process("post_shaping_filter", process_glyph_width, "compresspunctuations")
+    end,
+  },
+}
+
+otfregister {
+  name = "slant",
+  description = "fake slant fallback fonts",
+  default = false,
+  manipulators = {
+    node = function(fontdata, _, value)
+      process_fake_slant_font(fontdata, value)
+      activate_process("post_shaping_filter", process_fake_slant_corr, "slant")
+    end,
+    plug = function(fontdata, _, value)
+      process_fake_slant_font(fontdata, value)
+      activate_process("post_shaping_filter", process_fake_slant_corr, "slant")
+    end,
+  },
+}
+
+otfregister {
+  name = "vertical",
+  description = "vertical typesetting",
+  default = false,
+  manipulators = {
+    node = process_vertical_font,
+    plug = function(fontdata)
+      local fullname = fontdata.fullname
+      fontdata_warning("vertical."..fullname,
+      "Currently, vertical writing is not supported\nby harf mode."..
+      "`Renderer=Node' option is needed for\n`%s'", fullname)
+    end,
+  },
+}
+
+otfregister {
+  name = "expansion",
+  description = "glyph expansion",
+  default = false,
+  manipulators = {
+    node = function()
+      if tex.adjustspacing == 0 then
+        texset("global", "adjustspacing", 2)
+      end
+    end,
+    plug = function(fontdata, _, value)
+      local setup = fonts.expansions.setups[value] or {}
+      fontdata.stretch = fontdata.stretch or (setup.stretch or 2)*10
+      fontdata.shrink  = fontdata.shrink  or (setup.shrink  or 2)*10
+      fontdata.step    = fontdata.step    or (setup.step    or .5)*10
+      if tex.adjustspacing == 0 then
+        texset("global", "adjustspacing", 2)
+      end
+    end,
+  },
+}
+
+local function process_protrusion (fontdata, _, value)
+  local setup = fonts.protrusions.setups[value] or {}
+  local quad  = fontdata.parameters.quad
+  for i, v in pairs(setup) do
+    local chr = fontdata.characters[i]
+    if chr then
+      local wdq = chr.width/quad
+      chr.left_protruding  = chr.left_protruding  or wdq*v[1]*1000
+      chr.right_protruding = chr.right_protruding or wdq*v[2]*1000
+    end
+  end
+  if tex.protrudechars == 0 then
+    texset("global", "protrudechars", 2)
+  end
+  if option_in_font(fontdata, "compresspunctuations") then
+    local fullname = fontdata.fullname
+    fontdata_warning("protrude."..fullname,
+    "Both `compresspunctuations' and `protrusion' are\nenabled for `%s'.\n"..
+    "Beware bad justifications.", fullname)
+  end
+end
+
+otfregister {
+  name = "protrusion",
+  description = "glyph protrusion",
+  default = false,
+  manipulators = {
+    node = process_protrusion,
+    plug = process_protrusion,
+  },
+}
 
 local auxiliary_procs = {
   dotemph = {
@@ -2135,8 +2202,7 @@ function luatexko.deactivateall (str)
                          "pre_linebreak_filter",
                          "hyphenate",
                          "luatexko_do_atbegshi", -- might not work properly
-                         "luaotfload.patch_font_unsafe", -- added for harf
-                         "luaotfload.patch_font" } do
+                       } do
     local t = {}
     for i, v in ipairs( callback_descriptions(name) ) do
       if v:find(str or "^luatexko%.") then
