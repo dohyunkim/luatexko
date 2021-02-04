@@ -1907,17 +1907,14 @@ local function process_fake_slant_corr (head) -- for font fallback
 end
 
 local function process_fake_slant_font (fontdata, fsl)
-  -- fontdata.slant will be set by luaotfload
   if fsl and fsl > 0 then
-    local hb = is_harf(fontdata)
+    fontdata.slant = fsl*1000
 
     local params = fontdata.parameters or {}
-    if not hb then -- hb done by luaotfload
-      params.slant = (params.slant or 0) + fsl*65536 -- slant per point
-    end
+    params.slant = (params.slant or 0) + fsl*65536 -- slant per point
 
+    local hb = is_harf(fontdata)
     local scale  = hb and hb.scale or params.factor or 655.36
-
     local shared = fontdata.shared or {}
     local descrs = shared.rawdata and shared.rawdata.descriptions or {}
 
