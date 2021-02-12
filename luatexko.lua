@@ -1846,13 +1846,12 @@ local function process_charraise (head)
   while curr do
     local id = curr.id
     if id == glyphid then
-      local f = curr.font
-      local raise = font_options.charraise[f]
-      if not has_attribute(curr,raiseattr)
-        and raise
-        and not option_in_font(f, "vertical")
-        then
-        curr.yoffset = (curr.yoffset or 0) + raise
+      if not has_attribute(curr,raiseattr) then
+        local f = curr.font
+        local raise = font_options.charraise[f]
+        if raise and not option_in_font(f, "vertical") then
+          curr.yoffset = (curr.yoffset or 0) + raise
+        end
         set_attribute(curr, raiseattr, 1)
       end
     elseif id == discid then
