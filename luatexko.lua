@@ -41,6 +41,7 @@ local noderemove      = node.remove
 local nodeslide       = node.slide
 local nodewrite       = node.write
 local rangedimensions = node.rangedimensions
+local set_attribute   = node.set_attribute
 local setglue         = node.setglue
 local setproperty     = node.setproperty
 local unset_attribute = node.unset_attribute
@@ -69,12 +70,10 @@ local tableunpack = table.unpack
 local add_to_callback       = luatexbase.add_to_callback
 local attributes            = luatexbase.attributes
 local call_callback         = luatexbase.call_callback
-local callback_descriptions = luatexbase.callback_descriptions
 local create_callback       = luatexbase.create_callback
 local module_warning        = luatexbase.module_warning
 local new_user_whatsit      = luatexbase.new_user_whatsit
 local registernumber        = luatexbase.registernumber
-local remove_from_callback  = luatexbase.remove_from_callback
 
 local function warning (...)
   return module_warning("luatexko", stringformat(...))
@@ -1840,19 +1839,26 @@ end
 
 -- charraise
 
+local raiseattr = luatexbase.new_attribute"luatexkoraiseattr"
+
 local function process_charraise (head)
   local curr = head
   while curr do
-    if curr.id == glyphid then
+    local id = curr.id
+    if id == glyphid then
       local f = curr.font
       local raise = font_options.charraise[f]
-      if raise and not option_in_font(f, "vertical") then
-        local props = my_node_props(curr)
-        if not props.charraised then
-          curr.yoffset = (curr.yoffset or 0) + raise
-          props.charraised = true
-        end
+      if not has_attribute(curr,raiseattr)
+        and raise
+        and not option_in_font(f, "vertical")
+        then
+        curr.yoffset = (curr.yoffset or 0) + raise
+        set_attribute(curr, raiseattr, 1)
       end
+    elseif id == discid then
+      process_charraise(curr.pre)
+      process_charraise(curr.post)
+      process_charraise(curr.replace)
     end
     curr = getnext(curr)
   end
@@ -2201,9 +2207,9 @@ function luatexko.deactivateall (str)
                          "luatexko_do_atbegshi", -- might not work properly
                        } do
     local t = {}
-    for i, v in ipairs( callback_descriptions(name) ) do
+    for i, v in ipairs( luatexbase.callback_descriptions(name) ) do
       if v:find(str or "^luatexko%.") then
-        local ff, dd = remove_from_callback(name, v)
+        local ff, dd = luatexbase.remove_from_callback(name, v)
         tableinsert(t, { ff, dd, i })
       end
     end
