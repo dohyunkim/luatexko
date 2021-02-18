@@ -472,20 +472,26 @@ end
 
 local function hangul_space_skip (curr, newfont)
   if curr.lang ~= nohyphen and curr.font ~= newfont then
-    local n = getnext(curr)
-    if n and n.id == glueid and n.subtype == spaceskip then
-      local params = getparameters(curr.font)
-      local oldwd, oldst, oldsh, oldsto, oldsho = getglue(n)
-      if params
-        and oldwd == params.space
-        and oldst == params.space_stretch
-        and oldsh == params.space_shrink
-        and oldsto == 0
-        and oldsho == 0 then -- not user's spaceskip
+    local params = getparameters(curr.font)
+    -- fontloader's "node" mode sets space_stretch to zero
+    -- when the font is a monospaced font (fontspec's \setmonofont
+    -- command does the same thing), which we will bypass here
+    -- for alignment of CJK and Latin glyphs in verbatim environment.
+    -- See http://www.ktug.org/xe/index.php?document_srl=249772
+    if params and params.space_stretch ~= 0 then
+      local n = getnext(curr)
+      if n and n.id == glueid and n.subtype == spaceskip then
+        local oldwd, oldst, oldsh, oldsto, oldsho = getglue(n)
+        if oldwd == params.space
+          and oldst == params.space_stretch
+          and oldsh == params.space_shrink
+          and oldsto == 0
+          and oldsho == 0 then -- not user's spaceskip
 
-        local newwd = font_options.hangulspaceskip[newfont]
-        if newwd then
-          setglue(n, newwd[1], newwd[2], newwd[3])
+          local newwd = font_options.hangulspaceskip[newfont]
+          if newwd then
+            setglue(n, newwd[1], newwd[2], newwd[3])
+          end
         end
       end
     end
