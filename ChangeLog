@@ -1,3 +1,14 @@
+2021-03-01	Dohyun Kim <nomos at ktug org>
+
+	Version 3.0
+
+	* luatexko.lua:
+	do not adjust interword glue after CJK characters
+	when current font is a monospaced font
+
+	* luatexko.sty:
+	deprecated command \actualtext is now removed
+
 2020-07-27	Dohyun Kim <nomos at ktug org>
 
 	Version 2.9

@@ -1,6 +1,6 @@
 -- luatexko.lua
 --
--- Copyright (c) 2013-2020 Dohyun Kim <nomos at ktug org>
+-- Copyright (c) 2013-2021 Dohyun Kim <nomos at ktug org>
 --                         Soojin Nam <jsunam at gmail com>
 --
 -- This work may be distributed and/or modified under the
@@ -13,8 +13,8 @@
 
 luatexbase.provides_module {
   name        = 'luatexko',
-  date        = '2020/07/27',
-  version     = '2.9',
+  date        = '2021/03/01',
+  version     = '3.0',
   description = 'typesetting Korean with LuaTeX',
   author      = 'Dohyun Kim, Soojin Nam',
   license     = 'LPPL v1.3+',

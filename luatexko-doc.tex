@@ -124,7 +124,7 @@
 \author{Dohyun Kim \normalsize |<nomos at ktug org>| \and
         Soojin Nam \normalsize |<jsunam at gmail com>| \and
   \normalsize <\url{http://github.com/dohyunkim/luatexko}>}
-\date{Version 3.0\quad 2021/02/28}
+\date{Version 3.0\quad 2021/03/01}
 \maketitle
 
 \begin{quote}
@@ -214,10 +214,10 @@ verbatim 코드를 식자할 때는 이 기능이 작동하지 않으며,%
   부연하건대, |\\language=\\l@nohyphenation| 상황에서 작동하지 않는
   그밖의 기능은 다음과 같다: 줄바꿈 허용, InterCharacter, InterHangul,
   InterLatinCJK, CompressPunctuations, RemoveClassicSpaces,
-  한글^^b7한자 폰트 문자 다음의 공백 크기 조정 등. }
-문장부호가 고정폭 글꼴일 때에도 작동하지 않는다.%
-\footnote{%
-  또한 플레인텍에서는 영문글꼴을 트루타입/오픈타입으로 지정해야만 작동한다. }
+  한글^^b7한자 폰트 문자 다음의 공백 크기 조정 등. 마지막의
+  한글^^b7한자 다음의 공백 크기 조정은 영문자가 고정폭 글꼴일 때에도
+  작동하지 않는다. }
+문장부호가 고정폭 글꼴일 때에도 작동하지 않는다.
 영향 받는 문장부호들의 기본값은 다음과 같다:
 \begin{verbatim}
   [0x21]    !    [0x27]    '   [0x28]    (   [0x29]    )
@@ -728,6 +728,10 @@ v2.0부터는 자동으로 수식 한글을 잡아주지 않는다.%
 \section*{주요 변경 이력}
 
 \begin{itemize}\linespread{1.1}\selectfont
+  \item[v3.0] ------
+  \item \hyperref[sec:fontswitch]{영문자가 고정폭 글꼴일 때
+    한글^^b7한자 다음에 공백 크기 조정을 하지 않음}
+  \item \cs{actualtext} 명령 제거
   \item[v2.6] ------
   \item \hyperref[sec:fontswitch]{\cs{hangulbyhangulfont} 및
     \cs{hanjabyhanjafont}가 지역적 효력만 가짐}
