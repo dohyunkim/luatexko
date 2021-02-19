@@ -828,7 +828,16 @@
     \begingroup\ttfamily
     \directlua{ luatexko.currenthashangulchars(255) }\expandafter\endgroup
     \ifnum\count@=\z@
-      \let\luatexkomonohangulfont\luatexkosanshangulfont
+      \IfFontExistsTF{UnDotum.ttf}
+        {\setmonohangulfont{UnDotum}[
+          UprightFeatures={SizeFeatures={
+            {Size={-8.5},   FakeStretch=1.062},
+            {Size={8.5-11}, FakeStretch=1.05 },
+            {Size={11-},    FakeStretch=1.03 }}},
+          BoldFeatures={SizeFeatures={
+            {Size={-},      FakeStretch=1.05}}},
+          WordSpace={1.66667,0,0}]
+        }{}
     \fi
   \fi
   % just in case, reset luatexkodefault...font

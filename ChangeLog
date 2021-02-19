@@ -7,6 +7,8 @@
 	when current font is a monospaced font
 
 	* luatexko.sty:
+	horizontal metrics of default Hangul monospaced font are
+	matched with those of Latin Modern Mono;
 	deprecated command \actualtext is now removed
 
 2020-07-27	Dohyun Kim <nomos at ktug org>
