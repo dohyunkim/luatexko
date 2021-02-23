@@ -1794,6 +1794,8 @@ local function process_vertical_font (fontdata)
     parameters.space_stretch = spacechar.width/2
     parameters.space_shrink  = spacechar.width/2
   end
+  parameters.ascender  = quad/2
+  parameters.descender = quad/2
 
   local res = fontdata.resources or {}
   local fea = shared.features or {}

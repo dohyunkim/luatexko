@@ -85,7 +85,7 @@
   RawFeature=vertical,
   CompressPunctuations,
   InterCharStretch=1pt,
-  CharRaise=3.6pt,
+  CharRaise=.75ex,
   CharacterWidth=Full,
 ]
 \newhangulfontface\rubyfont{Noto Serif CJK KR Medium}[
@@ -343,8 +343,8 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
   [CharRaise=2pt]
 \end{verbatim}
   세로쓰기에서는 모든 글자들을 지정한 값만큼 오른쪽으로 이동시킨다.
-  세로쓰기에서 이 옵션 값을 고정길이{\small(가령 |pt| 단위)}로 주면
-  크기가 다른 폰트들간에 중앙정렬이 이루어진다.
+  \sout{세로쓰기에서 이 옵션 값을 고정길이{\small(가령 |pt| 단위)}로 주면
+  크기가 다른 폰트들간에 중앙정렬이 이루어진다.}
   세로쓰기에서 이 옵션을 주지 않으면 |0.5ex|가 기본값으로 동작한다.
 
 \item[RemoveClassicSpaces] \pkgkwd*{RemoveClassicSpaces}%
@@ -452,7 +452,7 @@ v2.0부터는 고문헌 조판에서 한글^^b7한자와 영문자가 붙어 나
   기본으로 셋팅되어 있다. 일종의 고문헌 조판으로 보는 것이다.
 }
 세로쓰기에서 |CharRaise| 옵션의 효과에 대해서는 제\ref{sec:fontoption}절을
-참조할 것.
+참조.
 
 \begin{figure}
   \framebox[\linewidth]{
