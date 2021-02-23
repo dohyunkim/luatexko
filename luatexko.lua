@@ -1760,7 +1760,11 @@ local function process_vertical_font (fontdata)
   local quad     = parameters.quad or 655360
   local ascender = parameters.ascender or quad*0.8
 
-  local goffset = font_opt_dim(fontdata, "charraise")
+  local goffset
+  local raise = option_in_font(fontdata, "charraise")
+  if raise and type(raise) == "string" then -- user's option
+    goffset = font_opt_dim(fontdata, "charraise")
+  end
   if not goffset then
     goffset = (parameters.x_height or quad/2)/2
     shared.features.charraise = goffset
