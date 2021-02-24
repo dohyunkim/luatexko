@@ -148,13 +148,15 @@ end
 local function font_opt_dim (fd, optname)
   local dim = option_in_font(fd, optname)
   if dim then
-    local params
+    local params, m, u
     if type(fd) == "number" then
       params = getparameters(fd)
     else
       params = fd.parameters
     end
-    local m, u = type(dim) == "string" and dim:match"^(.+)(e[mx])%s*$"
+    if type(dim) == "string" then
+      m, u = dim:match"^(.+)(e[mx])%s*$"
+    end
     if m and u and params then
       if u == "em" then
         dim = m * params.quad
@@ -1296,7 +1298,10 @@ function luatexko.get_strike_out_down (box)
     else
       down = -0.5*ex
     end
-    local raise = font_options.charraise[f] or 0
+    local raise = 0
+    if not option_in_font(f,"vertical") then
+      raise = font_options.charraise[f] or 0
+    end
     return down - raise
   end
   return -texsp"0.5ex"
@@ -1760,24 +1765,19 @@ local function process_vertical_font (fontdata)
   local quad     = parameters.quad or 655360
   local ascender = parameters.ascender or quad*0.8
 
-  local goffset
-  local raise = option_in_font(fontdata, "charraise")
-  if raise and type(raise) == "string" then -- user's option
-    goffset = font_opt_dim(fontdata, "charraise")
-  end
-  if not goffset then
-    goffset = (parameters.x_height or quad/2)/2
-    shared.features.charraise = goffset
-  end
+  local goffset = font_opt_dim(fontdata, "charraise") or
+                  (parameters.x_height or quad/2)/2
+  -- declare shift amount of horizontal box inside vertical env.
+  fontdata.vertcharraise = goffset
 
   for i,v in pairs(fontdata.characters) do
-    local voff = (v.width or 0)/2
+    local voff = goffset - (v.width or 0)/2
     local bbox = descriptions[i] and descriptions[i].boundingbox or {0,0,0,0}
     local gid  = v.index
     local tsb  = tsb_tab[gid].tsb
     local hoff = tsb and (bbox[4] + tsb) * scale or ascender
     v.commands = {
-      { "down",  voff },
+      { "down", -voff },
       { "right", hoff },
       { "pdf", "q 0 1 -1 0 0 0 cm" },
       { "push" },
@@ -1787,8 +1787,8 @@ local function process_vertical_font (fontdata)
     }
     local vw = tsb_tab[gid].ht
     v.width  = vw and vw * scale or quad
-    local ht = bbox[3] * scale + goffset - voff
-    local dp = bbox[1] * scale + goffset - voff
+    local ht = bbox[3] * scale + voff
+    local dp = bbox[1] * scale + voff
     v.height = ht > 0 and  ht or nil
     v.depth  = dp < 0 and -dp or nil
   end
@@ -1798,8 +1798,8 @@ local function process_vertical_font (fontdata)
     parameters.space_stretch = spacechar.width/2
     parameters.space_shrink  = spacechar.width/2
   end
-  parameters.ascender  = quad/2
-  parameters.descender = quad/2
+  parameters.ascender  = quad/2 + goffset
+  parameters.descender = quad/2 - goffset
 
   local res = fontdata.resources or {}
   local fea = shared.features or {}
@@ -1842,12 +1842,10 @@ function luatexko.gethorizboxmoveright ()
                       texattribute.luatexkohanjafontattr,
                       texattribute.luatexkofallbackfontattr } do
     if v and v > 0 then
-      if option_in_font(v, "vertical") then
-        local amount = font_options.charraise[v]
-        if amount then
-          set_macro("luatexkohorizboxmoveright", texsp(amount).."sp")
-          break
-        end
+      local amount = get_font_data(v).vertcharraise
+      if amount then
+        set_macro("luatexkohorizboxmoveright", texsp(amount).."sp")
+        break
       end
     end
   end
@@ -1855,22 +1853,25 @@ end
 
 -- charraise
 
+local raiseattr = luatexbase.new_attribute"luatexkoraiseattr"
+
 local function process_charraise (head)
   local curr = head
   while curr do
     local id = curr.id
     if id == glyphid then
-      local f = curr.font
-      local raise = font_options.charraise[f]
-      if raise then
-        curr.yoffset = (curr.yoffset or 0) + raise
+      if not has_attribute(curr,raiseattr) then
+        local f = curr.font
+        local raise = font_options.charraise[f]
+        if raise and not option_in_font(f, "vertical") then
+          curr.yoffset = (curr.yoffset or 0) + raise
+        end
+        set_attribute(curr, raiseattr, 1)
       end
     elseif id == discid then
       process_charraise(curr.pre)
       process_charraise(curr.post)
       process_charraise(curr.replace)
-    elseif curr.list then
-      process_charraise(curr.list)
     end
     curr = getnext(curr)
   end
@@ -1990,9 +1991,9 @@ end, "luatexko.pre_shaping_filter")
 
 local otfregister = fonts.constructors.features.otf.register
 
-local function activate_process (cbnam, cbfun, name, prior)
+local function activate_process (cbnam, cbfun, name)
   if not active_processes[name] then
-    add_to_callback(cbnam, cbfun, "luatexko."..cbnam.."."..name, prior)
+    add_to_callback(cbnam, cbfun, "luatexko."..cbnam.."."..name)
     active_processes[name] = true
   end
 end
@@ -2045,10 +2046,14 @@ otfregister {
   default = false,
   manipulators = {
     node = function(fontdata)
-      activate_process("luatexko_do_atbegshi", process_charraise, "charraise",1)
+      if not option_in_font(fontdata, "vertical") then
+        activate_process("post_shaping_filter", process_charraise, "charraise")
+      end
     end,
     plug = function(fontdata)
-      activate_process("luatexko_do_atbegshi", process_charraise, "charraise",1)
+      if not option_in_font(fontdata, "vertical") then
+        activate_process("post_shaping_filter", process_charraise, "charraise")
+      end
     end,
   },
 }
@@ -2088,10 +2093,7 @@ otfregister {
   description = "vertical typesetting",
   default = false,
   manipulators = {
-    node = function(fontdata)
-      process_vertical_font(fontdata)
-      activate_process("luatexko_do_atbegshi", process_charraise, "charraise",1)
-    end,
+    node = process_vertical_font,
     plug = function(fontdata)
       local fullname = fontdata.fullname
       fontdata_warning("vertical."..fullname,

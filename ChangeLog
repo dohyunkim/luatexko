@@ -5,7 +5,7 @@
 	* luatexko.lua:
 	do not adjust interword glue after CJK characters
 	when current font is a monospaced font;
-	fix a bug wrt dotemph/ruby position in vertical writing env.
+	fix a bug wrt \sout position in vertical writing env.
 
 	* luatexko.sty:
 	horizontal metrics of default Hangul monospaced font are
