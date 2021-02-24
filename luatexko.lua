@@ -1298,10 +1298,8 @@ function luatexko.get_strike_out_down (box)
     else
       down = -0.5*ex
     end
-    local raise = 0
-    if not option_in_font(f,"vertical") then
-      raise = font_options.charraise[f] or 0
-    end
+
+    local raise = font_options.charraise[f] or 0
     return down - raise
   end
   return -texsp"0.5ex"
@@ -1740,6 +1738,8 @@ local function fontdata_warning(activename, ...)
   end
 end
 
+local dfltfntsize = get_font_param(fontcurrent(), "quad") or 655360
+
 local function process_vertical_font (fontdata)
   local fullname = fontdata.fullname
 
@@ -1763,10 +1763,11 @@ local function process_vertical_font (fontdata)
   local parameters   = fontdata.parameters or {}
   local scale    = parameters.factor or 655.36
   local quad     = parameters.quad or 655360
+  local xheight  = parameters.x_height or quad/2
   local ascender = parameters.ascender or quad*0.8
 
-  local goffset = font_opt_dim(fontdata, "charraise") or
-                  (parameters.x_height or quad/2)/2
+  local goffset = xheight/2 * (dfltfntsize / quad) -- TODO?
+
   -- declare shift amount of horizontal box inside vertical env.
   fontdata.vertcharraise = goffset
 
@@ -1844,6 +1845,7 @@ function luatexko.gethorizboxmoveright ()
     if v and v > 0 then
       local amount = get_font_data(v).vertcharraise
       if amount then
+        amount = amount + (font_options.charraise[v] or 0)
         set_macro("luatexkohorizboxmoveright", texsp(amount).."sp")
         break
       end
@@ -1863,7 +1865,7 @@ local function process_charraise (head)
       if not has_attribute(curr,raiseattr) then
         local f = curr.font
         local raise = font_options.charraise[f]
-        if raise and not option_in_font(f, "vertical") then
+        if raise then
           curr.yoffset = (curr.yoffset or 0) + raise
         end
         set_attribute(curr, raiseattr, 1)
@@ -2046,14 +2048,10 @@ otfregister {
   default = false,
   manipulators = {
     node = function(fontdata)
-      if not option_in_font(fontdata, "vertical") then
-        activate_process("post_shaping_filter", process_charraise, "charraise")
-      end
+      activate_process("post_shaping_filter", process_charraise, "charraise")
     end,
     plug = function(fontdata)
-      if not option_in_font(fontdata, "vertical") then
-        activate_process("post_shaping_filter", process_charraise, "charraise")
-      end
+      activate_process("post_shaping_filter", process_charraise, "charraise")
     end,
   },
 }

@@ -5,12 +5,12 @@
 	* luatexko.lua:
 	do not adjust interword glue after CJK characters
 	when current font is a monospaced font;
-	fix a bug wrt \sout position in vertical writing env.
+	fix a bug wrt dotemph/ruby/sout position in vertical writing.
 
 	* luatexko.sty:
 	horizontal metrics of default Hangul monospaced font are
 	matched with those of Latin Modern Mono;
-	deprecated command \actualtext is now removed
+	deprecated command \actualtext is now removed.
 
 2020-07-27	Dohyun Kim <nomos at ktug org>
 

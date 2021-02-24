@@ -85,7 +85,7 @@
   RawFeature=vertical,
   CompressPunctuations,
   InterCharStretch=1pt,
-  CharRaise=3.6pt,
+  CharRaise=1pt,
   CharacterWidth=Full,
 ]
 \newhangulfontface\rubyfont{Noto Serif CJK KR Medium}[
@@ -342,10 +342,10 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
 \begin{verbatim}
   [CharRaise=2pt]
 \end{verbatim}
-  세로쓰기에서는 모든 글자들을 지정한 값만큼 오른쪽으로 이동시킨다.
-  세로쓰기에서 이 옵션 값을 고정길이{\small(가령 |pt| 단위)}로 주면
-  크기가 다른 폰트들간에 중앙정렬이 이루어진다.
-  세로쓰기에서 이 옵션을 주지 않으면 |0.5ex|가 기본값으로 동작한다.
+  세로쓰기에서는 모든 글자들을 지정한 값만큼 오른쪽으로 이동시킨다.%
+  \footnote{%
+    세로쓰기에서는 이 옵션 값을 고정길이(가령 |pt| 단위)로 주어야
+    크기가 다른 폰트들간에 중앙정렬이 유지된다. }
 
 \item[RemoveClassicSpaces] \pkgkwd*{RemoveClassicSpaces}%
   고문헌 조판시에 CJK 글자들 사이의 공백을 없애준다.%
@@ -442,7 +442,7 @@ v2.0부터는 고문헌 조판에서 한글^^b7한자와 영문자가 붙어 나
   |vmtx| 정보를 가지고 있지 않은 글꼴은 세로쓰기에 적합치 않은 글꼴이다.
   |otfinfo -t <파일>| 명령으로 글꼴에 들어있는 테이블 정보를 알 수 있다. }\,%
 \footnote{%
-  폰트 옵션 |Renderer=OpenType| 또는 |Renderer=HarfBuzz| 등
+  폰트 옵션 |Renderer=HarfBuzz| 또는 |Renderer=OpenType| 등
   (플레인텍에서는 |mode=harf| 옵션)을 주고
   컴파일하여 HarfBuzz 모듈을 이용하려는 경우 세로쓰기가
   현재로서는 지원되지 않는다. 세로쓰기를 하려면 이 옵션을 빼고 디폴트 값인
@@ -495,8 +495,7 @@ v2.0부터는 고문헌 조판에서 한글^^b7한자와 영문자가 붙어 나
 환경을 이용한다. |<dimen>|은 가로쓰기 박스의 너비를 지시한다.%
 \footnote{%
   플레인텍에서는 \cs{horizontal{<dimen>}} \ldots\ \cs{endhorizontal}. }
-가로쓰기 영역의 폰트 설정은 사용자의 몫이다.%
-\footnote{폰트 지시는 |horizontal| 환경 안에서 행하는 것을 권장한다.}
+가로쓰기 영역의 폰트 설정은 사용자의 몫이다.
 
 \begin{figure}
   \framebox[\linewidth]{
@@ -729,6 +728,8 @@ v2.0부터는 자동으로 수식 한글을 잡아주지 않는다.%
 
 \begin{itemize}\linespread{1.1}\selectfont
   \item[v3.0] ------
+  \item \hyperref[sec:fontoption]{세로쓰기에서 |CharRaise| 옵션은
+      이제 글자들의 \dotemph{추가적인} 이동 길이를 나타낸다.}
   \item 기본 로드되는 고정폭 한글 폰트(UnDotum)의 폭을
     Latin Modern Mono 폰트에 맞추어 조정
   \item \hyperref[sec:fontswitch]{영문자가 고정폭 글꼴일 때
