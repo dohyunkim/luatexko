@@ -15,7 +15,7 @@
 \usepackage[hangul]{luatexko}
 \directlua{
   local gidoffset = 0x120000
-  local notoserifcjkkr_hb = {
+  fonts.protrusions.setups.notoserifcjkharf = {
     [171]     = { 0.5, 0   }, % «
     [187]     = { 0,   0.5 }, % »
     [62253+gidoffset] = { 0.5, 0   }, % (
@@ -29,7 +29,16 @@
     [62273+gidoffset] = { 0.5, 0   }, % “
     [62274+gidoffset] = { 0,   0.5 }, % ”
   }
-  fonts.protrusions.setups.notoserifcjk = notoserifcjkkr_hb
+  fonts.protrusions.setups.notosanscjknode = { % compresspunctuations
+    [0x3001]  = { 0, .5 },
+    [0x3002]  = { 0, .5 },
+    [0xFF0C]  = { 0, .5 },
+    [0xFF0E]  = { 0, .5 },
+    [0xFE10]  = { 0, .5 },
+    [0xFE11]  = { 0, .5 },
+    [0xFE12]  = { 0, .5 },
+    [1004421] = { 0, .5 },
+  }
 }
 \defaultfontfeatures+{Renderer=HarfBuzz}
 \setmainfont{Latin Modern Roman}[Expansion] % for hb tlig
@@ -41,7 +50,7 @@
   UprightFont=* Light,
   BoldFont=* Bold,
   InterLatinCJK=.125em,
-  Expansion, Protrusion=notoserifcjk,
+  Expansion, Protrusion=notoserifcjkharf,
 ]
 \setsansfont{Latin Modern Sans}
 \setsanshangulfont{Noto Sans CJK KR}[
@@ -87,6 +96,7 @@
   InterCharStretch=1pt,
   CharRaise=1pt,
   CharacterWidth=Full,
+  Protrusion=notosanscjknode,
 ]
 \newhangulfontface\rubyfont{Noto Serif CJK KR Medium}[
   Script=Hangul,
@@ -455,6 +465,7 @@ v2.0부터는 고문헌 조판에서 한글^^b7한자와 영문자가 붙어 나
 참조.
 
 \begin{figure}
+  \fboxsep=5pt
   \framebox[\linewidth]{
     \begin{vertical}{20em}
       \linespread{1.5}\sffamily \verticalhangulfont
@@ -465,14 +476,15 @@ v2.0부터는 고문헌 조판에서 한글^^b7한자와 영문자가 붙어 나
 \end{figure}
 
 \begin{figure}
+  \fboxsep=5pt
   \framebox[\linewidth]{
-    \begin{vertical}{19em}
+    \begin{vertical}{17em}
       \linespread{1.5}\sffamily \verticalhangulfont
       \parindent0pt \everypar{\hangindent1em \hangafter1 }
       \analectstext
     \end{vertical}
   }
-  \caption{세로쓰기의 다른 예. 박스 높이 |19em|을 지시했다.
+  \caption{세로쓰기의 다른 예. 박스 높이 |17em|을 지시했다.
     글꼴에 |CompressPunctuations|와 더불어
     |InterCharStretch=1pt|를 옵션으로 주었다. 공백이 없는 문서는 자간늘이기 값을
     넉넉하게 주는 것이 좋다.
@@ -498,6 +510,7 @@ v2.0부터는 고문헌 조판에서 한글^^b7한자와 영문자가 붙어 나
 가로쓰기 영역의 폰트 설정은 사용자의 몫이다.
 
 \begin{figure}
+  \fboxsep=5pt
   \framebox[\linewidth]{
     \begin{vertical}{17em}
       \linespread{1.5}\sffamily \verticalhangulfont

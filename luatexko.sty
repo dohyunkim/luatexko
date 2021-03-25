@@ -59,7 +59,9 @@
 \protected\def\typesetvertical{\luatexkoclassicattr\@ne\parindent1em }
 \protected\def\typesetmodern{\unsetattribute\luatexkoclassicattr}
 \protected\def\inhibitglue{\hskip\z@skip}
-\protected\def\Schinese{\luatexkoclassicattr\tw@\parindent2em }
+\protected\def\Schinese{%
+  \ifnum\luatexkoclassicattr=\@ne \else \luatexkoclassicattr\tw@ \fi
+  \parindent2em }
 \protected\def\Tchinese{\luatexkoclassicattr\thr@@\parindent2em } % +halt
 \let\korean\typesetmodern \let\japanese\typesetclassic \let\chinese\Schinese
 % josa

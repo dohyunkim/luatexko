@@ -579,13 +579,13 @@ end
 
 local intercharclass = { [0] =
   { [0] = nil,    {1,1},  nil,    {.5,.5} },
-  { [0] = nil,    nil,    nil,    {.5,.5} },
-  { [0] = {1,1},  {1,1},  nil,    {.5,.5}, nil,    {1,1},  {1,1} },
-  { [0] = {.5,.5},{.5,.5},{.5,.5},{1,.5},  {.5,.5},{.5,.5},{.5,.5} },
-  { [0] = {1,0},  {1,0},  nil,    {1.5,.5},nil,    {1,0},  {1,0} },
-  { [0] = nil,    {1,1},  nil,    {.5,.5} },
-  { [0] = {1,1},  {1,1},  nil,    {.5,.5} },
-  { }, -- vertical colon
+  { [0] = nil,    nil,    nil,    {.5,.5} }, -- openers
+  { [0] = {1,1},  {1,1},  nil,    {.5,.5}, nil,    {1,1},  {1,1} }, -- closers
+  { [0] = {.5,.5},{.5,.5},{.5,.5},{1,.5},  {.5,.5},{.5,.5},{.5,.5},{.5,.5} }, -- middle dots
+  { [0] = {1,0},  {1,0},  nil,    {1.5,.5},nil,    {1,0},  {1,0} }, -- full stops
+  { [0] = nil,    {1,1},  nil,    {.5,.5} }, -- leaders and ellipses
+  { [0] = {1,1},  {1,1},  nil,    {.5,.5} }, -- questions and exclamations
+  { [0] = {.5,.5},{.5,.5},nil,    {.5,.5} }, -- vertical colons
 }
 
 local charclass = setmetatable({
@@ -619,7 +619,7 @@ local charclass = setmetatable({
 }, { __index = function() return 0 end })
 
 local SC_charclass = setmetatable({
-  [0xFF01] = 4, [0xFF1A] = 4, [0xFF1B] = 4, [0xFF1F] = 4,
+  [0xFF01] = 4, [0xFF1A] = 2, [0xFF1B] = 2, [0xFF1F] = 4,
 }, { __index = charclass })
 
 local vert_charclass = setmetatable({
