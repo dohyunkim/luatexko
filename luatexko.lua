@@ -2123,35 +2123,31 @@ otfregister {
   },
 }
 
-local function process_protrusion (fontdata, _, value)
-  local setup = fonts.protrusions.setups[value] or {}
-  local quad  = fontdata.parameters.quad
-  for i, v in pairs(setup) do
-    local chr = fontdata.characters[i]
-    if chr then
-      local wdq = chr.width/quad
-      chr.left_protruding  = chr.left_protruding  or wdq*v[1]*1000
-      chr.right_protruding = chr.right_protruding or wdq*v[2]*1000
-    end
-  end
-  if tex.protrudechars == 0 then
-    texset("global", "protrudechars", 2)
-  end
-  if option_in_font(fontdata, "compresspunctuations") then
-    local fullname = fontdata.fullname
-    fontdata_warning("protrude."..fullname,
-    "Both `compresspunctuations' and `protrusion' are\nenabled for `%s'.\n"..
-    "Beware bad justifications.", fullname)
-  end
-end
-
 otfregister {
   name = "protrusion",
   description = "glyph protrusion",
   default = false,
   manipulators = {
-    node = process_protrusion,
-    plug = process_protrusion,
+    node = function()
+      if tex.protrudechars == 0 then
+        texset("global", "protrudechars", 2)
+      end
+    end,
+    plug = function(fontdata, _, value)
+      local setup = fonts.protrusions.setups[value] or {}
+      local quad  = fontdata.parameters.quad
+      for i, v in pairs(setup) do
+        local chr = fontdata.characters[i]
+        if chr then
+          local wdq = chr.width/quad
+          chr.left_protruding  = chr.left_protruding  or wdq*v[1]*1000
+          chr.right_protruding = chr.right_protruding or wdq*v[2]*1000
+        end
+      end
+      if tex.protrudechars == 0 then
+        texset("global", "protrudechars", 2)
+      end
+    end,
   },
 }
 
