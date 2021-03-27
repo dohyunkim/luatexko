@@ -192,7 +192,8 @@ local function harf_reordered_tonemark (curr)
   end
 end
 
-local os2tag = luaotfload.harfbuzz and luaotfload.harfbuzz.Tag.new"OS/2"
+local harfbuzz = luaotfload.harfbuzz
+local os2tag = harfbuzz and harfbuzz.Tag.new"OS/2"
 
 local font_options = {
   charraise = setmetatable( {}, { __index = function(t, fid)
@@ -2123,12 +2124,45 @@ otfregister {
   },
 }
 
+local dir_ltr = harfbuzz and harfbuzz.Direction.new"ltr"
+
+local function get_HB_variant_char (fontdata, charcode)
+  local hbfont = fontdata.hb.shared.font
+  local spec   = fontdata.specification
+  local shaper = spec.features.raw.shaper
+  local buff   = harfbuzz.Buffer.new()
+  buff:set_direction(dir_ltr)
+  buff:set_script(spec.script)
+  buff:set_language(spec.language)
+  buff:add_codepoints{charcode}
+  harfbuzz.shape_full(hbfont, buff, spec.hb_features, shaper and {shaper} or {})
+  local glyphs = buff:get_glyphs()
+  if glyphs and glyphs[1] then
+    local glyph  = glyphs[1].codepoint
+    local offset = fontdata.hb.shared.gid_offset
+    return glyph + offset
+  end
+end
+
 otfregister {
   name = "protrusion",
   description = "glyph protrusion",
   default = false,
   manipulators = {
-    node = function()
+    node = function(fontdata, _, value)
+      local setup = fonts.protrusions.setups[value] or {}
+      local quad  = fontdata.parameters.quad
+      for i, v in pairs(fontdata.characters) do
+        local uni = v.unicode
+        if uni then
+          local lr = setup[uni]
+          if lr then
+            local wdq = v.width/quad
+            v.left_protruding  = v.left_protruding or wdq*lr[1]*1000
+            v.right_protruding = v.right_protruding or wdq*lr[2]*1000
+          end
+        end
+      end
       if tex.protrudechars == 0 then
         texset("global", "protrudechars", 2)
       end
@@ -2137,11 +2171,13 @@ otfregister {
       local setup = fonts.protrusions.setups[value] or {}
       local quad  = fontdata.parameters.quad
       for i, v in pairs(setup) do
-        local chr = fontdata.characters[i]
-        if chr then
-          local wdq = chr.width/quad
-          chr.left_protruding  = chr.left_protruding  or wdq*v[1]*1000
-          chr.right_protruding = chr.right_protruding or wdq*v[2]*1000
+        for _, ii in ipairs{i, get_HB_variant_char(fontdata,i)} do
+          local chr = fontdata.characters[ii]
+          if chr then
+            local wdq = chr.width/quad
+            chr.left_protruding  = chr.left_protruding  or wdq*v[1]*1000
+            chr.right_protruding = chr.right_protruding or wdq*v[2]*1000
+          end
         end
       end
       if tex.protrudechars == 0 then

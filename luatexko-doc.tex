@@ -14,22 +14,23 @@
 \usepackage{luacolor}
 \usepackage[hangul]{luatexko}
 \directlua{
-  local gidoffset = 0x120000
-  fonts.protrusions.setups.notoserifcjkharf = {
-    [171]     = { 0.5, 0   }, % «
-    [187]     = { 0,   0.5 }, % »
-    [62253+gidoffset] = { 0.5, 0   }, % (
-    [62254+gidoffset] = { 0,   0.5 }, % )
-    [62255+gidoffset] = { 0,   1   }, % ,
-    [62257+gidoffset] = { 0,   1   }, % .
-    [62259+gidoffset] = { 0,   0.5 }, % :
-    [62260+gidoffset] = { 0,   0.5 }, % ;
-    [62270+gidoffset] = { 1,   0   }, % ‘
-    [62271+gidoffset] = { 0,   1   }, % ’
-    [62273+gidoffset] = { 0.5, 0   }, % “
-    [62274+gidoffset] = { 0,   0.5 }, % ”
+  fonts.protrusions.setups.notoserifcjk = {
+    [0x28]   = { 0.5, 0   }, % (
+    [0x29]   = { 0,   0.5 }, % )
+    [0x2C]   = { 0,   1   }, % ,
+    [0x2E]   = { 0,   1   }, % .
+    [0x3A]   = { 0,   0.5 }, % :
+    [0x3B]   = { 0,   0.5 }, % ;
+    [0xAB]   = { 0.5, 0   }, % «
+    [0xBB]   = { 0,   0.5 }, % »
+    [0x2018] = { 1,   0   }, % ‘
+    [0x2019] = { 0,   1   }, % ’
+    [0x201C] = { 0.5, 0   }, % “
+    [0x201D] = { 0,   0.5 }, % ”
   }
-  fonts.protrusions.setups.notosanscjknode = { % compresspunctuations
+  fonts.protrusions.setups.notosanscjk = {
+    % compresspunctuations 가 이미 반각을 강제했으므로 여기선 0.5만 준다.
+    % +halt, +vhal 따위의 옵션이 주어진 때에도 마찬가지
     [0x3001]  = { 0, .5 },
     [0x3002]  = { 0, .5 },
     [0xFF0C]  = { 0, .5 },
@@ -37,7 +38,6 @@
     [0xFE10]  = { 0, .5 },
     [0xFE11]  = { 0, .5 },
     [0xFE12]  = { 0, .5 },
-    [1004421] = { 0, .5 },
   }
 }
 \defaultfontfeatures+{Renderer=HarfBuzz}
@@ -50,7 +50,7 @@
   UprightFont=* Light,
   BoldFont=* Bold,
   InterLatinCJK=.125em,
-  Expansion, Protrusion=notoserifcjkharf,
+  Expansion, Protrusion=notoserifcjk,
 ]
 \setsansfont{Latin Modern Sans}
 \setsanshangulfont{Noto Sans CJK KR}[
@@ -96,7 +96,7 @@
   InterCharStretch=1pt,
   CharRaise=1pt,
   CharacterWidth=Full,
-  Protrusion=notosanscjknode,
+  Protrusion=notosanscjk,
 ]
 \newhangulfontface\rubyfont{Noto Serif CJK KR Medium}[
   Script=Hangul,
@@ -134,7 +134,7 @@
 \author{Dohyun Kim \normalsize |<nomos at ktug org>| \and
         Soojin Nam \normalsize |<jsunam at gmail com>| \and
   \normalsize <\url{http://github.com/dohyunkim/luatexko}>}
-\date{Version 3.0\quad 2021/03/01}
+\date{Version 3.1\quad XXXX/XX/XX}
 \maketitle
 
 \begin{quote}

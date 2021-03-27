@@ -2,7 +2,8 @@ XXXX-XX-XX	Dohyun Kim <nomos at ktug org>
 
 	Version 3.1
 
-	* luatexko.lua: insert 1/4 quad after vertical colons
+	* luatexko.lua: insert 1/4 quad after vertical colons;
+	cleverer behavior when protrusion option is given
 
 2021-03-01	Dohyun Kim <nomos at ktug org>
 
