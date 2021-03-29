@@ -2157,9 +2157,9 @@ otfregister {
         if uni then
           local lr = setup[uni]
           if lr then
-            local wdq = v.width/quad
-            v.left_protruding  = v.left_protruding or wdq*lr[1]*1000
-            v.right_protruding = v.right_protruding or wdq*lr[2]*1000
+            local wdq = v.width/quad*1000
+            v.left_protruding  = wdq*lr[1]
+            v.right_protruding = wdq*lr[2]
           end
         end
       end
@@ -2174,9 +2174,9 @@ otfregister {
         for _, ii in ipairs{i, get_HB_variant_char(fontdata,i)} do
           local chr = fontdata.characters[ii]
           if chr then
-            local wdq = chr.width/quad
-            chr.left_protruding  = chr.left_protruding  or wdq*v[1]*1000
-            chr.right_protruding = chr.right_protruding or wdq*v[2]*1000
+            local wdq = chr.width/quad*1000
+            chr.left_protruding  = wdq*v[1]
+            chr.right_protruding = wdq*v[2]
           end
         end
       end
