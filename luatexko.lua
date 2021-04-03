@@ -286,18 +286,18 @@ local font_options = {
     end
   end } ),
 
-  tonemarkwidth = setmetatable( {}, { __index = function(t, fid)
+  tonemark_xmax = setmetatable( {}, { __index = function(t, fid)
     if fid then
-      local hwidth
-      -- check horizontal width; vertical width is mostly non-zero
+      -- check horizontal metric
       local fontdata     = get_font_data(fid)
       local shared       = fontdata.shared      or {}
       local rawdata      = shared.rawdata       or {}
       local descriptions = rawdata.descriptions or {}
       local description  = descriptions[0x302E] or {}
-      hwidth = description.width or 0
-      t[fid] = hwidth
-      return hwidth
+      local bbox         = description.boundingbox or {}
+      local xmax         = bbox[3] or -1
+      t[fid] = xmax
+      return xmax
     end
     return 0
   end } ),
@@ -1560,7 +1560,7 @@ local function process_reorder_tonemarks (head)
             n = getnext(n)
           end
 
-          if #syllable > 1 and font_options.tonemarkwidth[curr.font] ~= 0 then
+          if #syllable > 1 and font_options.tonemark_xmax[curr.font] >= 0 then
             local TM = curr
 
             local actual    = pdfliteral_direct_actual(syllable)
@@ -1576,7 +1576,7 @@ local function process_reorder_tonemarks (head)
         elseif char_in_font(fontdata, 0x25CC) then -- isolated tone mark
           local dotcircle = nodecopy(curr)
           dotcircle.char = 0x25CC
-          if font_options.tonemarkwidth[curr.font] ~= 0 then
+          if font_options.tonemark_xmax[curr.font] >= 0 then
             local actual    = pdfliteral_direct_actual{ init = curr, uni }
             local endactual = pdfliteral_direct_actual()
             head = insert_before(head, curr, actual)
