@@ -170,32 +170,79 @@ local function font_opt_dim (fd, optname)
   end
 end
 
-local function is_harf (f)
+local function has_harf_data (f)
   if type(f) == "number" then
     f = get_font_data(f)
   end
   return f.hb
 end
 
-local function is_not_harf (f)
-  if option_in_font(f, "mode") == "harf" then -- mode=harf with non-luahbtex
-    return false
-  end
-  return not is_harf(f)
-end
-
-local function harf_reordered_tonemark (curr)
-  if is_harf(curr.font) then
-    local props = getproperty(curr) or {}
-    local actualtext = props.luaotfload_startactualtext or ""
-    return actualtext:find"302[EF]$"
-  end
-end
-
 local harfbuzz = luaotfload.harfbuzz
 local os2tag = harfbuzz and harfbuzz.Tag.new"OS/2"
 
-local font_options = {
+local fontoptions = {
+  is_not_harf = setmetatable( {}, { __index = function (t, fid)
+    if fid then
+      local bool = has_harf_data(fid) and false or true
+      t[fid] = bool
+      return bool
+    end
+  end }),
+
+  mode = setmetatable( {}, { __index = function (t, fid)
+    if fid then
+      local m = option_in_font(fid, "mode") or false
+      if m == "harf" and not has_harf_data(fid) then
+        m = "node" -- default mode when 'mode=harf' in non-luahbtex
+      end
+      t[fid] = m
+      return m
+    end
+  end }),
+
+  is_widefont = setmetatable( {}, { __index = function(t, fid)
+    if fid then
+      local fontdata = get_font_data(fid)
+      local format   = fontdata.format
+      local encode   = fontdata.encodingbytes
+      local bool     = encode == 2 or format == "opentype" or format == "truetype"
+      t[fid] = bool
+      return bool
+    end
+  end }),
+
+  is_hangulscript = setmetatable( {}, { __index = function(t, fid)
+    if fid then
+      local bool = option_in_font(fid, "script") == "hang"
+      t[fid] = bool
+      return bool
+    end
+  end }),
+
+  compresspunctuations = setmetatable( {}, { __index = function(t, fid)
+    if fid then
+      local bool = option_in_font(fid, "compresspunctuations") or false
+      t[fid] = bool
+      return bool
+    end
+  end }),
+
+  removeclassicspaces = setmetatable( {}, { __index = function(t, fid)
+    if fid then
+      local bool = option_in_font(fid, "removeclassicspaces") or false
+      t[fid] = bool
+      return bool
+    end
+  end }),
+
+  slantvalue = setmetatable( {}, { __index = function(t, fid)
+    if fid then
+      local val = option_in_font(fid, "slant") or false
+      t[fid] = val
+      return val
+    end
+  end }),
+
   charraise = setmetatable( {}, { __index = function(t, fid)
     if fid then
       local dim = font_opt_dim(fid, "charraise") or false
@@ -248,7 +295,7 @@ local font_options = {
   hangulspaceskip = setmetatable( {}, { __index = function(t, fid)
     if fid then
       local newwd
-      if is_harf(fid) then
+      if has_harf_data(fid) then
         newwd = getparameters(fid) or false
         if newwd then
           newwd = { newwd.space, newwd.space_stretch, newwd.space_shrink }
@@ -275,12 +322,10 @@ local font_options = {
         t[fid] = true; return true
       end
       -- but not in harf mode; so we simply test widths of some glyphs
-      if is_harf(fid) then
-        local chars = get_font_data(fid).characters or {}
-        local i, M = chars[0x69], chars[0x4D]
-        if i and M and i.width == M.width then
-          t[fid] = true; return true
-        end
+      local chars = get_font_data(fid).characters or {}
+      local i, M = chars[0x69], chars[0x4D]
+      if i and M and i.width == M.width then
+        t[fid] = true; return true
       end
       t[fid] = false; return false
     end
@@ -308,7 +353,7 @@ local font_options = {
       -- luaharfbuzz's Font:get_h_extents() gets ascender value from hhea table;
       -- Node mode's parameters.ascender is gotten from OS/2 table.
       -- TypoAscender in OS/2 table seems to be more suitable for our purpose.
-      local hb = is_harf(fid)
+      local hb = has_harf_data(fid)
       if hb and os2tag then
         local hbface = hb.shared.face
         local tags = hbface:get_table_tags()
@@ -339,6 +384,14 @@ local font_options = {
     return { }
   end } ),
 }
+
+local function harf_reordered_tonemark (curr)
+  if not fontoptions.is_not_harf[curr.font] then
+    local props = getproperty(curr) or {}
+    local actualtext = props.luaotfload_startactualtext or ""
+    return actualtext:find"302[EF]$"
+  end
+end
 
 local function char_in_font(fontdata, char)
   if type(fontdata) == "number" then
@@ -480,7 +533,7 @@ local function hangul_space_skip (curr, newfont)
     -- command does the same thing), which we will bypass here
     -- for alignment of CJK and Latin glyphs in verbatim environment.
     -- See http://www.ktug.org/xe/index.php?document_srl=249772
-    if not font_options.monospaced[curr.font] then
+    if not fontoptions.monospaced[curr.font] then
       local n = getnext(curr)
       if n and n.id == glueid and n.subtype == spaceskip then
         local params = getparameters(curr.font)
@@ -492,7 +545,7 @@ local function hangul_space_skip (curr, newfont)
           and oldsto == 0
           and oldsho == 0 then -- not user's spaceskip
 
-          local newwd = font_options.hangulspaceskip[newfont]
+          local newwd = fontoptions.hangulspaceskip[newfont]
           if newwd then
             setglue(n, newwd[1], newwd[2], newwd[3])
           end
@@ -521,20 +574,20 @@ local function process_fonts (head)
 
           if not active_processes.reorderTM and
              hangul_tonemark[c] and
-             is_not_harf(curr.font) and
-             option_in_font(curr.font, "script") == "hang" then
+             fontoptions.is_not_harf[curr.font] and
+             fontoptions.is_hangulscript[curr.font] then
             luatexko.activate("reorderTM") -- activate reorderTM here
           end
 
         else
           local hf  = has_attribute(curr, hangulfontattr) or false
           local hjf = has_attribute(curr, hanjafontattr)  or false
-          local fontdata = get_font_data(curr.font)
-          local format   = fontdata.format
-          local encode   = fontdata.encodingbytes
-          local widefont = encode == 2 or format == "opentype" or format == "truetype"
 
-          if hf and widefont and force_hangul[c] and curr.lang ~= nohyphen and not font_options.monospaced[curr.font] then
+          if hf and force_hangul[c]
+            and fontoptions.is_widefont[curr.font] -- exclude legacy fonts
+            and curr.lang ~= nohyphen and not fontoptions.monospaced[curr.font] -- exclude ttfamily
+            and fontoptions.mode[curr.font] == fontoptions.mode[hf] -- exclude mismatching modes
+            then
             curr.font = hf
           elseif hf and has_attribute(curr, hangulbyhangulattr) and is_hangul_jamo(c) then
             hangul_space_skip(curr, hf)
@@ -542,7 +595,7 @@ local function process_fonts (head)
           elseif hjf and has_attribute(curr, hanjabyhanjaattr) and is_hanja(c) then
             hangul_space_skip(curr, hjf)
             curr.font = hjf
-          elseif not char_in_font(fontdata, c) then
+          elseif not char_in_font(curr.font, c) then
             local fbf = has_attribute(curr, fallbackfontattr) or false
             for _,f in ipairs{ hf, hjf, fbf } do
               if f and char_in_font(f, c) then
@@ -759,12 +812,12 @@ local function insert_glue_before (head, curr, par, br, brb, classic, ict, dim, 
 
   dim = dim or 0
   local gl = nodenew(glueid)
-  local en = font_options.en_size[fid]
+  local en = fontoptions.en_size[fid]
   if ict then
     en = classic and en or en/4
     setglue(gl, en * ict[1] + dim, nil, en * ict[2])
   else
-    local str = font_options.intercharstretch[fid] or stretch_f*en
+    local str = fontoptions.intercharstretch[fid] or stretch_f*en
     setglue(gl, dim, str, str*0.6)
   end
 
@@ -778,7 +831,7 @@ local function maybe_linebreak (head, curr, pc, pcl, cc, old, fid, par)
     local ict = intercharclass[pcl][ccl]
     local brb = breakable_before[cc]
     local br  = brb and breakable_after[pc]
-    local dim = font_options.intercharacter[fid]
+    local dim = fontoptions.intercharacter[fid]
     if ict or br or dim and (pcl >= 1 or ccl >= 1) then
       head = insert_glue_before(head, curr, par, br, brb, old, ict, dim, fid)
     end
@@ -834,7 +887,7 @@ local function process_glyph_width (head)
     local id = curr.id
     if id == glyphid then
       if curr.lang ~= nohyphen
-        and option_in_font(curr.font, "compresspunctuations") then
+        and fontoptions.compresspunctuations[curr.font] then
 
         local cc = my_node_props(curr).unicode or curr.char
         local old = has_attribute(curr, classicattr)
@@ -843,11 +896,11 @@ local function process_glyph_width (head)
           (old or cc < 0x2000 or cc > 0x202F) then -- exclude general puncts
 
           -- harf-node always puts kern after the glyph
-          local gpos = class == 1 and is_not_harf(curr.font) and getprev(curr) or getnext(curr)
+          local gpos = class == 1 and fontoptions.is_not_harf[curr.font] and getprev(curr) or getnext(curr)
           gpos = gpos and gpos.id == kernid and gpos.subtype == fontkern
 
           if not gpos then
-            local wd = font_options.en_size[curr.font] - curr.width
+            local wd = fontoptions.en_size[curr.font] - curr.width
             if wd ~= 0 then
               local k = nodenew(kernid) -- fontkern (subtype 0) is default
               k.kern = class == 3 and wd/2 or wd
@@ -888,7 +941,7 @@ local function do_interhangul_option (head, curr, pc, c, fontid, par)
   local cc = (is_hangul(c) or is_compat_jamo(c) or is_chosong(c)) and 1 or 0
 
   if cc*pc == 1 and curr.lang ~= nohyphen then
-    local dim = font_options.interhangul[fontid]
+    local dim = fontoptions.interhangul[fontid]
     if dim then
       head = insert_glue_before(head, curr, par, true, true, false, false, dim, fontid)
     end
@@ -945,11 +998,11 @@ local function do_interlatincjk_option (head, curr, pc, pf, pcl, c, cf, par)
     local brb = cc == 2 or breakable_before[c] -- numletter != br_before
     if brb then
       local f = cc == 1 and cf or pf
-      local dim = font_options.interlatincjk[f]
+      local dim = fontoptions.interlatincjk[f]
       if dim then
         local ict = old and intercharclass[pcl][ccl] -- under classic env. only
         if ict then
-          dim = font_options.intercharacter[f] or 0
+          dim = fontoptions.intercharacter[f] or 0
         end
         head = insert_glue_before(head, curr, par, true, brb, old, ict, dim, f)
       end
@@ -1015,7 +1068,7 @@ end
 -- remove classic spaces
 
 local function process_remove_spaces (head)
-  local curr, opt_name, to_free = head, "removeclassicspaces", {}
+  local curr, to_free = head, {}
   while curr do
     local id = curr.id
     if id == glueid then
@@ -1038,7 +1091,7 @@ local function process_remove_spaces (head)
               elseif id == hlistid and v.list then
                 vchar, vfont = hbox_char_font(v, k == "n")
               end
-              if vchar and vfont and option_in_font(vfont, opt_name) then
+              if vchar and vfont and fontoptions.removeclassicspaces[vfont] then
                 ok = is_cjk_char(vchar)
               end
 
@@ -1244,7 +1297,7 @@ local function process_dotemph (head)
           end
 
           local currwd = curr.width
-          if currwd >= font_options.en_size[curr.font] then
+          if currwd >= fontoptions.en_size[curr.font] then
             local box = nodecopy(dotemphbox[dotattr]).list
             -- bypass unwanted nodes injected by some other packages
             while box.id ~= hlistid do
@@ -1290,7 +1343,7 @@ function luatexko.get_strike_out_down (box)
     local down
     local ex = get_font_param(f, "x_height") or texsp"1ex"
     if is_cjk_char(c) then
-      local ascender, descender = tableunpack(font_options.asc_desc[f])
+      local ascender, descender = tableunpack(fontoptions.asc_desc[f])
       if ascender and descender then
         down = descender - (ascender + descender)/2
       else
@@ -1300,7 +1353,7 @@ function luatexko.get_strike_out_down (box)
       down = -0.5*ex
     end
 
-    local raise = font_options.charraise[f] or 0
+    local raise = fontoptions.charraise[f] or 0
     return down - raise
   end
   return -texsp"0.5ex"
@@ -1424,9 +1477,9 @@ luatexko.rubybox = rubybox
 
 function luatexko.getrubystretchfactor (box)
   local _, fid = hbox_char_font(box, true, true)
-  local str = font_options.intercharstretch[fid]
+  local str = fontoptions.intercharstretch[fid]
   if str then
-    local em = font_options.en_size[fid] * 2
+    local em = fontoptions.en_size[fid] * 2
     set_macro("luatexkostretchfactor", stringformat("%.4f", str/em/2))
   end
 end
@@ -1484,7 +1537,7 @@ local function process_ruby_post_linebreak (head)
           local shift = shift_put_top(curr, ruby)
 
           local _, f = hbox_char_font(curr, true, true)
-          local ascender = tableunpack(font_options.asc_desc[f]) or curr.height
+          local ascender = tableunpack(fontoptions.asc_desc[f]) or curr.height
           ruby.shift = shift - ascender - ruby.depth - ruby_t[2] -- rubysep
           head = insert_before(head, curr, ruby)
         end
@@ -1540,10 +1593,9 @@ local function process_reorder_tonemarks (head)
   while curr do
     local id = curr.id
     if id == glyphid and
-       is_not_harf(curr.font) and
-       option_in_font(curr.font, "script") == "hang" then
+       fontoptions.is_not_harf[curr.font] and
+       fontoptions.is_hangulscript[curr.font] then
 
-      local fontdata = get_font_data(curr.font)
       local uni = my_node_props(curr).unicode or curr.char
       if is_hangul(uni) or is_chosong(uni) or uni == 0x25CC then
         init = curr
@@ -1560,7 +1612,7 @@ local function process_reorder_tonemarks (head)
             n = getnext(n)
           end
 
-          if #syllable > 1 and font_options.tonemark_xmax[curr.font] >= 0 then
+          if #syllable > 1 and fontoptions.tonemark_xmax[curr.font] >= 0 then
             local TM = curr
 
             local actual    = pdfliteral_direct_actual(syllable)
@@ -1573,10 +1625,10 @@ local function process_reorder_tonemarks (head)
           end
 
           init = nil
-        elseif char_in_font(fontdata, 0x25CC) then -- isolated tone mark
+        elseif char_in_font(curr.font, 0x25CC) then -- isolated tone mark
           local dotcircle = nodecopy(curr)
           dotcircle.char = 0x25CC
-          if font_options.tonemark_xmax[curr.font] >= 0 then
+          if fontoptions.tonemark_xmax[curr.font] >= 0 then
             local actual    = pdfliteral_direct_actual{ init = curr, uni }
             local endactual = pdfliteral_direct_actual()
             head = insert_before(head, curr, actual)
@@ -1846,7 +1898,7 @@ function luatexko.gethorizboxmoveright ()
     if v and v > 0 then
       local amount = get_font_data(v).vertcharraise
       if amount then
-        amount = amount + (font_options.charraise[v] or 0)
+        amount = amount + (fontoptions.charraise[v] or 0)
         set_macro("luatexkohorizboxmoveright", texsp(amount).."sp")
         break
       end
@@ -1865,7 +1917,7 @@ local function process_charraise (head)
     if id == glyphid then
       if not has_attribute(curr,raiseattr) then
         local f = curr.font
-        local raise = font_options.charraise[f]
+        local raise = fontoptions.charraise[f]
         if raise then
           curr.yoffset = (curr.yoffset or 0) + raise
         end
@@ -1897,7 +1949,7 @@ local function process_fake_slant_corr (head) -- for font fallback
               break
             end
 
-            local slant = option_in_font(p.font, "slant")
+            local slant = fontoptions.slantvalue[p.font]
             if slant and slant > 0 then
               tableinsert(t, char_in_font(p.font, p.char).italic or 0)
             end
@@ -1935,7 +1987,7 @@ local function process_fake_slant_font (fontdata, fsl)
     local params = fontdata.parameters or {}
     params.slant = (params.slant or 0) + fsl*65536 -- slant per point
 
-    local hb = is_harf(fontdata)
+    local hb = has_harf_data(fontdata)
     local scale  = hb and hb.scale or params.factor or 655.36
     local shared = fontdata.shared or {}
     local descrs = shared.rawdata and shared.rawdata.descriptions or {}
@@ -2048,10 +2100,10 @@ otfregister {
   description = "raise chars",
   default = false,
   manipulators = {
-    node = function(fontdata)
+    node = function()
       activate_process("post_shaping_filter", process_charraise, "charraise")
     end,
-    plug = function(fontdata)
+    plug = function()
       activate_process("post_shaping_filter", process_charraise, "charraise")
     end,
   },
