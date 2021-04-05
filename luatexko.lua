@@ -385,20 +385,20 @@ local fontoptions = {
   end } ),
 }
 
-local function harf_reordered_tonemark (curr)
-  if not fontoptions.is_not_harf[curr.font] then
-    local props = getproperty(curr) or {}
-    local actualtext = props.luaotfload_startactualtext or ""
-    return actualtext:find"302[EF]$"
-  end
-end
-
 local function char_in_font(fontdata, char)
   if type(fontdata) == "number" then
     fontdata = get_font_data(fontdata)
   end
   if fontdata.characters then
     return fontdata.characters[char]
+  end
+end
+
+local function harf_reordered_tonemark (curr)
+  if not fontoptions.is_not_harf[curr.font] then
+    local props = getproperty(curr) or {}
+    local actualtext = props.luaotfload_startactualtext or ""
+    return actualtext:find"302[EF]$"
   end
 end
 
@@ -411,8 +411,6 @@ local function my_node_props (n)
   t.luatexko = t.luatexko or {}
   return t.luatexko
 end
-
-local active_processes = {}
 
 local function is_hanja (c)
   return c >= 0x3400 and c <= 0xA4C6
@@ -491,145 +489,6 @@ local function is_hangul_jamo (c)
   or     is_jungsong(c)
   or     is_jongsong(c)
 end
-
--- font fallback
-
-local force_hangul = {
-  [0x21] = true, -- !
-  [0x27] = true, -- '
-  [0x28] = true, -- (
-  [0x29] = true, -- )
-  [0x2C] = true, -- ,
-  [0x2E] = true, -- .
-  [0x3A] = true, -- :
-  [0x3B] = true, -- ;
-  [0x3F] = true, -- ?
-  [0x60] = true, -- `
-  [0xB7] = true, -- ·
-  [0x2014] = true, -- —
-  [0x2015] = true, -- ―
-  [0x2018] = true, -- ‘
-  [0x2019] = true, -- ’
-  [0x201C] = true, -- “
-  [0x201D] = true, -- ”
-  [0x2026] = true, -- …
-  [0x203B] = true, -- ※
-}
-luatexko.forcehangulchars = force_hangul
-
-local forcehf_f, forcehf_id = new_user_whatsit("forcehf","luatexko")
-
-function luatexko.updateforcehangul (value)
-  local what = forcehf_f()
-  what.type  = lua_value -- function
-  what.value = value
-  nodewrite(what)
-end
-
-local function hangul_space_skip (curr, newfont)
-  if curr.lang ~= nohyphen and curr.font ~= newfont then
-    -- fontloader's "node" mode sets space_stretch to zero
-    -- when the font is a monospaced font (fontspec's \setmonofont
-    -- command does the same thing), which we will bypass here
-    -- for alignment of CJK and Latin glyphs in verbatim environment.
-    -- See http://www.ktug.org/xe/index.php?document_srl=249772
-    if not fontoptions.monospaced[curr.font] then
-      local n = getnext(curr)
-      if n and n.id == glueid and n.subtype == spaceskip then
-        local params = getparameters(curr.font)
-        local oldwd, oldst, oldsh, oldsto, oldsho = getglue(n)
-        if params
-          and oldwd == params.space
-          and oldst == params.space_stretch
-          and oldsh == params.space_shrink
-          and oldsto == 0
-          and oldsho == 0 then -- not user's spaceskip
-
-          local newwd = fontoptions.hangulspaceskip[newfont]
-          if newwd then
-            setglue(n, newwd[1], newwd[2], newwd[3])
-          end
-        end
-      end
-    end
-  end
-end
-
-local function process_fonts (head)
-  local curr = head
-  while curr do
-    local id = curr.id
-    if id == glyphid then
-      local props = my_node_props(curr)
-      if not props.unicode then
-
-        local c = curr.char
-
-        if is_cjk_combining(c) then
-          local p = getprev(curr)
-          if p.id == glyphid and curr.font ~= p.font then
-            hangul_space_skip(curr, p.font)
-            curr.font = p.font
-          end
-
-          if not active_processes.reorderTM and
-             hangul_tonemark[c] and
-             fontoptions.is_not_harf[curr.font] and
-             fontoptions.is_hangulscript[curr.font] then
-            luatexko.activate("reorderTM") -- activate reorderTM here
-          end
-
-        else
-          local hf  = has_attribute(curr, hangulfontattr) or false
-          local hjf = has_attribute(curr, hanjafontattr)  or false
-
-          if hf and force_hangul[c]
-            and fontoptions.is_widefont[curr.font] -- exclude legacy fonts
-            and curr.lang ~= nohyphen and not fontoptions.monospaced[curr.font] -- exclude ttfamily
-            and fontoptions.mode[curr.font] == fontoptions.mode[hf] -- exclude mismatching modes
-            then
-            curr.font = hf
-          elseif hf and has_attribute(curr, hangulbyhangulattr) and is_hangul_jamo(c) then
-            hangul_space_skip(curr, hf)
-            curr.font = hf
-          elseif hjf and has_attribute(curr, hanjabyhanjaattr) and is_hanja(c) then
-            hangul_space_skip(curr, hjf)
-            curr.font = hjf
-          elseif not char_in_font(curr.font, c) then
-            local fbf = has_attribute(curr, fallbackfontattr) or false
-            for _,f in ipairs{ hf, hjf, fbf } do
-              if f and char_in_font(f, c) then
-                hangul_space_skip(curr, f)
-                curr.font = f
-                break
-              end
-            end
-          end
-        end
-
-        props.unicode = c
-      end
-    elseif id == discid then
-      curr.pre     = process_fonts(curr.pre)
-      curr.post    = process_fonts(curr.post)
-      curr.replace = process_fonts(curr.replace)
-    elseif id == mathid then
-      curr = end_of_math(curr)
-    elseif id      == whatsitid  and
-      curr.user_id == forcehf_id and
-      curr.type    == lua_value  then
-
-      local value = curr.value
-      if type(value) == "function" then
-        value()
-      end
-    end
-    curr = getnext(curr)
-  end
-  return head
-end
-
--- linebreak
 
 local intercharclass = { [0] =
   { [0] = nil,    {1,1},  nil,    {.5,.5} },
@@ -744,6 +603,161 @@ local breakable_before = setmetatable({
 end
 })
 luatexko.breakablebefore = breakable_before
+
+local function is_cjk_char (c)
+  return is_hangul_jamo(c)
+  or     is_hanja(c)
+  or     is_cjk_combining(c)
+  or     is_kana(c)
+  or     charclass[c] >= 1
+  or     rawget(breakable_before, c) and c >= 0x2000
+  or     rawget(breakable_after,  c) and c >= 0x2000
+end
+
+local active_processes = {}
+
+-- font fallback
+
+local force_hangul = {
+  [0x21] = true, -- !
+  [0x27] = true, -- '
+  [0x28] = true, -- (
+  [0x29] = true, -- )
+  [0x2C] = true, -- ,
+  [0x2E] = true, -- .
+  [0x3A] = true, -- :
+  [0x3B] = true, -- ;
+  [0x3F] = true, -- ?
+  [0x60] = true, -- `
+  [0xB7] = true, -- ·
+  [0x2014] = true, -- —
+  [0x2015] = true, -- ―
+  [0x2018] = true, -- ‘
+  [0x2019] = true, -- ’
+  [0x201C] = true, -- “
+  [0x201D] = true, -- ”
+  [0x2026] = true, -- …
+  [0x203B] = true, -- ※
+}
+luatexko.forcehangulchars = force_hangul
+
+local forcehf_f, forcehf_id = new_user_whatsit("forcehf","luatexko")
+
+function luatexko.updateforcehangul (value)
+  local what = forcehf_f()
+  what.type  = lua_value -- function
+  what.value = value
+  nodewrite(what)
+end
+
+local function hangul_space_skip (curr, newfont)
+  if curr.lang ~= nohyphen and curr.font ~= newfont then
+    -- fontloader's "node" mode sets space_stretch to zero
+    -- when the font is a monospaced font (fontspec's \setmonofont
+    -- command does the same thing), which we will bypass here
+    -- for alignment of CJK and Latin glyphs in verbatim environment.
+    -- See http://www.ktug.org/xe/index.php?document_srl=249772
+    if not fontoptions.monospaced[curr.font] then
+      local n = getnext(curr)
+      if n and n.id == glueid and n.subtype == spaceskip then
+        local params = getparameters(curr.font)
+        local oldwd, oldst, oldsh, oldsto, oldsho = getglue(n)
+        if params
+          and oldwd == params.space
+          and oldst == params.space_stretch
+          and oldsh == params.space_shrink
+          and oldsto == 0
+          and oldsho == 0 then -- not user's spaceskip
+
+          local newwd = fontoptions.hangulspaceskip[newfont]
+          if newwd then
+            setglue(n, newwd[1], newwd[2], newwd[3])
+          end
+        end
+      end
+    end
+  end
+end
+
+local function process_fonts (head)
+  local curr = head
+  while curr do
+    local id = curr.id
+    if id == glyphid then
+      local props = my_node_props(curr)
+      if not props.unicode then
+
+        local c = curr.char
+
+        if is_cjk_combining(c) then
+          local p = getprev(curr)
+          if p.id == glyphid and curr.font ~= p.font then
+            hangul_space_skip(curr, p.font)
+            curr.font = p.font
+            curr.lang = p.lang
+          end
+
+          if not active_processes.reorderTM and
+             hangul_tonemark[c] and
+             fontoptions.is_not_harf[curr.font] and
+             fontoptions.is_hangulscript[curr.font] then
+            luatexko.activate("reorderTM") -- activate reorderTM here
+          end
+
+        else
+          if curr.subtype == 1 and curr.lang ~= nohyphen and is_cjk_char(c) then
+            curr.lang = langkor -- suppress hyphenation of cjk chars
+          end
+
+          local hf  = has_attribute(curr, hangulfontattr) or false
+          local hjf = has_attribute(curr, hanjafontattr)  or false
+
+          if hf and force_hangul[c]
+            and fontoptions.is_widefont[curr.font] -- exclude legacy fonts
+            and curr.lang ~= nohyphen and not fontoptions.monospaced[curr.font] -- exclude ttfamily
+            then
+            curr.font = hf
+          elseif hf and has_attribute(curr, hangulbyhangulattr) and is_hangul_jamo(c) then
+            hangul_space_skip(curr, hf)
+            curr.font = hf
+          elseif hjf and has_attribute(curr, hanjabyhanjaattr) and is_hanja(c) then
+            hangul_space_skip(curr, hjf)
+            curr.font = hjf
+          elseif not char_in_font(curr.font, c) then
+            local fbf = has_attribute(curr, fallbackfontattr) or false
+            for _,f in ipairs{ hf, hjf, fbf } do
+              if f and char_in_font(f, c) then
+                hangul_space_skip(curr, f)
+                curr.font = f
+                break
+              end
+            end
+          end
+        end
+
+        props.unicode = c
+      end
+    elseif id == discid then
+      curr.pre     = process_fonts(curr.pre)
+      curr.post    = process_fonts(curr.post)
+      curr.replace = process_fonts(curr.replace)
+    elseif id == mathid then
+      curr = end_of_math(curr)
+    elseif id      == whatsitid  and
+      curr.user_id == forcehf_id and
+      curr.type    == lua_value  then
+
+      local value = curr.value
+      if type(value) == "function" then
+        value()
+      end
+    end
+    curr = getnext(curr)
+  end
+  return head
+end
+
+-- linebreak
 
 local allowbreak_false_nodes = {
   [hlistid]   = true,
@@ -879,63 +893,7 @@ local function process_linebreak (head, par)
   return head
 end
 
--- compress punctuations
-
-local function process_glyph_width (head)
-  local curr = head
-  while curr do
-    local id = curr.id
-    if id == glyphid then
-      if curr.lang ~= nohyphen
-        and fontoptions.compresspunctuations[curr.font] then
-
-        local cc = my_node_props(curr).unicode or curr.char
-        local old = has_attribute(curr, classicattr)
-        local class = get_char_class(cc, old)
-        if class >= 1 and class <= 4 and
-          (old or cc < 0x2000 or cc > 0x202F) then -- exclude general puncts
-
-          -- harf-node always puts kern after the glyph
-          local gpos = class == 1 and fontoptions.is_not_harf[curr.font] and getprev(curr) or getnext(curr)
-          gpos = gpos and gpos.id == kernid and gpos.subtype == fontkern
-
-          if not gpos then
-            local wd = fontoptions.en_size[curr.font] - curr.width
-            if wd ~= 0 then
-              local k = nodenew(kernid) -- fontkern (subtype 0) is default
-              k.kern = class == 3 and wd/2 or wd
-              if class == 1 then
-                head = insert_before(head, curr, k)
-              elseif class == 2 or class == 4 then
-                head, curr = insert_after(head, curr, k)
-              else
-                local k2 = nodecopy(k)
-                head = insert_before(head, curr, k)
-                head, curr = insert_after(head, curr, k2)
-              end
-            end
-          end
-        end
-      end
-    elseif id == mathid then
-      curr = end_of_math(curr)
-    end
-    curr = getnext(curr)
-  end
-  return head
-end
-
 -- interhangul & interlatincjk
-
-local function is_cjk_char (c)
-  return is_hangul_jamo(c)
-  or     is_hanja(c)
-  or     is_cjk_combining(c)
-  or     is_kana(c)
-  or     charclass[c] >= 1
-  or     rawget(breakable_before, c) and c >= 0x2000
-  or     rawget(breakable_after,  c) and c >= 0x2000
-end
 
 local function do_interhangul_option (head, curr, pc, c, fontid, par)
   local cc = (is_hangul(c) or is_compat_jamo(c) or is_chosong(c)) and 1 or 0
@@ -1059,6 +1017,52 @@ local function process_interlatincjk (head, par)
 
     elseif is_blocking_node(curr) then
       pc, pf, pcl = 0, 0, 0
+    end
+    curr = getnext(curr)
+  end
+  return head
+end
+
+-- compress punctuations
+
+local function process_glyph_width (head)
+  local curr = head
+  while curr do
+    local id = curr.id
+    if id == glyphid then
+      if curr.lang ~= nohyphen
+        and fontoptions.compresspunctuations[curr.font] then
+
+        local cc = my_node_props(curr).unicode or curr.char
+        local old = has_attribute(curr, classicattr)
+        local class = get_char_class(cc, old)
+        if class >= 1 and class <= 4 and
+          (old or cc < 0x2000 or cc > 0x202F) then -- exclude general puncts
+
+          -- harf-node always puts kern after the glyph
+          local gpos = class == 1 and fontoptions.is_not_harf[curr.font] and getprev(curr) or getnext(curr)
+          gpos = gpos and gpos.id == kernid and gpos.subtype == fontkern
+
+          if not gpos then
+            local wd = fontoptions.en_size[curr.font] - curr.width
+            if wd ~= 0 then
+              local k = nodenew(kernid) -- fontkern (subtype 0) is default
+              k.kern = class == 3 and wd/2 or wd
+              if class == 1 then
+                head = insert_before(head, curr, k)
+              elseif class == 2 or class == 4 then
+                head, curr = insert_after(head, curr, k)
+              else
+                local k2 = nodecopy(k)
+                head = insert_before(head, curr, k)
+                head, curr = insert_after(head, curr, k2)
+              end
+            end
+          end
+        end
+      end
+    elseif id == mathid then
+      curr = end_of_math(curr)
     end
     curr = getnext(curr)
   end
@@ -1916,8 +1920,7 @@ local function process_charraise (head)
     local id = curr.id
     if id == glyphid then
       if not has_attribute(curr,raiseattr) then
-        local f = curr.font
-        local raise = fontoptions.charraise[f]
+        local raise = fontoptions.charraise[curr.font]
         if raise then
           curr.yoffset = (curr.yoffset or 0) + raise
         end
@@ -2021,6 +2024,13 @@ end
 
 -- wrap up
 
+add_to_callback ("hyphenate",
+function(head)
+  local head = process_fonts(head)
+  lang.hyphenate(head)
+end,
+"luatexko.hyphenate.fonts_and_languages")
+
 local pass_fun = function(...) return ... end
 create_callback("luatexko_prelinebreak_first",  "data", pass_fun)
 create_callback("luatexko_prelinebreak_second", "data", pass_fun)
@@ -2038,7 +2048,6 @@ add_to_callback("pre_shaping_filter", function(h, gc)
            or gc == "vtop"
            or gc == "insert"
            or gc == "vcenter"
-  h = process_fonts(h)
   h = call_callback("luatexko_prelinebreak_first", h, par)
   h = call_callback("luatexko_prelinebreak_second", h, par)
   return process_linebreak(h, par)
@@ -2264,32 +2273,6 @@ function luatexko.activate (name)
   end
   active_processes[name] = true
 end
-
-add_to_callback ("hyphenate",
-function(head)
-  local curr = head
-  while curr do
-    local id = curr.id
-    if id == glyphid and curr.subtype == 1 and curr.lang ~= nohyphen then
-      local c = curr.char
-      if c then
-        if is_unicode_var_sel(c) then
-          local p = getprev(curr)
-          if p.id == glyphid then
-            curr.lang = p.lang
-          end
-        elseif is_cjk_char(c) then
-          curr.lang = langkor
-        end
-      end
-    elseif id == mathid then
-      curr = end_of_math(curr)
-    end
-    curr = getnext(curr)
-  end
-  lang.hyphenate(head)
-end,
-"luatexko.hyphenate.prevent_disc_nodes")
 
 -- aux functions
 
