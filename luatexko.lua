@@ -112,9 +112,6 @@ local rubyattr         = attributes.luatexkorubyattr
 local hangulbyhangulattr = attributes.luatexkohangulbyhangulattr
 local hanjabyhanjaattr   = attributes.luatexkohanjabyhanjaattr
 
-local vert_classic = 1
-local SC_classic   = 2
-
 local stretch_f = 5/100 -- should be consistent for ruby
 
 local function get_font_data (fontid)
@@ -531,22 +528,25 @@ local charclass = setmetatable({
   [0xFE15] = 6, [0xFE16] = 6, [0xFF01] = 6, [0xFF1F] = 6,
 }, { __index = function() return 0 end })
 
-local SC_charclass = setmetatable({
-  [0xFF01] = 4, [0xFF1A] = 2, [0xFF1B] = 2, [0xFF1F] = 4,
-}, { __index = charclass })
-
-local vert_charclass = setmetatable({
-  [0xFF1A] = 7, -- 0xFE13
-  [0xFF1B] = 7, -- 0xFE14
-}, { __index = charclass })
+local special_classes = {
+  [0] = charclass,
+  setmetatable({  -- vert
+    [0xFF1A] = 7, [0xFF1B] = 7,  -- 0xFE13, 0xFE14
+  }, { __index = charclass }),
+  setmetatable({  -- SC
+    [0xFF01] = 4, [0xFF1A] = 2, [0xFF1B] = 2, [0xFF1F] = 4,
+  }, { __index = charclass }),
+  setmetatable({  -- TC
+    [0x3001] = 3, [0x3002] = 3, [0xFF0C] = 3, [0xFF0E] = 3,
+  }, { __index = charclass }),
+  setmetatable({  -- TC vert
+    [0x3001] = 3, [0x3002] = 3, [0xFF0C] = 3, [0xFF0E] = 3,
+    [0xFF1A] = 7, [0xFF1B] = 7,  -- 0xFE13, 0xFE14
+  }, { __index = charclass }),
+}
 
 local function get_char_class (c, classic)
-  if classic == vert_classic then
-    return vert_charclass[c]
-  elseif classic == SC_classic then
-    return SC_charclass[c]
-  end
-  return charclass[c]
+  return special_classes[classic or 0][c]
 end
 
 local breakable_after = setmetatable({

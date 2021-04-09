@@ -62,7 +62,10 @@
 \protected\def\Schinese{%
   \ifnum\luatexkoclassicattr=\@ne \else \luatexkoclassicattr\tw@ \fi
   \parindent2em }
-\protected\def\Tchinese{\luatexkoclassicattr\thr@@\parindent2em } % +halt
+\protected\def\Tchinese{%
+  \ifnum\luatexkoclassicattr=\@ne \luatexkoclassicattr=4\relax
+  \else \luatexkoclassicattr\thr@@ \fi
+  \parindent2em }
 \let\korean\typesetmodern \let\japanese\typesetclassic \let\chinese\Schinese
 % josa
 \count@"AC00
