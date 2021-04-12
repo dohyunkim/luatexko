@@ -60,12 +60,20 @@
 \protected\def\typesetmodern{\unsetattribute\luatexkoclassicattr}
 \protected\def\inhibitglue{\hskip\z@skip}
 \protected\def\Schinese{%
-  \ifnum\luatexkoclassicattr=\@ne \else \luatexkoclassicattr\tw@ \fi
-  \parindent2em }
+  \ifnum\luatexkoclassicattr=\@ne
+  \else
+    \luatexkoclassicattr\tw@
+    \parindent2em
+  \fi
+  }
 \protected\def\Tchinese{%
-  \ifnum\luatexkoclassicattr=\@ne \luatexkoclassicattr=4\relax
-  \else \luatexkoclassicattr\thr@@ \fi
-  \parindent2em }
+  \ifnum\luatexkoclassicattr=\@ne
+    \luatexkoclassicattr=4\relax
+  \else
+    \luatexkoclassicattr\thr@@
+    \parindent2em
+  \fi
+  }
 \let\korean\typesetmodern \let\japanese\typesetclassic \let\chinese\Schinese
 % josa
 \count@"AC00
