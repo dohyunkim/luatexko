@@ -55,8 +55,20 @@
   \DeclareHookRule{shipout/before}{.}{before}{luacolor}
 \fi
 % classic
-\protected\def\typesetclassic{\luatexkoclassicattr\z@\parindent1em }
-\protected\def\typesetvertical{\luatexkoclassicattr\@ne\parindent1em }
+\protected\def\typesetclassic{%
+  \ifnum\luatexkoclassicattr<\z@
+    \luatexkoclassicattr\z@
+    \parindent1em
+  \fi
+  }
+\protected\def\typesetvertical{%
+  \ifnum\luatexkoclassicattr=\thr@@
+    \luatexkoclassicattr=4\relax
+  \else
+    \luatexkoclassicattr\@ne
+  \fi
+  \parindent1em
+  }
 \protected\def\typesetmodern{\unsetattribute\luatexkoclassicattr}
 \protected\def\inhibitglue{\hskip\z@skip}
 \protected\def\Schinese{%
