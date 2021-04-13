@@ -55,36 +55,56 @@
   \DeclareHookRule{shipout/before}{.}{before}{luacolor}
 \fi
 % classic
-\protected\def\typesetclassic{%
+\protected\def\typesetclassic{% 0
   \ifnum\luatexkoclassicattr<\z@
     \luatexkoclassicattr\z@
     \parindent1em
   \fi
   }
-\protected\def\typesetvertical{%
-  \ifnum\luatexkoclassicattr=\thr@@
+\protected\def\typesetvertical{% 1
+  \ifcase\luatexkoclassicattr
+    \luatexkoclassicattr\@ne
+    \parindent1em
+  \or
+  \or
+    \luatexkoclassicattr\@ne
+  \or
     \luatexkoclassicattr=4\relax
+  \or
   \else
     \luatexkoclassicattr\@ne
+    \parindent1em
   \fi
-  \parindent1em
   }
 \protected\def\typesetmodern{\unsetattribute\luatexkoclassicattr}
 \protected\def\inhibitglue{\hskip\z@skip}
-\protected\def\Schinese{%
-  \ifnum\luatexkoclassicattr=\@ne
+\protected\def\Schinese{% 2, 1
+  \ifcase\luatexkoclassicattr
+    \luatexkoclassicattr\tw@
+  \or
+  \or
+  \or
+    \luatexkoclassicattr\tw@
+  \or
+    \luatexkoclassicattr\@ne
   \else
     \luatexkoclassicattr\tw@
-    \parindent2em
   \fi
+  \parindent2em
   }
-\protected\def\Tchinese{%
-  \ifnum\luatexkoclassicattr=\@ne
+\protected\def\Tchinese{% 3, 4
+  \ifcase\luatexkoclassicattr
+    \luatexkoclassicattr\thr@@
+  \or
     \luatexkoclassicattr=4\relax
+  \or
+    \luatexkoclassicattr\thr@@
+  \or
+  \or
   \else
     \luatexkoclassicattr\thr@@
-    \parindent2em
   \fi
+  \parindent2em
   }
 \let\korean\typesetmodern \let\japanese\typesetclassic \let\chinese\Schinese
 % josa
