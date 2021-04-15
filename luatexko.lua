@@ -562,7 +562,7 @@ local breakable_after = setmetatable({
   [0xFE32] = true, [0xFE50] = true, [0xFE51] = true, [0xFE52] = true,
   [0xFE54] = true, [0xFE55] = true, [0xFE57] = true, [0xFE57] = true,
   [0xFE58] = true, [0xFE5A] = true, [0xFE5C] = true, [0xFE5E] = true,
-  [0xFF1E] = true, [0xFF5E] = true, [0xFF70] = true,
+  [0xFF1E] = true, [0xFF5E] = true, [0xFF70] = true, [0x226B] = true, -- ≫
 },{ __index = function (_,c)
   return is_hangul_jamo(c) -- chosong also is breakable_after
   or     is_noncjk_char(c)
@@ -577,7 +577,7 @@ local breakable_before = setmetatable({
   [0x28] = true,   [0x3C] = true,   [0x5B] = true,   [0x60] = true,
   [0x7B] = true,   [0xAB] = true,   [0x25A1] = true, [0x25CB] = true,
   [0x3007] = true, [0xFE59] = true, [0xFE5B] = true, [0xFE5D] = true,
-  [0xFF1C] = true,
+  [0xFF1C] = true, [0x226A] = true, -- ≪
   -- small kana
   [0x3041] = 1000, [0x3043] = 1000, [0x3045] = 1000, [0x3047] = 1000,
   [0x3049] = 1000, [0x3063] = 1000, [0x3083] = 1000, [0x3085] = 1000,
