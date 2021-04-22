@@ -12,7 +12,7 @@
 % version 2006/05/20 or later.
 
 \ifdefined\luatexkohangulfontattr \endinput\fi
-\ifdefined\selectfont
+\ifdefined\ProvidesPackage
   \NeedsTeXFormat{LaTeX2e}[2020/10/01]
   \ProvidesPackage{luatexko}[2021/04/20 v3.1 typesetting Korean with LuaTeX]
   \RequirePackage{luatexbase}
@@ -279,7 +279,7 @@
   \setbox\z@\luatexkorubybasehbox{#1}% base
   \setbox\tw@\hbox{% ruby
     \ifdefined\rubyfont \rubyfont \fi
-    \ifdefined\selectfont % <- latex
+    \ifcsname ver@luatexko.sty\endcsname % <- latex
       \dimen@\dimexpr\rubysize em\relax
       \fontsize\dimen@\dimen@\selectfont
     \fi
@@ -372,7 +372,7 @@
       \pdfliteral{q 0 1 -1 0 0 0 cm}\box#1\pdfliteral{Q}}%
     \hfil }}
 % do not veticalize headline/footline
-\ifdefined\selectfont
+\ifcsname ver@luatexko.sty\endcsname
   \def\verticaltypesetting{%
     \maxdepth\z@ \typesetvertical
     \dimen@\textwidth \textwidth\textheight \textheight\dimen@
@@ -443,7 +443,7 @@
     \fi
   \fi }
 % plain
-\ifdefined\selectfont\else
+\ifcsname ver@luatexko.sty\endcsname\else
   \protected\def\hangulfont{%
     \afterassignment\luatexkohangulselectfont\font\luatexkohangulfont}
   \protected\def\hanjafont{%

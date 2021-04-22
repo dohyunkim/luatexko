@@ -537,10 +537,10 @@ local special_classes = {
     [0xFF01] = 4, [0xFF1A] = 2, [0xFF1B] = 2, [0xFF1F] = 4,
   }, { __index = charclass }),
   setmetatable({  -- TC
-    [0x3001] = 3, [0x3002] = 3, [0xFF0C] = 3, [0xFF0E] = 3,
+    [0x3001] = 3, [0x3002] = 5, [0xFF0C] = 3, [0xFF0E] = 5,
   }, { __index = charclass }),
   setmetatable({  -- TC vert
-    [0x3001] = 3, [0x3002] = 3, [0xFF0C] = 3, [0xFF0E] = 3,
+    [0x3001] = 3, [0x3002] = 5, [0xFF0C] = 3, [0xFF0E] = 5,
     [0xFF1A] = 7, [0xFF1B] = 7,  -- 0xFE13, 0xFE14
   }, { __index = charclass }),
 }
