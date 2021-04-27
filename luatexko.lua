@@ -1131,6 +1131,23 @@ local josa_table = {
     [0xC774] = {0xC774, nil,    0xC774}, -- 이(라) = 이,  , 이
 }
 
+local hanja2hangul = { }
+
+local function add_to_hanja2hangul (filename, i, last)
+  local f = kpse.find_file(filename)
+  if f then
+    for c in io.lines(f) do
+      hanja2hangul[i] = tonumber(c)
+      i = i + 1
+    end
+  else
+    warning("cannot find %s", filename)
+    for c = i, last do
+      hanja2hangul[c] = c
+    end
+  end
+end
+
 local josa_code = setmetatable({
     [0x30] = 3,   [0x31] = 1,   [0x33] = 3,   [0x36] = 3,
     [0x37] = 1,   [0x38] = 1,   [0x4C] = 1,   [0x4D] = 3,
@@ -1156,16 +1173,37 @@ local josa_code = setmetatable({
     [0xFF13] = 3, [0xFF16] = 3, [0xFF17] = 1, [0xFF18] = 1,
     [0xFF2C] = 1, [0xFF2D] = 3, [0xFF2E] = 3, [0xFF4C] = 1,
     [0xFF4D] = 3, [0xFF4E] = 3,
-},{ __index = function(_,c)
+},{ __index = function(t, cc)
+  local c = cc
+  -- xetexko에 포함된 .tab 파일들을 이용해 한자를 한글로 변환
+  if c >= 0x4E00 and c <= 0x9FA5 then
+    if not hanja2hangul[c] then
+      add_to_hanja2hangul("hanja_hangul.tab", 0x4E00, 0x9FA5)
+    end
+    c = hanja2hangul[c]
+  elseif c >= 0xF900 and c <= 0xFA2D then
+    if not hanja2hangul[c] then
+      add_to_hanja2hangul("hanjacom_hangul.tab", 0xF900, 0xFA2D)
+    end
+    c = hanja2hangul[c]
+  elseif c >= 0x3400 and c <= 0x4DB5 then
+    if not hanja2hangul[c] then
+      add_to_hanja2hangul("hanjaexa_hangul.tab", 0x3400, 0x4DB5)
+    end
+    c = hanja2hangul[c]
+  end
   if is_hangul(c) then
     c = (c - 0xAC00) % 28 + 0x11A7
   end
   if is_chosong(c) then
-    return c == 0x1105 and 1 or 3
+    c = c == 0x1105 and 1 or 3
+    t[cc] = c; return c
   elseif is_jungsong(c) then
-    return c ~= 0x1160 and 2
+    c = c ~= 0x1160 and 2
+    t[cc] = c; return c
   elseif is_jongsong(c) then
-    return c == 0x11AF and 1 or 3
+    c = c == 0x11AF and 1 or 3
+    t[cc] = c; return c
   elseif is_noncjk_char(c) and c <= 0x7A
     or c >= 0x2160 and c <= 0x217F -- roman
     or c >= 0x2460 and c <= 0x24E9 -- ①
@@ -1175,11 +1213,13 @@ local josa_code = setmetatable({
     or c >= 0xFF10 and c <= 0xFF19 -- ０
     or c >= 0xFF21 and c <= 0xFF3A -- Ａ
     or c >= 0xFF41 and c <= 0xFF5A -- ａ
-    then return 2
+    then
+      t[cc] = 2; return 2
   elseif c >= 0x3131 and c <= 0x314E or c >= 0x3165 and c <= 0x3186 -- ㄱ
     or c >= 0x3200 and c <= 0x320D -- ㈀
     or c >= 0x3260 and c <= 0x326D -- ㉠
-    then return 3
+    then
+      t[cc] = 3; return 3
   end
 end })
 
