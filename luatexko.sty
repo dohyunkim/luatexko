@@ -13,7 +13,7 @@
 
 \ifdefined\luatexkohangulfontattr \endinput\fi
 \ifdefined\ProvidesPackage
-  \NeedsTeXFormat{LaTeX2e}[2020/10/01]
+  \NeedsTeXFormat{LaTeX2e}[2021/06/01]
   \ProvidesPackage{luatexko}[2021/04/20 v3.1 typesetting Korean with LuaTeX]
   \RequirePackage{luatexbase}
   \RequirePackage{fontspec}[2020/02/03]
@@ -376,8 +376,9 @@
   \def\verticaltypesetting{%
     \maxdepth\z@ \typesetvertical
     \dimen@\textwidth \textwidth\textheight \textheight\dimen@
-    \edef\@outputpage{\unexpanded{\luatexkorotatebox\@outputbox
-    \textwidth\textheight}\unexpanded\expandafter{\@outputpage}}}
+    \AddToHook{cmd/@outputpage/before}{\luatexkorotatebox\@outputbox \textwidth\textheight}%
+    \let\verticaltypesetting\relax % prevent multiple running
+  }
 \else
   \def\verticaltypesetting{%
     \dimen@\hsize \hsize\vsize \vsize\dimen@
@@ -385,7 +386,9 @@
       \unexpanded\expandafter{\plainoutput}}%
     \def\pagebody{\setbox\z@\vbox to\hsize{\boxmaxdepth=\maxdepth
       \pagecontents}\luatexkorotatebox\z@\box\z@}%
-    \maxdepth\z@ \typesetvertical }
+    \maxdepth\z@ \typesetvertical
+    \let\verticaltypesetting\relax % prevent multiple running
+  }
 \fi
 % hangul normalize
 \def\luatexhangulnormalize{%
@@ -471,17 +474,10 @@
   \catcode`\@=\luatexkoatcatcode
 \endinput\fi
 % latex
-\IfHookExistsTF{selectfont}{
-  \AddToHook{selectfont}{%
-    \luatexkohangulselectfont
-    \luatexkohanjaselectfont
-    \luatexkofallbackselectfont }
-}{
-  \RequirePackage{everysel}
-  \EverySelectfont{%
-    \luatexkohangulselectfont
-    \luatexkohanjaselectfont
-    \luatexkofallbackselectfont }
+\AddToHook{selectfont}{%
+  \luatexkohangulselectfont
+  \luatexkohanjaselectfont
+  \luatexkofallbackselectfont
 }
 \AddToHook{rmfamily}{%
   \let\luatexkohangulfont  \luatexkomainhangulfont
