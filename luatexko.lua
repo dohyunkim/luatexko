@@ -1327,7 +1327,7 @@ local function process_dotemph (head)
 
     elseif curr.id == glyphid then
       local dotattr = has_attribute(curr, dotemphattr)
-      if dotattr then
+      if dotattr and dotemphbox[dotattr] then
         local c = my_node_props(curr).unicode or curr.char
         if is_hangul(c)      or
            is_compat_jamo(c) or
@@ -1489,6 +1489,10 @@ local function process_uline (head, parent, level)
         end
       end
 
+      local to_free = curr
+      head, curr = noderemove(head, curr)
+      nodefree(to_free)
+      goto nextnode
     else
       local currattr = has_attribute(curr, ulineattr)
       if currattr then
@@ -1501,6 +1505,7 @@ local function process_uline (head, parent, level)
 
     end
     curr = getnext(curr)
+    ::nextnode::
   end
 
   if attr then
@@ -1536,7 +1541,7 @@ local function process_ruby_pre_linebreak (head)
       local rubyid = has_attribute(curr, rubyattr)
       if rubyid then
         local ruby_t = rubybox[rubyid]
-        if ruby_t[3] then -- rubyoverlap
+        if ruby_t and ruby_t[3] then -- rubyoverlap
           local side = (ruby_t[1].width - curr.width)/2
           if side > 0 then -- ruby is wide
             local k, r = nodenew(kernid), nodenew(ruleid)
@@ -1585,7 +1590,7 @@ local function process_ruby_post_linebreak (head)
           ruby.shift = shift - ascender - ruby.depth - ruby_t[2] -- rubysep
           head = insert_before(head, curr, ruby)
         end
-        ruby_t = nil
+        rubybox[rubyid] = nil
       elseif curr.list then
         curr.list = process_ruby_post_linebreak(curr.list)
       end
@@ -2291,13 +2296,16 @@ otfregister {
 local auxiliary_procs = {
   dotemph = {
     luatexko_do_atbegshi = process_dotemph,
+    hpack_filter         = process_dotemph, -- useboxresource
   },
   uline   = {
     luatexko_do_atbegshi = process_uline,
+    hpack_filter         = function(h) return process_uline(h) end, -- useboxresource
   },
   ruby    = {
     pre_linebreak_filter = process_ruby_pre_linebreak,
     luatexko_do_atbegshi = process_ruby_post_linebreak,
+    hpack_filter         = process_ruby_post_linebreak, -- useboxresource
   },
   autojosa = {
     luatexko_prelinebreak_first = process_josa,
@@ -2321,6 +2329,7 @@ function luatexko.deactivateall (str)
   for _, name in ipairs{ "pre_shaping_filter",
                          "post_shaping_filter",
                          "pre_linebreak_filter",
+                         "hpack_filter",
                          "hyphenate",
                          "luatexko_do_atbegshi", -- might not work properly
                        } do
