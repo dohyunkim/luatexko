@@ -54,23 +54,35 @@
   }
   \DeclareHookRule{shipout/before}{.}{before}{luacolor}
 \fi
-% classic
-\protected\def\typesetclassic{% 0
-  \ifnum\luatexkoclassicattr<\z@
-    \luatexkoclassicattr\z@
-    \parindent1em
+% classics
+% 0: horizotal KO, JP
+% 1: vertical  KO, SC
+% 2: horizotal SC
+% 3: horizotal TC
+% 4: vertical  TC
+% 5: vertical  JP
+\chardef\luatexkolangCJK=\z@ % 0:KO, 1:JP, 2:SC, 3:TC
+\protected\def\typesetclassic{%
+  \ifcase\luatexkolangCJK
+    \ifnum\luatexkoclassicattr<\z@
+      \luatexkoclassicattr\z@
+      \parindent1em
+    \fi
   \fi
   }
-\protected\def\typesetvertical{% 1
-  \ifcase\luatexkoclassicattr
+\protected\def\typesetvertical{% 1, 4, 5
+  \ifcase\luatexkolangCJK
     \luatexkoclassicattr\@ne
     \parindent1em
   \or
+    \luatexkoclassicattr=5\relax
+    \parindent1em
   \or
     \luatexkoclassicattr\@ne
+    \parindent2em
   \or
     \luatexkoclassicattr=4\relax
-  \or
+    \parindent2em
   \else
     \luatexkoclassicattr\@ne
     \parindent1em
@@ -78,13 +90,33 @@
   }
 \protected\def\typesetmodern{\unsetattribute\luatexkoclassicattr}
 \protected\def\inhibitglue{\hskip\z@skip}
+\protected\def\japanese{% 0, 5
+  \chardef\luatexkolangCJK=\@ne
+  \ifcase\luatexkoclassicattr
+  \or
+    \luatexkoclassicattr=5\relax
+  \or
+    \luatexkoclassicattr\z@
+  \or
+    \luatexkoclassicattr\z@
+  \or
+    \luatexkoclassicattr=5\relax
+  \or
+  \else
+    \luatexkoclassicattr\z@
+  \fi
+  \parindent1em
+  }
 \protected\def\Schinese{% 2, 1
+  \chardef\luatexkolangCJK=\tw@
   \ifcase\luatexkoclassicattr
     \luatexkoclassicattr\tw@
   \or
   \or
   \or
     \luatexkoclassicattr\tw@
+  \or
+    \luatexkoclassicattr\@ne
   \or
     \luatexkoclassicattr\@ne
   \else
@@ -93,6 +125,7 @@
   \parindent2em
   }
 \protected\def\Tchinese{% 3, 4
+  \chardef\luatexkolangCJK=\thr@@
   \ifcase\luatexkoclassicattr
     \luatexkoclassicattr\thr@@
   \or
@@ -101,12 +134,14 @@
     \luatexkoclassicattr\thr@@
   \or
   \or
+  \or
+    \luatexkoclassicattr=4\relax
   \else
     \luatexkoclassicattr\thr@@
   \fi
   \parindent2em
   }
-\let\korean\typesetmodern \let\japanese\typesetclassic \let\chinese\Schinese
+\let\korean\typesetmodern \let\chinese\Schinese
 % josa
 \count@"AC00
 \loop

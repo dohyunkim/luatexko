@@ -543,6 +543,9 @@ local special_classes = {
     [0x3001] = 3, [0x3002] = 5, [0xFF0C] = 3, [0xFF0E] = 5,
     [0xFF1A] = 7, [0xFF1B] = 7,  -- 0xFE13, 0xFE14
   }, { __index = charclass }),
+  setmetatable({  -- JP vert
+    [0xFF1B] = 7, -- 0xFE13
+  }, { __index = charclass }),
 }
 
 local function get_char_class (c, classic)
