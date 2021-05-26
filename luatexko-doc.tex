@@ -41,7 +41,6 @@
   }
 }
 \defaultfontfeatures+{Renderer=HarfBuzz}
-\setmainfont{Latin Modern Roman}[Expansion] % for hb tlig
 \setmainhangulfont{Noto Serif CJK KR}[
   Scale=0.98,
   AutoFakeSlant,
@@ -50,9 +49,9 @@
   UprightFont=* Light,
   BoldFont=* Bold,
   InterLatinCJK=.125em,
+  CompressPunctuations,
   Expansion, Protrusion=notoserifcjk,
 ]
-\setsansfont{Latin Modern Sans}
 \setsanshangulfont{Noto Sans CJK KR}[
   Scale=0.98,
   Script=Hangul,
@@ -74,7 +73,8 @@
   CharRaise=-.125ex,
   Color=MidnightBlue,
 ]
-\setmathhangulfont{Noto Sans CJK KR}[
+\setmathhangulfont{Noto Sans CJK KR}
+[
   Script=Hangul,
   Language=Korean,
   SizeFeatures={
@@ -110,7 +110,7 @@
 \AddToHook{env/itemize/begin}{\small}
 \AddToHook{env/verbatim/begin}{\linespread{1.1}}
 
-\catcode`|=13 \protected\def|{\verb|\let\\=\textbackslash}
+\catcode`|=13 \protected\def|{\verb|\let\\=\textbackslash} %|
 \def\nohyphen{\language\csname l@nohyphenation\endcsname}
 \protected\def\cs#1{\texttt{\nohyphen \textbackslash\detokenize{#1}}}
 \protected\def\pkgkwd#1#{\leavevmode
@@ -125,6 +125,13 @@
 \def\kotex{\logoko\kern-.1ex .\kern-.1667em \TeX}
 \def\hemph#1{\textsf{\bfseries #1}}
 \def\ldots{$\dots$}
+\newenvironment{plaintex}{%
+  \par\bigskip
+  \begin{narrower}\small\parindent=0pt
+  \leavevmode\llap{\color{gray}plain \TeX\quad}\ignorespaces
+}{
+  \end{narrower}%
+}
 
 \widowpenalty5000
 \clubpenalty5000
@@ -134,7 +141,7 @@
 \author{Dohyun Kim \normalsize |<nomos at ktug org>| \and
         Soojin Nam \normalsize |<jsunam at gmail com>| \and
   \normalsize <\url{http://github.com/dohyunkim/luatexko}>}
-\date{Version 3.1\quad 2021/04/20}
+\date{Version 3.2\quad 2021/06/10}
 \maketitle
 
 \begin{quote}
@@ -181,13 +188,7 @@ fontspec 문서 참조.
 첫 두 줄, 즉 main/sans 글꼴들에는 |Ligatures=TeX| 옵션이 자동으로 주어진다.%
 \footnote{%
   \cs{adhochangulfont} \cs{adhochanjafont} \cs{addhocfallbackfont}는
-  마지막 줄 명령들의 다른 이름들이다. }\,%
-\footnote{%
-  플레인텍에서 한글 글꼴 설정은 다음과 같이 한다:\par
-  \leftskip=3em\noindent
-  \cs{hangulfont=UnDotum\relax}\\
-  \cs{hanjafont=UnDotum at 14pt}\\
-  \cs{fallbackfont=HanaMinB at 12pt} }
+  마지막 줄 명령들의 다른 이름들이다. }
 \begin{verbatim}
   \setmainhangulfont     \setmainhanjafont    \setmainfallbackfont
   \setsanshangulfont     \setsanshanjafont    \setsansfallbackfont
@@ -197,6 +198,27 @@ fontspec 문서 참조.
   \addhangulfontfeature  \addhanjafontfeature \addfallbackfontfeature
   \hangulfontspec        \hanjafontspec       \fallbackfontspec
 \end{verbatim}
+
+\begin{plaintex}
+  플레인텍에서 한글 글꼴 설정은 다음과 같이 할 수 있다:
+\begin{verbatim}
+    \hangulfont=UnDotum\relax
+    \hanjafont="Noto Sans CJK KR" at 10pt
+    \fallbackfont=HanaMinA at 10pt
+\end{verbatim}
+
+  v3.2부터는 한글폰트의 기본값으로 \hemph{은바탕}을 로드한다.
+  또한 다음 명령들도 제공한다:
+\begin{verbatim}
+    \sethangulfont\taza=UnTaza at 12pt
+    \sethanjafont\dotum=UnDotum at 12pt
+    \setfallbackfont\noto={Noto Sans CJK KR} at 12pt
+\end{verbatim}
+  그리하여 다음처럼 지시할 수 있게 된다:
+\begin{verbatim}
+    \expandafter\def\expandafter\tt\expandafter{\tt\taza\dotum\noto}
+\end{verbatim}
+\end{plaintex}
 
 \section{글꼴 대체}\label{sec:fontswitch}
 
@@ -219,15 +241,15 @@ fontspec 문서 참조.
 |0|을 지시해야 이 기능이 비로소 꺼진다.
 verbatim 코드를 식자할 때는 이 기능이 작동하지 않으며,%
 \footnote{%
-  정확히 말하자면 |\\language=\\l@nohyphenation|, 즉 하이프네이션이
-  허용 안 되는  상황에서는 작동하지 않는다.
+  정확히 말하자면 |\\language=\\l@nohyphenation| (플레인텍에서는 |\\language=-1|인 경우),
+  즉 하이프네이션이 허용 안 되는  상황에서는 작동하지 않는다.
   부연하건대, |\\language=\\l@nohyphenation| 상황에서 작동하지 않는
   그밖의 기능은 다음과 같다: 줄바꿈 허용, InterCharacter, InterHangul,
   InterLatinCJK, CompressPunctuations, RemoveClassicSpaces,
   한글^^b7한자 폰트 문자 다음의 공백 크기 조정 등. 마지막의
   한글^^b7한자 다음의 공백 크기 조정은 영문자가 고정폭 글꼴일 때에도
   작동하지 않는다. }
-문장부호가 고정폭 글꼴일 때에도 작동하지 않는다.
+문장부호가 고정폭 글꼴이거나 tfm 폰트일 때에도 작동하지 않는다.
 영향 받는 문장부호들의 기본값은 다음과 같다:
 \begin{verbatim}
   [0x21]    !    [0x27]    '   [0x28]    (   [0x29]    )
@@ -374,7 +396,9 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
   |Vertical=HalfMetrics|와 거의 같은 기능을 한다.%
   \footnote{%
     플레인텍에서는 각각 |+halt| 및 |+vhal|이다. 이들과 완전 동일하진
-    않다. 가령 U+3002 (\char"3002) 처리의 경우.}
+    않다. 가령 U+00B7\;(^^b7)의 경우 및 고문헌조판 모드에서
+    U+2018\;(^^^^2018) U+2019\;(^^^^2019) U+201C\;(^^^^201c) U+201D\;(^^^^201d)
+    처리의 경우.}
 
 \item[Protrusion] \pkgkwd*{Protrusion}%
   특정 글자가 행 끝에 왔을 때 판면 바깥으로 끌어내는
@@ -420,9 +444,12 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
 고문헌 조판을 위해 \pkgkwd{typesetclassic} 환경을 제공한다.%
 \footnote{%
   플레인텍에서는 (문서 전체에 적용하지 않는다면 그룹 안에서)
-  \cs{typesetclassic}을 사용한다.
+  \cs{typesetclassic}을 사용한다. }\,%
+\footnote{%
   |japanese|, |chinese|, |Schinese|, |Tchinese|, |korean| 따위의 환경은
-  지난 버전과의 호환성을 위해 당분간 제공되고 있을 뿐이다. }
+  지난 버전과의 호환성을 위해 제공되고 있을 뿐이다.
+  그렇더라도 중국어나 일본어 폰트를 사용한다면 이들 환경을 사용하는 것이 좋다.
+  |chinese|는 |Schinese|와 동의어이다. }
 그림~\ref{fig:gomun} 참조.
 
 v2.0부터는 고문헌 조판에서 한글^^b7한자와 영문자가 붙어 나오더라도 자동으로
@@ -472,7 +499,9 @@ v2.0부터는 고문헌 조판에서 한글^^b7한자와 영문자가 붙어 나
       \hunmintxt
     \end{vertical}
   }
-  \caption{세로쓰기의 예. 박스 높이 |20em|을 지시했다.}\label{fig:vertical}
+  \caption{세로쓰기의 예. 박스 높이 |20em|을 지시했다.
+    아직 HarfBuzz 모드를 쓸 수 없으므로 폰트에 |Renderer=Node| 옵션을 명시했다.
+    }\label{fig:vertical}
 \end{figure}
 
 \begin{figure}
@@ -575,9 +604,7 @@ v2.0부터는 고문헌 조판에서 한글^^b7한자와 영문자가 붙어 나
 \footnote{%
   플레인텍에서는 루비의 글꼴크기를 따로 조정해주지 않는다.
   사용자가 \cs{rubyfont}를 설정할 때 크기도 함께 지시하도록 한다.
-  가령:\par
-  \leftskip=3em\noindent
-  |\\font\\rubyfont=UnBatang at \\rubysize em| }
+  가령: |\\font\\rubyfont=UnBatang at \\rubysize em| }
 
 ③~|\def|\pkgkwd{\rubysep}|{0.1ex}|: 루비와 본문 글자 사이의 간격을 지정
 
@@ -677,31 +704,38 @@ ulem 패키지가 \luatexko와 궁합이 맞지 않아{\small (줄바꿈에 문�
   |$가^{나^다}$|\quad$\Rightarrow\quad가^{나^다}$
 \end{quote}
 수식 한글 폰트를 설정하면 수식 모드에서도 한글을 {\small(hbox로 감싸지 않고)}
-직접 입력할 수 있다.%
-\footnote{%
-  플레인텍에서는 \cs{mathhangulfont=UnBatang}과 같이 설정한다.
-  또는 좀 더 그럴듯하게 하려면:\par
-  \leftskip=3em\noindent
-  |\\font\\texthangul="Noto Sans CJK KR DemiLight" at 10pt|\\
-  |\\font\\scripthangul="Noto Sans CJK KR Regular" at 7pt|\\
-  |\\font\\scriptscripthangul="Noto Sans CJK KR Medium" at 5pt|\\
-  |\\setmathhangulfonts\\texthangul\\scripthangul\\scriptscripthangul| }
+직접 입력할 수 있다.
 v2.0부터는 자동으로 수식 한글을 잡아주지 않는다.%
 \pkgkwd*{\setmathhangulfont}
 \begin{verbatim}
-  \setmathhangulfont{Noto Sans CJK KR}[
+  \setmathhangulfont{Noto Sans CJK KR}
+  [
     SizeFeatures={
       {Size=-6,  Font=* Medium},
       {Size=6-9, Font=* Regular},
       {Size=9-,  Font=* DemiLight},
-    } ]
+    }
+  ]
 \end{verbatim}
+
 현재 한글만 쓸 수 있게 설정되어 있다. 한자도 수식에 직접 입력하려면 사용자는
 다음 명령으로 유니코드 블럭을 추가 지정해야 한다.%
 \pkgkwd*{\setmathhangulblock}
 \begin{verbatim}
   \setmathhangulblock{4E00}{9FC3}
 \end{verbatim}
+
+\begin{plaintex}
+  플레인텍에서는 \cs{mathhangulfont=UnBatang}과 같이 설정한다.
+
+  또는 좀 더 그럴듯하게 하려면:
+\begin{verbatim}
+    \font\texthangul="Noto Sans CJK KR DemiLight" at 10pt
+    \font\scripthangul="Noto Sans CJK KR Regular" at 7pt
+    \font\scriptscripthangul="Noto Sans CJK KR Medium" at 5pt
+    \setmathhangulfonts\texthangul\scripthangul\scriptscripthangul
+\end{verbatim}
+\end{plaintex}
 
 \section{한국어 항목 번호}\label{sec:hangulnums}
 
@@ -719,7 +753,9 @@ v2.0부터는 자동으로 수식 한글을 잡아주지 않는다.%
 유사하다.%
 \footnote{%
   변환기능은 |lua-uni-algos| 패키지를 이용하므로
-  이 패키지를 설치해두어야 한다. 또한 HarfBuzz 모드에서는
+  이 패키지를 설치해두어야 한다. }\,%
+\footnote{%
+  HarfBuzz 모드에서는
   첫가끝 자모로의 입력변환이 효과를 못볼 수도 있으니 유의할 것.
 }
 
@@ -732,7 +768,8 @@ v2.0부터는 자동으로 수식 한글을 잡아주지 않는다.%
 |0|을 할당하면 다시 UTF-8 입력으로 간주한다. \XeTeX의 \cs{XeTeXinputencoding}
 명령과 유사하나, 오직 한국어 문자만 처리할 수 있다.%
 \footnote{%
-  윈도 운영체제에서의 한글 파일이름 불러오기 기능은 v2.0부터는 제공하지 않는다.
+  CP949 인코딩 파일시스템을 사용하는 윈도 운영체제에서의
+  한글 파일이름 불러오기 기능은 v2.0부터는 제공하지 않는다.
   대신 |luatex -cmdx ...|, |lualatex -cmdx ...|와 같이 컴파일시 명령행에
   |-cmdx| 옵션을 주면 된다고 하니 테스트해 보시기 바란다. }
 
@@ -743,6 +780,11 @@ v2.0부터는 자동으로 수식 한글을 잡아주지 않는다.%
 \section*{주요 변경 이력}
 
 \begin{itemize}\linespread{1.1}\selectfont
+  \item[v3.2] ------
+  \item \hyperref[sec:fontcmds]{플레인텍 명령
+    \cs{sethangulfont} \cs{sethanjafont} \cs{setfallbackfont} 추가}
+  \item 한자 뒤에서도 자동조사 기능이 대체로 동작하게끔 하였다.
+    \XeTeX-\logoko{} 패키지가 설치돼 있을 것을 요구한다.
   \item[v3.0] ------
   \item \hyperref[sec:fontoption]{세로쓰기에서 |CharRaise| 옵션은
       이제 글자들의 \dotemph{추가적인} 이동 길이를 나타낸다.}

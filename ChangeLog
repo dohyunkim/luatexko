@@ -1,3 +1,16 @@
+2021-06-10	Dohyun Kim <nomos at ktug org>
+
+	Version 3.2
+
+	* luatexko.lua:
+	support automatic josa selection after hanja characters;
+	support dotemph/uline/ruby in \saveboxresource boxes
+
+	* luatexko.sty:
+	use LaTeX's cmd hooks which require LaTeX 2021/06/01 or later;
+	introduce new plain TeX commands: \sethangulfont \sethanjafont
+	\setfallbackfont
+
 2021-04-20	Dohyun Kim <nomos at ktug org>
 
 	Version 3.1

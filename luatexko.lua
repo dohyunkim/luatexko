@@ -13,8 +13,8 @@
 
 luatexbase.provides_module {
   name        = 'luatexko',
-  date        = '2021/04/20',
-  version     = '3.1',
+  date        = '2021/06/10',
+  version     = '3.2',
   description = 'typesetting Korean with LuaTeX',
   author      = 'Dohyun Kim, Soojin Nam',
   license     = 'LPPL v1.3+',
@@ -544,7 +544,7 @@ local special_classes = {
     [0xFF1A] = 7, [0xFF1B] = 7,  -- 0xFE13, 0xFE14
   }, { __index = charclass }),
   setmetatable({  -- JP vert
-    [0xFF1B] = 7, -- 0xFE13
+    [0xFF1B] = 7, -- 0xFE14
   }, { __index = charclass }),
 }
 
