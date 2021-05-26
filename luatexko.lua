@@ -72,6 +72,7 @@ local attributes            = luatexbase.attributes
 local call_callback         = luatexbase.call_callback
 local create_callback       = luatexbase.create_callback
 local module_warning        = luatexbase.module_warning
+local new_attribute         = luatexbase.new_attribute
 local new_user_whatsit      = luatexbase.new_user_whatsit
 local registernumber        = luatexbase.registernumber
 
@@ -111,6 +112,8 @@ local ulineattr        = attributes.luatexkoulineattr
 local rubyattr         = attributes.luatexkorubyattr
 local hangulbyhangulattr = attributes.luatexkohangulbyhangulattr
 local hanjabyhanjaattr   = attributes.luatexkohanjabyhanjaattr
+
+local unicodeattr = new_attribute"luatexkounicodeattr"
 
 local stretch_f = 5/100 -- should be consistent for ruby
 
@@ -687,8 +690,7 @@ local function process_fonts (head)
   while curr do
     local id = curr.id
     if id == glyphid then
-      local props = my_node_props(curr)
-      if not props.unicode then
+      if not has_attribute(curr, unicodeattr) then
 
         local c = curr.char
 
@@ -738,7 +740,7 @@ local function process_fonts (head)
           end
         end
 
-        props.unicode = c
+        set_attribute(curr, unicodeattr, c)
       end
     elseif id == discid then
       curr.pre     = process_fonts(curr.pre)
@@ -782,7 +784,7 @@ local function hbox_char_font (box, init, glyfonly)
   while curr do
     local id = curr.id
     if id == glyphid then
-      local c = my_node_props(curr).unicode or curr.char
+      local c = has_attribute(curr, unicodeattr) or curr.char
       if c and not is_cjk_combining(c) then
         return c, curr.font
       end
@@ -861,7 +863,7 @@ local function process_linebreak (head, par)
   while curr do
     local id = curr.id
     if id == glyphid then
-      local c = my_node_props(curr).unicode or curr.char
+      local c = has_attribute(curr, unicodeattr) or curr.char
       if c and not is_unicode_var_sel(c) then
         local old = has_attribute(curr, classicattr)
         head, pc, pcl = maybe_linebreak(head, curr, pc, pcl, c, old, curr.font, par)
@@ -916,7 +918,7 @@ local function process_interhangul (head, par)
   while curr do
     local id = curr.id
     if id == glyphid then
-      local c = my_node_props(curr).unicode or curr.char
+      local c = has_attribute(curr, unicodeattr) or curr.char
       if c and not is_unicode_var_sel(c) then
         head, pc = do_interhangul_option(head, curr, pc, c, curr.font, par)
 
@@ -978,7 +980,7 @@ local function process_interlatincjk (head, par)
   while curr do
     local id = curr.id
     if id == glyphid then
-      local c = my_node_props(curr).unicode or curr.char
+      local c = has_attribute(curr, unicodeattr) or curr.char
       if c and not is_unicode_var_sel(c) then
         head, pc, pf, pcl = do_interlatincjk_option(head, curr, pc, pf, pcl, c, curr.font, par)
         pc = breakable_after[c] and pc or 0
@@ -1036,7 +1038,7 @@ local function process_glyph_width (head)
       if curr.lang ~= nohyphen
         and fontoptions.compresspunctuations[curr.font] then
 
-        local cc = my_node_props(curr).unicode or curr.char
+        local cc = has_attribute(curr, unicodeattr) or curr.char
         local old = has_attribute(curr, classicattr)
         local class = get_char_class(cc, old)
         if class >= 1 and class <= 4 and
@@ -1090,11 +1092,11 @@ local function process_remove_spaces (head)
 
               local vchar, vfont
               if id == glyphid and v.lang ~= nohyphen then
-                local c = my_node_props(v).unicode or v.char or 0
+                local c = has_attribute(v, unicodeattr) or v.char or 0
                 if is_unicode_var_sel(c) then
                   v = getprev(v) or v
                 end
-                vchar, vfont = my_node_props(v).unicode or v.char, v.font
+                vchar, vfont = has_attribute(v, unicodeattr) or v.char, v.font
               elseif id == hlistid and v.list then
                 vchar, vfont = hbox_char_font(v, k == "n")
               end
@@ -1231,7 +1233,7 @@ local function prevjosacode (n, parenlevel, ignore_parens)
   while n do
     local id = n.id
     if id == glyphid then
-      local c = my_node_props(n).unicode or n.char -- beware hlist/vlist
+      local c = has_attribute(n, unicodeattr) or n.char -- beware hlist/vlist
       if ignore_parens and c == 0x29 then -- )
         parenlevel = parenlevel + 1
       elseif ignore_parens and c == 0x28 then -- (
@@ -1331,7 +1333,7 @@ local function process_dotemph (head)
     elseif curr.id == glyphid then
       local dotattr = has_attribute(curr, dotemphattr)
       if dotattr and dotemphbox[dotattr] then
-        local c = my_node_props(curr).unicode or curr.char
+        local c = has_attribute(curr, unicodeattr) or curr.char
         if is_hangul(c)      or
            is_compat_jamo(c) or
            is_chosong(c)     or
@@ -1648,7 +1650,7 @@ local function process_reorder_tonemarks (head)
        fontoptions.is_not_harf[curr.font] and
        fontoptions.is_hangulscript[curr.font] then
 
-      local uni = my_node_props(curr).unicode or curr.char
+      local uni = has_attribute(curr, unicodeattr) or curr.char
       if is_hangul(uni) or is_chosong(uni) or uni == 0x25CC then
         init = curr
       elseif is_jungsong(uni) or is_jongsong(uni) then
@@ -1657,7 +1659,7 @@ local function process_reorder_tonemarks (head)
           local n, syllable = init, { init = init }
           while n do
             if n.id == glyphid then
-              local u = my_node_props(n).unicode or n.char
+              local u = has_attribute(n, unicodeattr) or n.char
               if u then tableinsert(syllable, u) end
             end
             if n == curr then break end
@@ -1960,7 +1962,7 @@ end
 
 -- charraise
 
-local raiseattr = luatexbase.new_attribute"luatexkoraiseattr"
+local raiseattr = new_attribute"luatexkoraiseattr"
 
 local function process_charraise (head)
   local curr = head
@@ -2005,7 +2007,7 @@ local function process_fake_slant_corr (head) -- for font fallback
               tableinsert(t, char_in_font(p.font, p.char).italic or 0)
             end
 
-            local c = my_node_props(p).unicode or p.char
+            local c = has_attribute(p, unicodeattr) or p.char
             if is_jungsong(c) or is_jongsong(c) or hangul_tonemark[c] then
             else
               break
