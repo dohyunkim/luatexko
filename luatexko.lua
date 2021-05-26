@@ -2358,7 +2358,3 @@ function luatexko.reactivateall ()
   luatexko.deactivated = nil
 end
 
-function luatexko.currenthashangulchars (cnt)
-  texcount[cnt] = char_in_font(fontcurrent(), 0xAC00) and 1 or 0
-end
-
