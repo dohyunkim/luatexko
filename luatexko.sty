@@ -295,12 +295,13 @@
 \let\rubynooverlap\ruby@overlapfalse
 \rubyoverlap % ruby may hangover neighboring chars
 \newcount\luatexkorubycount
-\def\luatexkorubybasehbox{\hbox attr\luatexkorubyalloc=\luatexkorubycount}
 \protected\def\ruby#1#2{%
   \global\advance\luatexkorubycount\@ne
+  \directlua{ if \the\luatexkorubycount == 1 then luatexko.activate"ruby" end }%
   \begingroup
+  \count@=\luatexkorubycount
   \leavevmode
-  \setbox\z@\luatexkorubybasehbox{#1}% base
+  \setbox\z@\hbox attr\luatexkorubyalloc=\count@{#1}% base
   \setbox\tw@\hbox{% ruby
     \ifdefined\rubyfont \rubyfont \fi
     \ifcsname ver@luatexko.sty\endcsname % <- latex
@@ -315,13 +316,13 @@
     \ifruby@overlap
       \dimen@\dimexpr\wd\tw@-\wd\z@-\dimen@ii\relax % overhang .5 rubysize
       \ifdim\dimen@ > \z@
-        \setbox\z@\luatexkorubybasehbox spread\dimen@{%
+        \setbox\z@\hbox attr\luatexkorubyalloc=\count@ spread\dimen@{%
           \hskip\z@ plus \luatexkostretchfactor em\relax
           \unhbox\z@
           \hskip\z@ plus \luatexkostretchfactor em\relax }%
       \fi
     \else
-      \setbox\z@\luatexkorubybasehbox to\wd\tw@{%
+      \setbox\z@\hbox attr\luatexkorubyalloc=\count@ to\wd\tw@{%
         \hskip\z@ plus \luatexkostretchfactor em\relax
         \unhbox\z@
         \hskip\z@ plus \luatexkostretchfactor em\relax }%
@@ -340,8 +341,7 @@
     \fi
   \fi
   \directlua{
-    if \the\luatexkorubycount == 1 then luatexko.activate("ruby") end
-    luatexko.rubybox[\the\luatexkorubycount] = {
+    luatexko.rubybox[\number\count@] = {
       node.copy(tex.box[2]),
       \number\numexpr\dimexpr\rubysep\relax\relax,
       \ifruby@overlap true\else false\fi, }}%
