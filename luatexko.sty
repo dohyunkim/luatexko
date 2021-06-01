@@ -297,7 +297,7 @@
 \newcount\luatexkorubycount
 \protected\def\ruby#1#2{%
   \global\advance\luatexkorubycount\@ne
-  \directlua{ if \the\luatexkorubycount == 1 then luatexko.activate"ruby" end }%
+  \ifnum\luatexkorubycount=\@ne \directlua{ luatexko.activate"ruby" }\fi
   \begingroup
   \count@=\luatexkorubycount
   \leavevmode
