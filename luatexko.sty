@@ -32,20 +32,10 @@
 \newattribute\luatexkoautojosaattr
 \newattribute\luatexkoclassicattr
 \newattribute\luatexkodotemphattr
-\newattribute\luatexkoulineattr
 \newattribute\luatexkorubyattr \chardef\luatexkorubyalloc\allocationnumber
 \newattribute\luatexkohangulbyhangulattr
 \newattribute\luatexkohanjabyhanjaattr
 \directlua{ require"luatexko" }
-\unless\ifcsname ver@luatexko.sty\endcsname
-  \AtBeginShipout{%
-    \directlua{ luatexko.process_atbegshi(tex.getbox(\the\AtBeginShipoutBox)) }%
-  }
-\else
-  \AddToHook{shipout/before}{%
-    \directlua{ luatexko.process_atbegshi(tex.getbox(\the\ShipoutBox)) }%
-  }
-\fi
 % classics
 % 0: horizontal KO, JP
 % 1: vertical   KO, SC
@@ -217,15 +207,13 @@
 \edef\dotemphchar{\expandafter\noexpand\ifdefined\bfseries\bfseries\else\bf\fi ^^^^02d9}
 \protected\def\dotemph#1{%
   \global\advance\luatexkodotemphcount\@ne
+  \ifnum\luatexkodotemphcount=\@ne \directlua{ luatexko.activate"dotemph" }\fi
   \begingroup
+  \count@=\luatexkodotemphcount
   \setbox\z@\hbox{\raise\dotemphraise\hbox{\dotemphchar}}%
-  \directlua{
-    if \the\luatexkodotemphcount == 1 then luatexko.activate("dotemph") end
-    luatexko.dotemphbox[\the\luatexkodotemphcount] = node.copy(tex.box[0])
-  }\luatexkodotemphattr\luatexkodotemphcount #1%
-  \directlua{
-    luatexko.dotemphboundary(\the\luatexkodotemphattr)
-  }%
+  \directlua{ luatexko.dotemphbox[\number\count@] = node.copy(tex.box[0]) }%
+  \luatexkodotemphattr\count@ #1\relax
+  \directlua{ luatexko.dotemphboundary(\number\count@) }%
   \endgroup }
 % uline
 \newcount\luatexkoulinecount
@@ -239,19 +227,15 @@
   \luatexkomarkoverwith }
 \def\luatexkomarkoverwith#1#2{%
   \global\advance\luatexkoulinecount\@ne
+  \ifnum\luatexkoulinecount=\@ne \directlua{ luatexko.activate"uline" }\fi
   \begingroup
+  \count@=\luatexkoulinecount
   \leavevmode
   \setbox\z@\hbox{#1}%
-  \directlua{
-    if \the\luatexkoulinecount == 1 then luatexko.activate("uline") end
-    luatexko.ulboundary(\the\luatexkoulinecount,
-                        tex.box[0].list,
-                        \luatexkoleaderstype)
-  }%
-  \luatexkoulineattr\luatexkoulinecount #2\relax
-  \directlua{
-    luatexko.ulboundary(\the\luatexkoulineattr)
-  }\endgroup }
+  \directlua{ luatexko.ulboundary(\number\count@, tex.box[0].list, \luatexkoleaderstype) }%
+  #2\relax
+  \directlua{ luatexko.ulboundary(\number\count@) }%
+  \endgroup }
 \protected\def\uline{\markoverwith{%
   \vrule width\z@ height-\ulinedown depth\dimexpr\ulinedown+\ulinewidth\relax }}
 \protected\def\dashuline{\markoverwith*{%

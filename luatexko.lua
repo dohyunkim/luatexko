@@ -86,6 +86,7 @@ local glueid    = node.id"glue"
 local glyphid   = node.id"glyph"
 local hlistid   = node.id"hlist"
 local kernid    = node.id"kern"
+local localparid = node.id"local_par"
 local mathid    = node.id"math"
 local penaltyid = node.id"penalty"
 local ruleid    = node.id"rule"
@@ -99,6 +100,7 @@ local italcorr   = 3
 local lua_number = 100
 local lua_value  = 108
 local spaceskip  = 13
+local indentbox  = 3
 local nohyphen = registernumber"l@nohyphenation" or -1 -- verbatim
 local langkor  = registernumber"koreanlanguage"  or 16383
 
@@ -108,7 +110,6 @@ local fallbackfontattr = attributes.luatexkofallbackfontattr
 local autojosaattr     = attributes.luatexkoautojosaattr
 local classicattr      = attributes.luatexkoclassicattr
 local dotemphattr      = attributes.luatexkodotemphattr
-local ulineattr        = attributes.luatexkoulineattr
 local rubyattr         = attributes.luatexkorubyattr
 local hangulbyhangulattr = attributes.luatexkohangulbyhangulattr
 local hanjabyhanjaattr   = attributes.luatexkohanjabyhanjaattr
@@ -788,7 +789,7 @@ local function hbox_char_font (box, init, glyfonly)
       if c and not is_cjk_combining(c) then
         return c, curr.font
       end
-    elseif id == hlistid and curr.list then
+    elseif curr.list then
       return hbox_char_font(curr, init, glyfonly)
     elseif not glyfonly and is_blocking_node(curr) then
       return
@@ -1470,7 +1471,7 @@ end
 local ulitems = {}
 
 local function process_uline (head, parent, level)
-  local curr, level, attr = head, level or 0
+  local curr, level = head, level or 0
   while curr do
     if curr.list then
       curr.list = process_uline(curr.list, curr, level+1)
@@ -1484,13 +1485,13 @@ local function process_uline (head, parent, level)
           list    = list,
           subtype = subtype,
           level   = level,
+          start   = getnext(curr) or curr,
         }
       else
         local item = ulitems[value]
         if item then
           head = draw_uline(head, curr, parent, item, true)
           ulitems[value] = nil
-          attr = nil
         end
       end
 
@@ -1498,24 +1499,14 @@ local function process_uline (head, parent, level)
       head, curr = noderemove(head, curr)
       nodefree(to_free)
       goto nextnode
-    else
-      local currattr = has_attribute(curr, ulineattr)
-      if currattr then
-        local item = ulitems[currattr]
-        if item and not item.start then
-          item.start = curr
-          attr = currattr
-        end
-      end
 
     end
     curr = getnext(curr)
     ::nextnode::
   end
 
-  if attr then
-    local item = ulitems[attr]
-    if item and item.level == level then
+  for _, item in pairs(ulitems) do
+    if item.level == level then
       head = draw_uline(head, nodeslide(head), parent, item)
       item.start = nil
     end
@@ -1553,6 +1544,16 @@ local function process_ruby_pre_linebreak (head)
             k.subtype, k.kern = userkern, -side
             r.width, r.height, r.depth = side, 0, 0
             local k2, r2 = nodecopy(k), nodecopy(r)
+
+            local prev = curr.prev -- 문단 첫머리에 루비 돌출 방지
+            if prev then
+              if  prev.id == localparid or
+                  prev.id == hlistid and prev.subtype == indentbox and prev.width == 0
+                  then
+                k.kern = 0
+              end
+            end
+
             head = insert_before(head, curr, k)
             head = insert_before(head, curr, r)
             head, curr = insert_after(head, curr, r2)
@@ -1590,17 +1591,22 @@ local function process_ruby_post_linebreak (head)
           -- consider charraise
           local shift = shift_put_top(curr, ruby)
 
-          local _, f = hbox_char_font(curr, true, true)
-          local ascender = tableunpack(fontoptions.asc_desc[f]) or curr.height
-          ruby.shift = shift - ascender - ruby.depth - ruby_t[2] -- rubysep
+          local f, ascender, descender
+          _, f = hbox_char_font(curr, true, true)
+          ascender  = fontoptions.asc_desc[f][1] or 0
+          _, f = hbox_char_font(ruby, true, true)
+          descender = fontoptions.asc_desc[f][2] or 0
+
+          ascender  = ascender  > curr.height and ascender  or curr.height
+          descender = descender > ruby.depth  and descender or ruby.depth
+
+          ruby.shift = shift - ascender - descender - ruby_t[2] -- rubysep
           head = insert_before(head, curr, ruby)
         end
         rubybox[rubyid] = nil
-      elseif curr.list then
-        curr.list = process_ruby_post_linebreak(curr.list)
       end
-    elseif curr.list then
-      curr.list = process_ruby_post_linebreak(curr.list)
+    elseif id == mathid then
+      curr = end_of_math(curr)
     end
     curr = getnext(curr)
   end
@@ -2084,13 +2090,6 @@ end,
 local pass_fun = function(...) return ... end
 create_callback("luatexko_prelinebreak_first",  "data", pass_fun)
 create_callback("luatexko_prelinebreak_second", "data", pass_fun)
-create_callback("luatexko_do_atbegshi",         "data", pass_fun)
-
-function luatexko.process_atbegshi (box)
-  if box and box.list then
-    box.list = call_callback("luatexko_do_atbegshi", box.list)
-  end
-end
 
 add_to_callback("pre_shaping_filter", function(h, gc)
   local par = gc == ""
@@ -2300,17 +2299,20 @@ otfregister {
 
 local auxiliary_procs = {
   dotemph = {
-    luatexko_do_atbegshi = process_dotemph,
-    hpack_filter         = process_dotemph, -- useboxresource
+    post_linebreak_filter = process_dotemph,
+    hpack_filter          = process_dotemph,
   },
   uline   = {
-    luatexko_do_atbegshi = process_uline,
-    hpack_filter         = function(h) return process_uline(h) end, -- useboxresource
+    post_linebreak_filter = function(h) return process_uline(h) end,
+    hpack_filter          = function(h) return process_uline(h) end,
   },
   ruby    = {
-    pre_linebreak_filter = process_ruby_pre_linebreak,
-    luatexko_do_atbegshi = process_ruby_post_linebreak,
-    hpack_filter         = process_ruby_post_linebreak, -- useboxresource
+    pre_linebreak_filter = function(h)
+      h = process_ruby_pre_linebreak(h)
+      h = process_ruby_post_linebreak(h)
+      return h
+    end,
+    hpack_filter         = process_ruby_post_linebreak,
   },
   autojosa = {
     luatexko_prelinebreak_first = process_josa,
@@ -2322,7 +2324,11 @@ local auxiliary_procs = {
 
 function luatexko.activate (name)
   for cbnam, cbfun in pairs( auxiliary_procs[name] ) do
-    add_to_callback(cbnam, cbfun, "luatexko."..cbnam.."."..name)
+    local prior
+    if cbnam == "hpack_filter" then
+      prior = luatexbase.priority_in_callback(cbnam, "luaotfload.color_handler") or nil
+    end
+    add_to_callback(cbnam, cbfun, "luatexko."..cbnam.."."..name, prior)
   end
   active_processes[name] = true
 end
@@ -2336,7 +2342,7 @@ function luatexko.deactivateall (str)
                          "pre_linebreak_filter",
                          "hpack_filter",
                          "hyphenate",
-                         "luatexko_do_atbegshi", -- might not work properly
+                         "post_linebreak_filter",
                        } do
     local t = {}
     for i, v in ipairs( luatexbase.callback_descriptions(name) ) do
