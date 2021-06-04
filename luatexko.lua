@@ -691,7 +691,8 @@ local function process_fonts (head)
   while curr do
     local id = curr.id
     if id == glyphid then
-      if not has_attribute(curr, unicodeattr) then
+      if curr.font ~= 0 -- exclude nullfont
+        and not has_attribute(curr, unicodeattr) then
 
         local c = curr.char
 
