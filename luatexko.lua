@@ -1593,12 +1593,9 @@ local function process_ruby_post_linebreak (head)
 
           local f, ascender, descender
           _, f = hbox_char_font(curr, true, true)
-          ascender  = fontoptions.asc_desc[f][1] or 0
+          ascender  = fontoptions.asc_desc[f][1] or curr.height
           _, f = hbox_char_font(ruby, true, true)
-          descender = fontoptions.asc_desc[f][2] or 0
-
-          ascender  = ascender  > curr.height and ascender  or curr.height
-          descender = descender > ruby.depth  and descender or ruby.depth
+          descender = fontoptions.asc_desc[f][2] or ruby.depth
 
           ruby.shift = shift - ascender - descender - ruby_t[2] -- rubysep
           head = insert_before(head, curr, ruby)
@@ -2321,6 +2318,9 @@ local auxiliary_procs = {
     luatexko_prelinebreak_first = process_reorder_tonemarks,
   },
 }
+
+-- dotemph 등을 수식 한글에서도 작동하게 하려면
+-- post_mlist_to_hlist_filter 콜백을 이용해야 한다.
 
 function luatexko.activate (name)
   for cbnam, cbfun in pairs( auxiliary_procs[name] ) do
