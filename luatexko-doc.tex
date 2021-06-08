@@ -130,6 +130,7 @@
   \begin{narrower}\small\parindent=0pt
   \leavevmode\llap{\color{gray}plain \TeX\quad}\ignorespaces
 }{
+  \par
   \end{narrower}%
 }
 
@@ -441,7 +442,8 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
   }\label{fig:gomun}
 \end{figure}
 
-고문헌 조판을 위해 \pkgkwd{typesetclassic} 환경을 제공한다.%
+고문헌 조판을 위해 \pkgkwd{typesetclassic} 환경을 제공한다.
+전처리부에 \cs{typesetclassic}을 선언할 수도 있다.%
 \footnote{%
   플레인텍에서는 (문서 전체에 적용하지 않는다면 그룹 안에서)
   \cs{typesetclassic}을 사용한다. }\,%
@@ -491,6 +493,11 @@ v2.0부터는 고문헌 조판에서 한글^^b7한자와 영문자가 붙어 나
 세로쓰기에서 |CharRaise| 옵션의 효과에 대해서는 제\ref{sec:fontoption}절을
 참조.
 
+문서의 일부를 세로쓰기하려면
+|\begin{|\pkgkwd{vertical}|}{<dimen>}| \ldots\ |\end{vertical}|
+환경을 이용한다. |<dimen>|으로 세로쓰기 박스의 높이를 지시한다.
+그림~\ref{fig:vertical},~\ref{fig:vertical3} 및 \ref{fig:vertical2} 참조.
+
 \begin{figure}
   \fboxsep=5pt
   \framebox[\linewidth]{
@@ -523,24 +530,6 @@ v2.0부터는 고문헌 조판에서 한글^^b7한자와 영문자가 붙어 나
   }\label{fig:vertical3}
 \end{figure}
 
-문서의 일부를 세로쓰기하려면
-|\begin{|\pkgkwd{vertical}|}{<dimen>}| \ldots\ |\end{vertical}|
-환경을 이용한다. |<dimen>|으로 세로쓰기 박스의 높이를 지시한다.%
-\footnote{%
-  플레인텍에서는 \cs{vertical{<dimen>}} \ldots\ \cs{endvertical}. }
-그림~\ref{fig:vertical},~\ref{fig:vertical3} 및 \ref{fig:vertical2} 참조.
-
-문서 전체를 세로쓰기한다면 이 환경을 쓰는 대신
-\pkgkwd{\verticaltypesetting} 명령을 전처리부에 선언한다.
-이때 면주는 가로로 식자되며 면주 폰트의 설정은 사용자의 몫이다.
-
-세로쓰기 도중에 문서의 일부를 가로쓰기하려면
-|\begin{|\pkgkwd{horizontal}|}{<dimen>}| \ldots\ |\end{horizontal}|
-환경을 이용한다. |<dimen>|은 가로쓰기 박스의 너비를 지시한다.%
-\footnote{%
-  플레인텍에서는 \cs{horizontal{<dimen>}} \ldots\ \cs{endhorizontal}. }
-가로쓰기 영역의 폰트 설정은 사용자의 몫이다.
-
 \begin{figure}
   \fboxsep=5pt
   \framebox[\linewidth]{
@@ -569,6 +558,30 @@ v2.0부터는 고문헌 조판에서 한글^^b7한자와 영문자가 붙어 나
     반각 크기로 강제했다.
   }\label{fig:vertical2}
 \end{figure}
+
+문서 전체를 세로쓰기한다면 이 환경을 쓰는 대신
+\pkgkwd{\verticaltypesetting} 명령을 전처리부에 선언한다.
+이때 면주는 가로로 식자되며 면주 폰트의 설정은 사용자의 몫이다.
+
+몇몇 페이지를 세로쓰기로 식자하려면 본문 중에
+|\begin{|\pkgkwd{verticaltypesetting}|}| \ldots\ |\end{verticaltypesetting}|
+환경을 이용한다.
+이때도 면주는 가로로 식자되며, 환경의 시작과 끝에서 쪽나눔이 행해진다.
+
+세로쓰기 도중에 문서의 일부를 가로쓰기하려면
+|\begin{|\pkgkwd{horizontal}|}{<dimen>}| \ldots\ |\end{horizontal}|
+환경을 이용한다. |<dimen>|은 가로쓰기 박스의 너비를 지시한다.
+가로쓰기 영역의 폰트 설정은 사용자의 몫이다.
+
+\begin{plaintex}
+  문서의 일부를 세로쓰기하려면 |\vertical{<dimen>}| \ldots\ |\endvertical|.
+
+  문서 전체를 세로쓰기하려면 문서 첫머리에 \cs{verticaltypesetting}.
+
+  몇몇 페이지를 세로쓰기하려면 \cs{beginverticaltypesetting} \ldots\ \cs{endverticaltypesetting}.
+
+  세로쓰기 도중에 가로쓰기를 넣으려면 |\horizontal{<dimen>}| \ldots\ |\endhorizontal|.
+\end{plaintex}
 
 \section{드러냄표}\label{sec:dotemph}
 
@@ -662,12 +675,12 @@ ulem 패키지가 \luatexko와 궁합이 맞지 않아{\small (줄바꿈에 문�
 \begin{verbatim}
    \def\ymarker{%
      \markoverwith{%
-       \hbox{{\color{yellow!50}\vrule width 1pt height 9pt depth 2pt}}%
+       \hbox{\color{yellow!50}\vrule width 1pt height 9pt depth 2pt}%
    }}
 \end{verbatim}
 
 \def\ymarker{\markoverwith{%
-  \hbox{{\color{yellow!50}\vrule width 1pt height 9pt depth 2pt}}}}
+  \hbox{\color{yellow!50}\vrule width 1pt height 9pt depth 2pt}}}
 
 \cs{ymarker{노란색을 칠해서 강조한다}}\quad$\Rightarrow$\quad
 \ymarker{노란색을 칠해서 강조한다}.
@@ -706,10 +719,11 @@ ulem 패키지가 \luatexko와 궁합이 맞지 않아{\small (줄바꿈에 문�
 수식 한글 폰트를 설정하면 수식 모드에서도 한글을 {\small(hbox로 감싸지 않고)}
 직접 입력할 수 있다.%
 \footnote{%
-  |\\hbox|를 쓰지 않고 직접 입력하는 수식 한글에는 앞서 기술한
-  드러냄표 강조, 밑줄 강조, 한글 글꼴 옵션 등의 기능이 현재로는
+  |\\hbox|를 쓰지 않고 직접 입력하는 수식 한글이
+  \uline{디스플레이 수식} 안에 사용된 경우,
+  앞서 기술한 드러냄표 강조, 밑줄 강조, 한글 글꼴 옵션 등의 기능이 현재로는
   전혀 작동하지 않는다.  구현은 비교적 간단하지만, 과연 수식에서
-  저런 기능을 써야 할 경우가 있을까 의문이기 때문이다.
+  저러한 기능을 써야 할 경우가 있을까 의문이기 때문이다.
   사용자의 요청이 있으면 즉시 반영하겠다.
 }
 v2.0부터는 자동으로 수식 한글을 잡아주지 않는다.%
@@ -788,10 +802,12 @@ v2.0부터는 자동으로 수식 한글을 잡아주지 않는다.%
 
 \begin{itemize}\linespread{1.1}\selectfont
   \item[v3.2] ------
-  \item \hyperref[sec:fontcmds]{플레인텍 명령
-    \cs{sethangulfont} \cs{sethanjafont} \cs{setfallbackfont} 추가}
   \item 한자 뒤에서도 자동조사 기능이 대체로 동작하게끔 하였다.
     \XeTeX-\logoko{} 패키지가 설치돼 있을 것을 요구한다.
+  \item \hyperref[sec:verttype]{|verticaltypesetting|을 환경으로도 쓸 수 있다.
+    플레인텍에서는 \cs{beginverticaltypesetting} \cs{endverticaltypesetting}}.
+  \item \hyperref[sec:fontcmds]{플레인텍 명령
+    \cs{sethangulfont} \cs{sethanjafont} \cs{setfallbackfont} 추가}
   \item[v3.0] ------
   \item \hyperref[sec:fontoption]{세로쓰기에서 |CharRaise| 옵션은
       이제 글자들의 \dotemph{추가적인} 이동 길이를 나타낸다.}

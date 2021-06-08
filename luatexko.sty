@@ -379,25 +379,6 @@
       \wd#1\z@ \ht#1\z@ \dp#1\z@
       \pdfliteral{q 0 1 -1 0 0 0 cm}\box#1\pdfliteral{Q}}%
     \hfil }}
-% do not veticalize headline/footline
-\ifcsname ver@luatexko.sty\endcsname
-  \def\verticaltypesetting{%
-    \maxdepth\z@ \typesetvertical
-    \dimen@\textwidth \textwidth\textheight \textheight\dimen@
-    \AddToHook{cmd/@outputpage/before}{\luatexkorotatebox\@outputbox \textwidth\textheight}%
-    \let\verticaltypesetting\relax % prevent multiple running
-  }
-\else
-  \def\verticaltypesetting{%
-    \dimen@\hsize \hsize\vsize \vsize\dimen@
-    \edef\plainoutput{\unexpanded{\dimen@\hsize \hsize\vsize \vsize\dimen@}%
-      \unexpanded\expandafter{\plainoutput}}%
-    \def\pagebody{\setbox\z@\vbox to\hsize{\boxmaxdepth=\maxdepth
-      \pagecontents}\luatexkorotatebox\z@\box\z@}%
-    \maxdepth\z@ \typesetvertical
-    \let\verticaltypesetting\relax % prevent multiple running
-  }
-\fi
 % hangul normalize
 \def\luatexhangulnormalize{%
   \directlua{require"luatexko-normalize"}%
@@ -455,6 +436,19 @@
   \fi }
 % plain
 \ifcsname ver@luatexko.sty\endcsname\else
+  % do not verticalize headline/footline.
+  \def\verticaltypesetting{%
+    \dimen@\hsize \hsize\vsize \vsize\dimen@
+    \edef\plainoutput{\dimen@\hsize \hsize\vsize \vsize\dimen@
+      \unexpanded\expandafter{\plainoutput}}%
+    \def\pagebody{\setbox\z@\vbox to\hsize{\boxmaxdepth=\maxdepth \pagecontents}%
+      \luatexkorotatebox\z@\box\z@}%
+    \maxdepth\z@ \typesetvertical
+    \let\verticaltypesetting\relax % prevent multiple running
+  }
+  \def\beginverticaltypesetting{\vfill\supereject \begingroup \verticaltypesetting}
+  \def\endverticaltypesetting{\vfill\supereject \endgroup}
+  % hangul fonts
   \protected\def\hangulfont{%
     \afterassignment\luatexkohangulselectfont\font\luatexkohangulfont}
   \protected\def\hanjafont{%
@@ -483,9 +477,9 @@
     \expandafter\protected\expandafter\edef\@tempa{%
       \luatexkofallbackfontattr\fontid\csname luatexko.fallbackfont.\@tempb\endcsname\relax }}
   \hangulfont={UnBatang:mode=node;script=hang;+tlig} at 10pt % default: unbatang
-  \newfam\symmathhangul
   \protected\def\setmathhangulfonts#1#2#3{% font identifiers
-    \ifnum\Umathcharfam"AC00=\symmathhangul\else
+    \ifnum\Umathcodenum"AC00="AC00\relax
+      \csname newfam\endcsname\symmathhangul
       \setmathhangulblock{AC00}{D7A3}%
     \fi
     \textfont\symmathhangul=#1\relax
@@ -504,6 +498,37 @@
   \catcode`\@=\luatexkoatcatcode
 \endinput\fi
 % latex
+% do not verticalize headline/footline
+\def\verticaltypesetting{%
+  \ifx\@nodocument\relax % not in the preamble
+    \clearpage
+    \begingroup
+  \fi
+  \hsize\textheight \vsize\textwidth
+  \textwidth\hsize  \textheight\vsize
+  \@colroom\vsize   \@colht\vsize
+  \if@twocolumn
+    \columnwidth=.5\dimexpr\textwidth-\columnsep\relax
+    \linewidth\columnwidth \hsize\columnwidth
+  \else
+    \linewidth\hsize \columnwidth\hsize
+  \fi
+  \expandafter\def\expandafter\@outputpage\expandafter{%
+    \expandafter\luatexkorotatebox\expandafter\@outputbox
+    \expandafter\textwidth\expandafter\textheight
+    \@outputpage
+  }%
+  \maxdepth\z@ \typesetvertical
+  \let\verticaltypesetting\relax % prevent multiple running
+}
+\def\endverticaltypesetting{%
+  \clearpage
+  \endgroup
+  \global\@colroom\textheight
+  \global\@colht\textheight
+  \global\vsize\textheight
+}
+% hangul fonts
 \AddToHook{selectfont}{%
   \luatexkohangulselectfont
   \luatexkohanjaselectfont

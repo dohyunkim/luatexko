@@ -4,13 +4,14 @@
 
 	* luatexko.lua:
 	support automatic josa selection after hanja characters;
+	introduce a new environment: verticaltypesetting;
 	dotemph/uline/ruby routines are now called from hpack_filter,
 	pre_linebreak_filter, and post_linebreak_filter callbacks.
 
 	* luatexko.sty:
-	use LaTeX's cmd hooks which require LaTeX 2021/06/01 or later;
+	use LaTeX's selectfont hook which require LaTeX 2021/06/01 or later;
 	introduce new plain TeX commands: \sethangulfont \sethanjafont
-	\setfallbackfont
+	\setfallbackfont \beginverticaltypesetting \endverticaltypesetting
 
 2021-04-20	Dohyun Kim <nomos at ktug org>
 
