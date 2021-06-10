@@ -495,8 +495,10 @@ v2.0부터는 고문헌 조판에서 한글^^b7한자와 영문자가 붙어 나
 
 문서의 일부를 세로쓰기하려면
 |\begin{|\pkgkwd{vertical}|}{<dimen>}| \ldots\ |\end{vertical}|
-환경을 이용한다. |<dimen>|으로 세로쓰기 박스의 높이를 지시한다.
+환경을 이용한다. 인자 |<dimen>|으로 세로쓰기 박스의 높이를 지시한다.
 그림~\ref{fig:vertical},~\ref{fig:vertical3} 및 \ref{fig:vertical2} 참조.
+만약 인자가 비어있거나 \cs{empty}이면 본문을 한 줄짜리 박스로 식자하며,
+이때 높이는 natural height가 된다.
 
 \begin{figure}
   \fboxsep=5pt
@@ -571,16 +573,19 @@ v2.0부터는 고문헌 조판에서 한글^^b7한자와 영문자가 붙어 나
 세로쓰기 도중에 문서의 일부를 가로쓰기하려면
 |\begin{|\pkgkwd{horizontal}|}{<dimen>}| \ldots\ |\end{horizontal}|
 환경을 이용한다. |<dimen>|은 가로쓰기 박스의 너비를 지시한다.
-가로쓰기 영역의 폰트 설정은 사용자의 몫이다.
+만약 인자가 비어있거나 \cs{empty}이면 본문을 한 줄짜리 박스로 식자하며,
+이때 너비는 당연히 natural width가 된다.
 
 \begin{plaintex}
   문서의 일부를 세로쓰기하려면 |\vertical{<dimen>}| \ldots\ |\endvertical|.
+  인자는 비워둘 수 있다.
 
   문서 전체를 세로쓰기하려면 문서 첫머리에 \cs{verticaltypesetting}.
 
   몇몇 페이지를 세로쓰기하려면 \cs{beginverticaltypesetting} \ldots\ \cs{endverticaltypesetting}.
 
   세로쓰기 도중에 가로쓰기를 넣으려면 |\horizontal{<dimen>}| \ldots\ |\endhorizontal|.
+  인자는 비워둘 수 있다.
 \end{plaintex}
 
 \section{드러냄표}\label{sec:dotemph}
@@ -804,6 +809,7 @@ v2.0부터는 자동으로 수식 한글을 잡아주지 않는다.%
   \item[v3.2] ------
   \item 한자 뒤에서도 자동조사 기능이 대체로 동작하게끔 하였다.
     \XeTeX-\logoko{} 패키지가 설치돼 있을 것을 요구한다.
+  \item \hyperref[sec:verttype]{|vertical| 및 |horizontal| 환경의 인자를 비워둘 수 있다}.
   \item \hyperref[sec:verttype]{|verticaltypesetting|을 환경으로도 쓸 수 있다.
     플레인텍에서는 \cs{beginverticaltypesetting} \cs{endverticaltypesetting}}.
   \item \hyperref[sec:fontcmds]{플레인텍 명령

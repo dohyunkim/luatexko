@@ -25,7 +25,6 @@
   \catcode`\@=11
 \fi
 \newlanguage\koreanlanguage
-\protected\def\pdfliteral{\pdfextension literal}
 \newattribute\luatexkohangulfontattr
 \newattribute\luatexkohanjafontattr
 \newattribute\luatexkofallbackfontattr
@@ -345,40 +344,62 @@
 % vertical writing
 \protected\def\vertical#1{%
   \leavevmode
-  \setbox\z@\vbox\bgroup
-    \hsize#1\relax
-    \typesetvertical }
+  \ifx\empty#1\empty
+    \setbox\z@\hbox\bgroup
+  \else
+    \setbox\z@\vbox\bgroup \hsize#1\relax
+  \fi
+  \typesetvertical }
 \protected\def\endvertical{%
   \egroup
   \luatexkorotatebox\z@
   \box\z@ }
 \protected\def\luatexkorotatebox#1{%
-  \setbox#1\hbox to\dimexpr\ht#1+\dp#1{%
+  \dimen@\dimexpr\ht#1+\dp#1\relax
+  \setbox#1\hbox to\dimen@\bgroup
     \hfil
-    \vbox to\wd#1{%
-      \wd#1\z@ \ht#1\z@ \dp#1\z@
-      \pdfliteral{q 0 -1 1 0 0 0 cm}\box#1\pdfliteral{Q}%
-      \vfil }}}
+    \vbox to\wd#1\bgroup
+      \wd#1\z@
+      \pdfextension save\relax
+      \pdfextension setmatrix{0 -1 1 0}\relax
+      \box#1\relax
+      \kern-\dimen@
+      \pdfextension restore\relax
+      \vfil
+    \egroup
+  \egroup
+}
 % horizontal box inside vertical writing
 \def\luatexkohorizboxmoveright{0.5ex}
 \protected\def\horizontal#1{%
   \directlua{ luatexko.gethorizboxmoveright() }%
   \leavevmode
-  \setbox\z@\vbox\bgroup
-    \hsize#1\relax
-    \typesetmodern }
+  \ifx\empty#1\empty
+    \setbox\z@\hbox\bgroup
+  \else
+    \setbox\z@\vbox\bgroup \hsize#1\relax
+  \fi
+  \typesetmodern }
 \protected\def\endhorizontal{%
   \egroup
-  \dimen@=\dimexpr.5\wd\z@-\luatexkohorizboxmoveright\relax
   \luatexkounrotatebox\z@
-  \lower\dimen@\box\z@ }
+  \raise\luatexkohorizboxmoveright
+  \box\z@ }
 \protected\def\luatexkounrotatebox#1{%
-  \setbox#1\hbox to\dimexpr\ht#1+\dp#1{%
-    \vbox to\wd#1{%
+  \dimen@\dimexpr\ht#1+\dp#1\relax
+  \setbox#1\hbox to\dimen@\bgroup
+    \lower.5\wd#1\vbox to\wd#1\bgroup
       \vfil
-      \wd#1\z@ \ht#1\z@ \dp#1\z@
-      \pdfliteral{q 0 1 -1 0 0 0 cm}\box#1\pdfliteral{Q}}%
-    \hfil }}
+      \wd#1\z@
+      \pdfextension save\relax
+      \pdfextension setmatrix{0 1 -1 0}\relax
+      \box#1\relax
+      \kern-\dimen@
+      \pdfextension restore\relax
+    \egroup
+    \hfil
+  \egroup
+}
 % hangul normalize
 \def\luatexhangulnormalize{%
   \directlua{require"luatexko-normalize"}%
