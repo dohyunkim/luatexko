@@ -351,6 +351,7 @@
   \fi
   \typesetvertical }
 \protected\def\endvertical{%
+  \ifinner\else \par\fi
   \egroup
   \luatexkorotatebox\z@
   \box\z@ }
@@ -381,6 +382,7 @@
   \fi
   \typesetmodern }
 \protected\def\endhorizontal{%
+  \ifinner\else \par\fi
   \egroup
   \luatexkounrotatebox\z@
   \raise\luatexkohorizboxmoveright
