@@ -415,8 +415,8 @@ end
 
 local function is_hanja (c)
   return c >= 0x3400 and c <= 0xA4C6
-  or     c >= 0xF900 and c <= 0xFAD9
-  or     c >= 0x20000 and c <= 0x2FFFD
+  or     c >= 0xF900 and c <= 0xFAFF
+  or     c >= 0x20000 and c <= 0x3FFFD
   or     c >= 0x2E81 and c <= 0x2FD5
 end
 
@@ -600,6 +600,8 @@ local breakable_before = setmetatable({
   [0xFF6B] = 1000, [0xFF6C] = 1000, [0xFF6D] = 1000, [0xFF6E] = 1000,
   [0xFF6F] = 1000,  [0x1B150] = 1000, [0x1B151] = 1000, [0x1B152] = 1000,
   [0x1B164] = 1000, [0x1B165] = 1000, [0x1B166] = 1000, [0x1B167] = 1000,
+  -- nonstarter
+  [0xA015] = false, -- YI SYLLABLE WU
 },{ __index = function(_,c)
   return is_hangul(c)
   or     is_compat_jamo(c)
