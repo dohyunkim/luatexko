@@ -2078,11 +2078,49 @@ local function process_fake_slant_font (fontdata, fsl)
   end
 end
 
+-- AC00 11A8, AC00 11F0 ...
+-- these should not happen in KS-observing documents
+-- but HarfBuzz supports these sequences anyway.
+local function normalize_syllable_TC (head)
+  local curr = head
+  while curr do
+    if curr.id == glyphid then
+      local c, f = curr.char, curr.font
+      if fontoptions.is_not_harf[f] and is_hangul(c) and (c - 0xAC00) % 28 == 0 then
+        local t = getnext(curr)
+        if t then
+          if t.id == glyphid then
+            local tc, tf = t.char, t.font
+            if is_jongsong(tc) and f == tf then
+              if tc <= 0x11C2 then
+                curr.char = c + tc - 0x11A7
+                noderemove(head, t)
+                nodefree(t)
+              else
+                c = (c - 0xAC00) // 28
+                curr.char = c // 21 + 0x1100
+                local v = nodecopy(curr)
+                v.char = c % 21 + 0x1161
+                insert_after(head, curr, v)
+                curr = t
+              end
+            end
+          else
+            curr = t
+          end
+        end
+      end
+    end
+    curr = getnext(curr)
+  end
+end
+
 -- wrap up
 
 add_to_callback ("hyphenate",
 function(head)
-  local head = process_fonts(head)
+  normalize_syllable_TC(head)
+  head = process_fonts(head)
   lang.hyphenate(head)
 end,
 "luatexko.hyphenate.fonts_and_languages")
