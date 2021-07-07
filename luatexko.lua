@@ -747,9 +747,9 @@ local function process_fonts (head)
         set_attribute(curr, unicodeattr, c)
       end
     elseif id == discid then
-      curr.pre     = process_fonts(curr.pre)
-      curr.post    = process_fonts(curr.post)
-      curr.replace = process_fonts(curr.replace)
+      process_fonts(curr.pre)
+      process_fonts(curr.post)
+      process_fonts(curr.replace)
     elseif id == mathid then
       curr = end_of_math(curr)
     elseif id      == whatsitid  and
@@ -763,7 +763,6 @@ local function process_fonts (head)
     end
     curr = getnext(curr)
   end
-  return head
 end
 
 -- linebreak
@@ -2120,7 +2119,7 @@ end
 add_to_callback ("hyphenate",
 function(head)
   normalize_syllable_TC(head)
-  head = process_fonts(head)
+  process_fonts(head)
   lang.hyphenate(head)
 end,
 "luatexko.hyphenate.fonts_and_languages")
