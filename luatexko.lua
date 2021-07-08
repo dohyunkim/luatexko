@@ -447,16 +447,19 @@ local function is_compat_jamo (c)
   return c >= 0x3131 and c <= 0x318E
 end
 
-local function is_unicode_var_sel (c)
-  return c >= 0xFE00  and c <= 0xFE0F
-  or     c >= 0xE0100 and c <= 0xE01EF
-end
-
-local function is_cjk_combining (c)
+local function is_combining (c)
   return c >= 0x302A and c <= 0x302F
   or     c >= 0x3099 and c <= 0x309C
-  or     c >= 0xFF9E and c <= 0xFF9F
-  or     is_unicode_var_sel(c)
+  or     c == 0xFF9E or  c == 0xFF9F
+  -- variation selectors
+  or     c >= 0xFE00  and c <= 0xFE0F
+  or     c >= 0xE0100 and c <= 0xE01EF
+  -- others (probably non-cjk)
+  or     c >= 0x0300 and c <= 0x036F
+  or     c >= 0x1AB0 and c <= 0x1AFF
+  or     c >= 0x1DC0 and c <= 0x1DFF
+  or     c >= 0x20D0 and c <= 0x20FF
+  or     c >= 0xFE20 and c <= 0xFE2F
 end
 
 local function is_noncjk_char (c)
@@ -465,12 +468,12 @@ local function is_noncjk_char (c)
   or     c >= 0x61 and c <= 0x7A
   or     c >= 0xC0 and c <= 0xD6
   or     c >= 0xD8 and c <= 0xF6
-  or     c >= 0xF8 and c <= 0x10FC
-  or     c >= 0x1200 and c <= 0x1FFE
-  or     c >= 0xA4D0 and c <= 0xA877
-  or     c >= 0xAB01 and c <= 0xABBF
-  or     c >= 0xFB00 and c <= 0xFDFD
-  or     c >= 0xFE70 and c <= 0xFEFC
+  or     c >= 0xF8 and c <= 0x10FF
+  or     c >= 0x1200 and c <= 0x1FFF
+  or     c >= 0xA4D0 and c <= 0xA95F
+  or     c >= 0xA980 and c <= 0xABFF
+  or     c >= 0xFB00 and c <= 0xFDFF
+  or     c >= 0xFE70 and c <= 0xFEFF
 end
 
 local function is_kana (c)
@@ -574,7 +577,7 @@ local breakable_after = setmetatable({
   return is_hangul_jamo(c) -- chosong also is breakable_after
   or     is_noncjk_char(c)
   or     is_hanja(c)
-  or     is_cjk_combining(c)
+  or     is_combining(c)
   or     is_kana(c)
   or     charclass[c] >= 2
 end })
@@ -616,7 +619,7 @@ luatexko.breakablebefore = breakable_before
 local function is_cjk_char (c)
   return is_hangul_jamo(c)
   or     is_hanja(c)
-  or     is_cjk_combining(c)
+  or     hangul_tonemark[c]
   or     is_kana(c)
   or     charclass[c] >= 1
   or     rawget(breakable_before, c) and c >= 0x2000
@@ -698,19 +701,28 @@ local function process_fonts (head)
 
         local c = curr.char
 
-        if is_cjk_combining(c) then
+        if is_combining(c) then
           local p = getprev(curr)
-          if p.id == glyphid and curr.font ~= p.font then
-            hangul_space_skip(curr, p.font)
-            curr.font = p.font
+          if p.id == glyphid then
+            if curr.font ~= p.font then
+              hangul_space_skip(curr, p.font)
+              curr.font = p.font
+            end
             curr.lang = p.lang
-          end
 
-          if not active_processes.reorderTM and
-             hangul_tonemark[c] and
-             fontoptions.is_not_harf[curr.font] and
-             fontoptions.is_hangulscript[curr.font] then
-            luatexko.activate("reorderTM") -- activate reorderTM here
+            if hangul_tonemark[c] then
+              if not active_processes.reorderTM and
+                 fontoptions.is_not_harf[curr.font] and
+                 fontoptions.is_hangulscript[curr.font] then
+                luatexko.activate("reorderTM") -- activate reorderTM here
+              end
+
+              set_attribute(curr, unicodeattr, c)
+            else
+              curr.attr = p.attr -- inherit previous attr including unicodeattr
+            end
+          else
+            set_attribute(curr, unicodeattr, c)
           end
 
         else
@@ -742,9 +754,8 @@ local function process_fonts (head)
               end
             end
           end
+          set_attribute(curr, unicodeattr, c)
         end
-
-        set_attribute(curr, unicodeattr, c)
       end
     elseif id == discid then
       process_fonts(curr.pre)
@@ -788,7 +799,7 @@ local function hbox_char_font (box, init, glyfonly)
     local id = curr.id
     if id == glyphid then
       local c = has_attribute(curr, unicodeattr) or curr.char
-      if c and not is_cjk_combining(c) then
+      if c and not is_combining(c) then
         return c, curr.font
       end
     elseif curr.list then
@@ -867,7 +878,7 @@ local function process_linebreak (head, par)
     local id = curr.id
     if id == glyphid then
       local c = has_attribute(curr, unicodeattr) or curr.char
-      if c and not is_unicode_var_sel(c) then
+      if c and not is_combining(curr.char) then -- we are in pre-shaping stage
         local old = has_attribute(curr, classicattr)
         head, pc, pcl = maybe_linebreak(head, curr, pc, pcl, c, old, curr.font, par)
       end
@@ -922,7 +933,7 @@ local function process_interhangul (head, par)
     local id = curr.id
     if id == glyphid then
       local c = has_attribute(curr, unicodeattr) or curr.char
-      if c and not is_unicode_var_sel(c) then
+      if c and not is_combining(curr.char) then -- we are in pre-shaping stage
         head, pc = do_interhangul_option(head, curr, pc, c, curr.font, par)
 
         if is_jungsong(c) or is_jongsong(c) or hangul_tonemark[c] then
@@ -984,7 +995,7 @@ local function process_interlatincjk (head, par)
     local id = curr.id
     if id == glyphid then
       local c = has_attribute(curr, unicodeattr) or curr.char
-      if c and not is_unicode_var_sel(c) then
+      if c and not is_combining(curr.char) then -- we are in pre-shaping stage
         head, pc, pf, pcl = do_interlatincjk_option(head, curr, pc, pf, pcl, c, curr.font, par)
         pc = breakable_after[c] and pc or 0
       end
@@ -1096,7 +1107,7 @@ local function process_remove_spaces (head)
               local vchar, vfont
               if id == glyphid and v.lang ~= nohyphen then
                 local c = has_attribute(v, unicodeattr) or v.char or 0
-                if is_unicode_var_sel(c) then
+                if is_combining(c) then
                   v = getprev(v) or v
                 end
                 vchar, vfont = has_attribute(v, unicodeattr) or v.char, v.font
@@ -1337,11 +1348,12 @@ local function process_dotemph (head)
       local dotattr = has_attribute(curr, dotemphattr)
       if dotattr and dotemphbox[dotattr] then
         local c = has_attribute(curr, unicodeattr) or curr.char
-        if is_hangul(c)      or
-           is_compat_jamo(c) or
-           is_chosong(c)     or
-           is_hanja(c)       or
-           is_kana(c)        then
+        if not is_combining(curr.char) and -- bypass unicodeattr inherited
+          ( is_hangul(c)      or
+            is_compat_jamo(c) or
+            is_chosong(c)     or
+            is_hanja(c)       or
+            is_kana(c) )      then
 
           -- harf font: skip reordered tone mark
           if harf_reordered_tonemark(curr) then
@@ -2124,9 +2136,8 @@ function(head)
 end,
 "luatexko.hyphenate.fonts_and_languages")
 
-local pass_fun = function(...) return ... end
-create_callback("luatexko_prelinebreak_first",  "data", pass_fun)
-create_callback("luatexko_prelinebreak_second", "data", pass_fun)
+create_callback("luatexko_prelinebreak_first",  "data", function(...) return ... end)
+create_callback("luatexko_prelinebreak_second", "data", function(...) return ... end)
 
 add_to_callback("pre_shaping_filter", function(h, gc)
   local par = gc == ""
