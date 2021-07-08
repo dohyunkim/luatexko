@@ -449,7 +449,7 @@ end
 
 local function is_combining (c)
   return c >= 0x302A and c <= 0x302F
-  or     c >= 0x3099 and c <= 0x309C
+  or     c == 0x3099 or  c == 0x309A
   or     c == 0xFF9E or  c == 0xFF9F
   -- variation selectors
   or     c >= 0xFE00  and c <= 0xFE0F
