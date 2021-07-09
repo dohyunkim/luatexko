@@ -566,12 +566,14 @@ local breakable_after = setmetatable({
   [0x2013] = true, [0x2014] = true, [0x25A1] = true, [0x25CB] = true,
   [0x2E80] = true, [0x3003] = true, [0x3005] = true, [0x3007] = true,
   [0x301C] = true, [0x3035] = true, [0x303B] = true, [0x303C] = true,
+  [0x309B] = true, [0x309C] = true,
   [0x309D] = true, [0x309E] = true, [0x30A0] = true, [0x30FC] = true,
   [0x30FD] = true, [0x30FE] = true, [0xFE13] = true, [0xFE14] = true,
   [0xFE32] = true, [0xFE50] = true, [0xFE51] = true, [0xFE52] = true,
   [0xFE54] = true, [0xFE55] = true, [0xFE57] = true, [0xFE57] = true,
   [0xFE58] = true, [0xFE5A] = true, [0xFE5C] = true, [0xFE5E] = true,
   [0xFF1E] = true, [0xFF5E] = true, [0xFF70] = true, [0x226B] = true, -- ≫
+  [0xFF9E] = true, [0xFF9F] = true,
 },{ __index = function (_,c)
   return is_hangul_jamo(c) -- chosong also is breakable_after
   or     is_noncjk_char(c)
