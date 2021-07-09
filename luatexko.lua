@@ -184,7 +184,12 @@ local os2tag = harfbuzz and harfbuzz.Tag.new"OS/2"
 local fontoptions = {
   is_not_harf = setmetatable( {}, { __index = function (t, fid)
     if fid then
-      local bool = has_harf_data(fid) and false or true
+      local bool
+      if has_harf_data(fid) then
+        bool = false
+      else
+        bool = true
+      end
       t[fid] = bool
       return bool
     end
@@ -1348,19 +1353,23 @@ local function process_dotemph (head)
     elseif curr.id == glyphid then
       local dotattr = has_attribute(curr, dotemphattr)
       if dotattr and dotemphbox[dotattr] then
-        local c = has_attribute(curr, unicodeattr) or curr.char
-        if not is_combining(curr.char) and -- bypass unicodeattr inherited
-          ( is_hangul(c)      or
-            is_compat_jamo(c) or
-            is_chosong(c)     or
-            is_hanja(c)       or
-            is_kana(c) )      then
 
-          -- harf font: skip reordered tone mark
-          if harf_reordered_tonemark(curr) then
-            curr = getnext(curr)
+        local ok
+        if hangul_tonemark[curr.char] and harf_reordered_tonemark(curr) then
+          curr = getnext(curr)
+          if is_hangul_jamo(has_attribute(curr, unicodeattr) or curr.char) then
+            ok = true
           end
+        else
+          if not is_combining(curr.char) then -- bypass unicodeattr inherited
+            local c = has_attribute(curr, unicodeattr) or curr.char
+            if is_hangul(c) or is_compat_jamo(c) or is_chosong(c) or is_hanja(c) or is_kana(c) then
+              ok = true
+            end
+          end
+        end
 
+        if ok then
           local currwd = curr.width
           if currwd >= fontoptions.en_size[curr.font] then
             local box = nodecopy(dotemphbox[dotattr]).list
@@ -2098,7 +2107,7 @@ local function normalize_syllable_TC (head)
   while curr do
     if curr.id == glyphid then
       local c, f = curr.char, curr.font
-      if fontoptions.is_not_harf[f] and is_hangul(c) and (c - 0xAC00) % 28 == 0 then
+      if is_hangul(c) and (c - 0xAC00) % 28 == 0 then
         local t = getnext(curr)
         if t then
           if t.id == glyphid then
