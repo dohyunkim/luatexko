@@ -1,3 +1,15 @@
+2021-07-10	Dohyun Kim <nomos at ktug org>
+
+	Version 3.3
+
+	* luatexko.sty:
+	- respect 'para/end' hook
+	- allow linebreak before CJK Unified Ideographs Extension G
+
+	* luatexko.lua:
+	- normalize node sequence 'LV, T'
+	- fix a bug wrt detection of HB fonts
+
 2021-06-10	Dohyun Kim <nomos at ktug org>
 
 	Version 3.2
