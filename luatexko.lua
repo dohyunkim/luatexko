@@ -707,9 +707,10 @@ local function process_fonts (head)
 
         local c = curr.char
 
+        local done
         if is_combining(c) then
           local p = getprev(curr)
-          if p.id == glyphid then
+          if p and p.id == glyphid then
             if curr.font ~= p.font then
               hangul_space_skip(curr, p.font)
               curr.font = p.font
@@ -727,11 +728,12 @@ local function process_fonts (head)
             else
               curr.attr = p.attr -- inherit previous attr including unicodeattr
             end
-          else
-            set_attribute(curr, unicodeattr, c)
+            done = true
           end
+        end
 
-        else
+        if not done then
+
           if curr.subtype == 1 and curr.lang ~= nohyphen and is_cjk_char(c) then
             curr.lang = langkor -- suppress hyphenation of cjk chars
           end
@@ -2039,6 +2041,7 @@ local function process_fake_slant_corr (head) -- for font fallback
             else
               break
             end
+          elseif p.id == whatsitid then
           else
             break
           end
