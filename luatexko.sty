@@ -967,12 +967,12 @@
     \def\가{가}\def\이{이}\def\라{라}\def\으{으}\def\로{로}%
     \def\hellipsis{...}}}{}
   \@ifpackageloaded{pxrubrica}{\let\ruby\jruby}{}
-  \if@hangul \RequirePackage{konames-utf}\fi
 }
 % misc
 \RequirePackage{kolabels-utf}
 \protected\def\hellipsis{\char"2026\char"2026 }
 \if@hangul
+  \RequirePackage{konames-utf}
   \linespread{1.3888}
   \footnotesep=1.3888\footnotesep
   \skip\footins=\glueexpr\skip\footins/72*100\relax
