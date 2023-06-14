@@ -933,8 +933,9 @@
     \let\luatexkodefaulthanjafont   \luatexkomainhanjafont
     \let\luatexkodefaultfallbackfont\luatexkomainfallbackfont
   \fi\fi
-  % hyperref
-  \@ifpackageloaded{hyperref}{\pdfstringdefDisableCommands{%
+}
+% hyperref
+\AddToHook{package/hyperref/after}{\pdfstringdefDisableCommands{%
     \let\ruby\@firstoftwo
     \let\xxruby\@firstoftwo
     \let\dotemph\@firstofone
@@ -966,9 +967,8 @@
     \let\addfallbackfontfeatures\@gobble
     \def\는{는}\def\은{은}\def\을{을}\def\를{를}\def\와{와}\def\과{과}%
     \def\가{가}\def\이{이}\def\라{라}\def\으{으}\def\로{로}%
-    \def\hellipsis{...}}}{}
-  \@ifpackageloaded{pxrubrica}{\let\ruby\jruby}{}
-}
+    \def\hellipsis{...}}}
+\AddToHook{package/pxrubrica/after}{\let\ruby\jruby}
 % misc
 \RequirePackage{kolabels-utf}
 \protected\def\hellipsis{\char"2026\char"2026 }
