@@ -13,7 +13,7 @@
 
 \ifdefined\luatexkohangulfontattr \endinput\fi
 \ifdefined\ProvidesPackage
-  \NeedsTeXFormat{LaTeX2e}[2021/06/01]
+  \NeedsTeXFormat{LaTeX2e}[2021/11/15]
   \ProvidesPackage{luatexko}[2022/11/01 v3.5 typesetting Korean with LuaTeX]
   \RequirePackage{luatexbase}
   \RequirePackage{fontspec}[2020/02/03]
@@ -229,6 +229,9 @@
   \global\advance\luatexkoulinecount\@ne
   \ifnum\luatexkoulinecount=\@ne \directlua{ luatexko.activate"uline" }\fi
   \begingroup
+  \ifdefined\luatexkoprocessinguline
+    \edef\ulinedown{\dimexpr\ulinedown+\ulinewidth+.15ex\relax}\fi
+  \let\luatexkoprocessinguline\relax
   \count@=\luatexkoulinecount
   \leavevmode
   \setbox\z@\hbox{#1}%
