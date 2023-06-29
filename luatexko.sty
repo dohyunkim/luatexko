@@ -229,9 +229,9 @@
   \global\advance\luatexkoulinecount\@ne
   \ifnum\luatexkoulinecount=\@ne \directlua{ luatexko.activate"uline" }\fi
   \begingroup
-  \ifdefined\luatexkoprocessinguline
+  \ifx\luatexko@prev@ulinedown\ulinedown
     \edef\ulinedown{\dimexpr\ulinedown+\ulinewidth+.15ex\relax}\fi
-  \let\luatexkoprocessinguline\relax
+  \let\luatexko@prev@ulinedown\ulinedown
   \count@=\luatexkoulinecount
   \leavevmode
   \setbox\z@\hbox{#1}%
