@@ -684,8 +684,8 @@ local function hangul_space_skip (curr, newfont)
         if params and sfcode and oldsto == 0 and oldsho == 0 then
           if sfcode == 0 then
             local p = curr.prev
-            while sfcode == 0 do
-              sfcode = p and p.char and tex.getsfcode(p.char) or 1000
+            while p and sfcode == 0 do
+              sfcode = p.char and tex.getsfcode(p.char) or 1000
               p = p.prev
             end
           end
