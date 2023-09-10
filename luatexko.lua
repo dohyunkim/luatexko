@@ -668,66 +668,12 @@ function luatexko.updateforcehangul (value)
   nodewrite(what)
 end
 
-local function hangul_space_skip (curr, newfont)
-  if curr.lang ~= nohyphen and curr.font ~= newfont then
-    -- fontloader's "node" mode sets space_stretch to zero
-    -- when the font is a monospaced font (fontspec's \setmonofont
-    -- command does the same thing), which we will bypass here
-    -- for alignment of CJK and Latin glyphs in verbatim environment.
-    -- See http://www.ktug.org/xe/index.php?document_srl=249772
-    if not fontoptions.monospaced[curr.font] then
-      local n = getnext(curr)
-      if n and n.id == glueid and n.subtype == spaceskip then
-        local params = getparameters(curr.font)
-        local oldwd, oldst, oldsh, oldsto, oldsho = getglue(n)
-        local sf = tex.getsfcode(curr.char)
-        if params and sf and oldsto == 0 and oldsho == 0 then
-          if sf == 0 or sf > 1000 then
-            local p, pf = curr.prev, 0
-            while p and pf == 0 do
-              pf = p.char and tex.getsfcode(p.char) or 1000
-              p = p.prev
-            end
-            if sf == 0 then
-              sf = pf
-            end
-            if pf < 1000 then
-              sf = 1000
-            end
-          end
-          if sf == 1000 then
-            if oldwd == params.space and
-               oldst == params.space_stretch and
-               oldsh == params.space_shrink then -- not user's spaceskip
-              local newwd = fontoptions.hangulspaceskip[newfont]
-              if newwd then
-                setglue(n, newwd[1], newwd[2], newwd[3])
-              end
-            end
-          else
-            if oldwd == (sf < 2000 and params.space or params.space + params.extra_space) and
-               oldst == texsp(params.space_stretch * (sf/1000)) and
-               oldsh == texsp(params.space_shrink * (1000/sf)) then
-              local newwd = fontoptions.hangulspaceskip[newfont]
-              if newwd then
-                setglue(n,
-                  sf < 2000 and newwd[1] or newwd[1] + newwd[4],
-                  texsp(newwd[2] * (sf/1000)),
-                  texsp(newwd[3] * (1000/sf)))
-              end
-            end
-          end
-        end
-      end
-    end
-  end
-end
-
 local function process_fonts (head)
-  local curr = head
+  local curr, currfont, currlang, newfont = head, 0, nohyphen, 0
   while curr do
     local id = curr.id
     if id == glyphid then
+      currfont, currlang = curr.font, curr.lang
       if curr.font ~= 0 -- exclude nullfont
         and not has_attribute(curr, unicodeattr) then
 
@@ -738,7 +684,6 @@ local function process_fonts (head)
           local p = getprev(curr)
           if p and p.id == glyphid then
             if curr.font ~= p.font then
-              hangul_space_skip(curr, p.font)
               curr.font = p.font
             end
             curr.lang = p.lang
@@ -771,25 +716,61 @@ local function process_fonts (head)
             and fontoptions.is_widefont[curr.font] -- exclude legacy fonts
             and curr.lang ~= nohyphen and not fontoptions.monospaced[curr.font] -- exclude ttfamily
             then
-            hangul_space_skip(curr, hf)
             curr.font = hf
           elseif hf and has_attribute(curr, hangulbyhangulattr) and is_hangul_jamo(c) then
-            hangul_space_skip(curr, hf)
             curr.font = hf
           elseif hjf and has_attribute(curr, hanjabyhanjaattr) and is_hanja(c) then
-            hangul_space_skip(curr, hjf)
             curr.font = hjf
           elseif not char_in_font(curr.font, c) then
             local fbf = has_attribute(curr, fallbackfontattr) or false
             for _,f in ipairs{ hf, hjf, fbf } do
               if f and char_in_font(f, c) then
-                hangul_space_skip(curr, f)
                 curr.font = f
                 break
               end
             end
           end
           set_attribute(curr, unicodeattr, c)
+        end
+      end
+      newfont = curr.font
+    elseif id == glueid
+      and currfont ~= 0
+      and currfont ~= newfont
+      and currlang ~= nohyphen
+      and curr.subtype == spaceskip
+      -- fontloader's "node" mode sets space_stretch to zero
+      -- when the font is a monospaced font (fontspec's \setmonofont
+      -- command does the same thing), which we will bypass here
+      -- for alignment of CJK and Latin glyphs in verbatim environment.
+      -- See http://www.ktug.org/xe/index.php?document_srl=249772
+      and not fontoptions.monospaced[currfont] then
+
+      local params = getparameters(currfont)
+      local oldwd, oldst, oldsh, oldsto, oldsho = getglue(curr)
+      if params and oldsto == 0 and oldsho == 0 then
+        local p = getprev(curr)
+        local sf = p and p.char and tex.getsfcode(p.char) or 1000
+        if sf == 0 or sf > 1000 then
+          local p, pf = getprev(p), 0
+          while p and pf == 0 do
+            pf = p.char and tex.getsfcode(p.char) or 1000
+            p = getprev(p)
+          end
+          if sf == 0 then sf = pf end
+          if pf < 1000 then sf = 1000 end
+        end
+        if oldwd == (sf < 2000 and params.space or params.space+params.extra_space)
+          and oldst == texsp(params.space_stretch * (sf/1000))
+          and oldsh == texsp(params.space_shrink * (1000/sf)) then
+
+          local newwd = fontoptions.hangulspaceskip[newfont]
+          if newwd then
+            setglue(curr,
+                    sf < 2000 and newwd[1] or newwd[1]+newwd[4],
+                    texsp(newwd[2] * (sf/1000)),
+                    texsp(newwd[3] * (1000/sf)))
+          end
         end
       end
     elseif id == discid then
