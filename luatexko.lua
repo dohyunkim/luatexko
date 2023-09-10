@@ -680,16 +680,22 @@ local function hangul_space_skip (curr, newfont)
       if n and n.id == glueid and n.subtype == spaceskip then
         local params = getparameters(curr.font)
         local oldwd, oldst, oldsh, oldsto, oldsho = getglue(n)
-        local sfcode = tex.getsfcode(curr.char)
-        if params and sfcode and oldsto == 0 and oldsho == 0 then
-          if sfcode == 0 then
-            local p = curr.prev
-            while p and sfcode == 0 do
-              sfcode = p.char and tex.getsfcode(p.char) or 1000
+        local sf = tex.getsfcode(curr.char)
+        if params and sf and oldsto == 0 and oldsho == 0 then
+          if sf == 0 or sf > 1000 then
+            local p, pf = curr.prev, 0
+            while p and pf == 0 do
+              pf = p.char and tex.getsfcode(p.char) or 1000
               p = p.prev
             end
+            if sf == 0 then
+              sf = pf
+            end
+            if pf < 1000 then
+              sf = 1000
+            end
           end
-          if sfcode <= 1000 then
+          if sf == 1000 then
             if oldwd == params.space and
                oldst == params.space_stretch and
                oldsh == params.space_shrink then -- not user's spaceskip
@@ -699,15 +705,15 @@ local function hangul_space_skip (curr, newfont)
               end
             end
           else
-            if oldwd == (sfcode < 2000 and params.space or params.space + params.extra_space) and
-               oldst == texsp(params.space_stretch * (sfcode/1000)) and
-               oldsh == texsp(params.space_shrink * (1000/sfcode)) then
+            if oldwd == (sf < 2000 and params.space or params.space + params.extra_space) and
+               oldst == texsp(params.space_stretch * (sf/1000)) and
+               oldsh == texsp(params.space_shrink * (1000/sf)) then
               local newwd = fontoptions.hangulspaceskip[newfont]
               if newwd then
                 setglue(n,
-                  sfcode < 2000 and newwd[1] or newwd[1] + newwd[4],
-                  texsp(newwd[2] * (sfcode/1000)),
-                  texsp(newwd[3] * (1000/sfcode)))
+                  sf < 2000 and newwd[1] or newwd[1] + newwd[4],
+                  texsp(newwd[2] * (sf/1000)),
+                  texsp(newwd[3] * (1000/sf)))
               end
             end
           end
