@@ -304,7 +304,7 @@ local fontoptions = {
       if has_harf_data(fid) then
         newwd = getparameters(fid) or false
         if newwd then
-          newwd = { newwd.space, newwd.space_stretch, newwd.space_shrink }
+          newwd = { newwd.space, newwd.space_stretch, newwd.space_shrink, newwd.extra_space }
         end
       else
         local newsp = nodenew(glyphid)
@@ -312,7 +312,7 @@ local fontoptions = {
         newsp = nodes.simple_font_handler(newsp)
         newwd = newsp and newsp.width or false
         if newwd then
-          newwd = { texsp(newwd), texsp(newwd/2), texsp(newwd/3) }
+          newwd = { texsp(newwd), texsp(newwd/2), texsp(newwd/3), texsp(newwd/3) }
         end
         if newsp then nodefree(newsp) end
       end
@@ -680,16 +680,36 @@ local function hangul_space_skip (curr, newfont)
       if n and n.id == glueid and n.subtype == spaceskip then
         local params = getparameters(curr.font)
         local oldwd, oldst, oldsh, oldsto, oldsho = getglue(n)
-        if params
-          and oldwd == params.space
-          and oldst == params.space_stretch
-          and oldsh == params.space_shrink
-          and oldsto == 0
-          and oldsho == 0 then -- not user's spaceskip
-
-          local newwd = fontoptions.hangulspaceskip[newfont]
-          if newwd then
-            setglue(n, newwd[1], newwd[2], newwd[3])
+        local sfcode = tex.getsfcode(curr.char)
+        if params and sfcode and oldsto == 0 and oldsho == 0 then
+          if sfcode == 0 then
+            local p = curr.prev
+            while sfcode == 0 do
+              sfcode = p and p.char and tex.getsfcode(p.char) or 1000
+              p = p.prev
+            end
+          end
+          if sfcode <= 1000 then
+            if oldwd == params.space and
+               oldst == params.space_stretch and
+               oldsh == params.space_shrink then -- not user's spaceskip
+              local newwd = fontoptions.hangulspaceskip[newfont]
+              if newwd then
+                setglue(n, newwd[1], newwd[2], newwd[3])
+              end
+            end
+          else
+            if oldwd == (sfcode < 2000 and params.space or params.space + params.extra_space) and
+               oldst == texsp(params.space_stretch * (sfcode/1000)) and
+               oldsh == texsp(params.space_shrink * (1000/sfcode)) then
+              local newwd = fontoptions.hangulspaceskip[newfont]
+              if newwd then
+                setglue(n,
+                  sfcode < 2000 and newwd[1] or newwd[1] + newwd[4],
+                  texsp(newwd[2] * (sfcode/1000)),
+                  texsp(newwd[3] * (1000/sfcode)))
+              end
+            end
           end
         end
       end
@@ -745,6 +765,7 @@ local function process_fonts (head)
             and fontoptions.is_widefont[curr.font] -- exclude legacy fonts
             and curr.lang ~= nohyphen and not fontoptions.monospaced[curr.font] -- exclude ttfamily
             then
+            hangul_space_skip(curr, hf)
             curr.font = hf
           elseif hf and has_attribute(curr, hangulbyhangulattr) and is_hangul_jamo(c) then
             hangul_space_skip(curr, hf)
@@ -1911,7 +1932,7 @@ local function process_vertical_font (fontdata)
     local voff = goffset - (v.width or 0)/2
     local bbox = descriptions[i] and descriptions[i].boundingbox or {0,0,0,0}
     local gid  = v.index
-    local tsb  = tsb_tab[gid].tsb
+    local tsb  = tsb_tab[gid] and tsb_tab[gid].tsb
     local hoff = tsb and (bbox[4] + tsb) * scale or ascender
     v.commands = {
       { "down", -voff },
@@ -1922,7 +1943,7 @@ local function process_vertical_font (fontdata)
       { "pop" },
       { "pdf", "Q" },
     }
-    local vw = tsb_tab[gid].ht
+    local vw = tsb_tab[gid] and tsb_tab[gid].ht
     v.width  = vw and vw * scale or quad
     local ht = bbox[3] * scale + voff
     local dp = bbox[1] * scale + voff
