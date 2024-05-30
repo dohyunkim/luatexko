@@ -365,11 +365,19 @@
     \hfil
     \vbox to\wd#1\bgroup
       \wd#1\z@
-      \pdfextension save\relax
-      \pdfextension setmatrix{0 -1 1 0}\relax
+      \ifnum\outputmode > 0
+        \pdfextension save\relax
+        \pdfextension setmatrix{0 -1 1 0}\relax
+      \else
+        \special{pdf:btrans rotate -90}\relax
+      \fi
       \box#1\relax
       \kern-\dimen@
-      \pdfextension restore\relax
+      \ifnum\outputmode > 0
+        \pdfextension restore\relax
+      \else
+        \special{pdf:etrans}\relax
+      \fi
       \vfil
     \egroup
   \egroup
@@ -397,11 +405,19 @@
     \lower.5\wd#1\vbox to\wd#1\bgroup
       \vfil
       \wd#1\z@
-      \pdfextension save\relax
-      \pdfextension setmatrix{0 1 -1 0}\relax
+      \ifnum\outputmode > 0
+        \pdfextension save\relax
+        \pdfextension setmatrix{0 1 -1 0}\relax
+      \else
+        \special{pdf:btrans rotate 90}\relax
+      \fi
       \box#1\relax
       \kern-\dimen@
-      \pdfextension restore\relax
+      \ifnum\outputmode > 0
+        \pdfextension restore\relax
+      \else
+        \special{pdf:etrans}\relax
+      \fi
     \egroup
     \hfil
   \egroup
