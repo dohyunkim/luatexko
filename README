@@ -1,4 +1,4 @@
-LuaTeX-ko Package version 3.6 (2023/09/11)
+LuaTeX-ko Package version 3.7 (2025/02/24)
 ===========================================
 
 This is a Lua(La)TeX macro package that supports typesetting Korean
@@ -25,10 +25,11 @@ See each file for details.
 Author
 ------
 
-    Dohyun Kim <nomos at ktug org>
+    Dohyun Kim <nomosnomos at gmail com>
     Soojin Nam <jsunam at gmail com>
 
 Please report any errors or suggestions to
+    Dohyun Kim <nomosnomos at gmail com> (current maintainer)
 or leave messages in the issue tracker at:
     <http://github.com/dohyunkim/luatexko>
 

@@ -1,3 +1,10 @@
+2025-02-24	Dohyun Kim <nomosnomos at gmail com>
+
+	Version 3.7
+
+	* luatexko.sty: prevent garbages in dvi mode
+	* luatexko.lua: change char class of some chinese chars
+
 2023-09-11	Dohyun Kim <nomos at ktug org>
 
 	Version 3.6
