@@ -2,7 +2,10 @@
 
 	Version 3.7
 
-	* luatexko.sty: prevent garbages in dvi mode
+	* luatexko.sty:
+	- prevent garbages in dvi mode
+	- use LaTeX's build/page/before hook if available
+
 	* luatexko.lua: change char class of some chinese chars
 
 2023-09-11	Dohyun Kim <nomos at ktug org>

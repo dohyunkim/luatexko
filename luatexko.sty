@@ -556,16 +556,24 @@
   \else
     \linewidth\hsize \columnwidth\hsize
   \fi
-  \expandafter\def\expandafter\@outputpage\expandafter{%
-    \expandafter\luatexkorotatebox\expandafter\@outputbox
-    \expandafter\textwidth\expandafter\textheight
-    \@outputpage
+  \IfFormatAtLeastTF{2025-06-01}{%
+    \AddToHook{build/page/before}[luatexko/beforeOR]{%
+      \luatexkorotatebox\@outputbox
+      \textwidth\textheight
+    }%
+  }{%
+    \expandafter\def\expandafter\@outputpage\expandafter{%
+      \expandafter\luatexkorotatebox\expandafter\@outputbox
+      \expandafter\textwidth\expandafter\textheight
+      \@outputpage
+    }%
   }%
   \typesetvertical
   \let\verticaltypesetting\relax % prevent multiple running
 }
 \def\endverticaltypesetting{%
   \clearpage
+  \IfFormatAtLeastTF{2025-06-01}{\RemoveFromHook{build/page/before}[luatexko/beforeOR]}{}%
   \endgroup
   \global\@colroom\textheight
   \global\@colht\textheight
