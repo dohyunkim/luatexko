@@ -1,3 +1,10 @@
+2025-02-28	Dohyun Kim <nomosnomos at gmail com>
+
+	Version 3.8
+
+	* luatexko.lua:
+	- fix an age-old bug regarding protrusion of harfbuzz font
+
 2025-02-24	Dohyun Kim <nomosnomos at gmail com>
 
 	Version 3.7

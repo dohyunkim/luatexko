@@ -13,8 +13,8 @@
 
 luatexbase.provides_module {
   name        = 'luatexko',
-  date        = '2025/02/24',
-  version     = '3.7',
+  date        = '2025/02/28',
+  version     = '3.8',
   description = 'typesetting Korean with LuaTeX',
   author      = 'Dohyun Kim, Soojin Nam',
   license     = 'LPPL v1.3+',
@@ -2337,8 +2337,9 @@ otfregister {
           local lr = setup[uni]
           if lr then
             local wdq = v.width/quad*1000
-            v.left_protruding  = wdq*lr[1]
-            v.right_protruding = wdq*lr[2]
+            local l, r = lr[1], lr[2]
+            if l and l ~= 0 then v.left_protruding  = wdq*l end
+            if r and r ~= 0 then v.right_protruding = wdq*r end
           end
         end
       end
@@ -2350,12 +2351,15 @@ otfregister {
       local setup = fonts.protrusions.setups[value] or {}
       local quad  = fontdata.parameters.quad
       for i, v in pairs(setup) do
-        for _, ii in ipairs{i, get_HB_variant_char(fontdata,i)} do
-          local chr = fontdata.characters[ii]
-          if chr then
-            local wdq = chr.width/quad*1000
-            chr.left_protruding  = wdq*v[1]
-            chr.right_protruding = wdq*v[2]
+        if type(i) == "number" then
+          for _, ii in ipairs{i, get_HB_variant_char(fontdata,i)} do
+            local chr = fontdata.characters[ii]
+            if chr then
+              local wdq = chr.width/quad*1000
+              local l, r = v[1], v[2]
+              if l and l ~= 0 then chr.left_protruding  = wdq*l end
+              if r and r ~= 0 then chr.right_protruding = wdq*r end
+            end
           end
         end
       end
