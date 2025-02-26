@@ -2350,10 +2350,11 @@ otfregister {
     plug = function(fontdata, _, value)
       local setup = fonts.protrusions.setups[value] or {}
       local quad  = fontdata.parameters.quad
+      local chrs  = fontdata.characters
       for i, v in pairs(setup) do
-        if type(i) == "number" then
+        if chrs[i] then
           for _, ii in ipairs{i, get_HB_variant_char(fontdata,i)} do
-            local chr = fontdata.characters[ii]
+            local chr = chrs[ii]
             if chr then
               local wdq = chr.width/quad*1000
               local l, r = v[1], v[2]
