@@ -2323,6 +2323,9 @@ local function get_HB_variant_char (fontdata, charcode)
   end
 end
 
+fonts.protrusions.setups.default[0xFF0C] = { 0, 1 }
+fonts.protrusions.setups.default[0xFF0E] = { 0, 1 }
+
 otfregister {
   name = "protrusion",
   description = "glyph protrusion",
