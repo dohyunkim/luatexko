@@ -4,6 +4,7 @@
 
 	* luatexko.lua:
 	- fix an age-old bug regarding protrusion of harfbuzz font
+	- add 0xFF0C and 0xFF0E to fonts.protrusions.setups.default
 
 2025-02-24	Dohyun Kim <nomosnomos at gmail com>
 
