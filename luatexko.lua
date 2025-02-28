@@ -2334,6 +2334,7 @@ otfregister {
     node = function(fontdata, _, value)
       local setup = fonts.protrusions.setups[value] or {}
       local quad  = fontdata.parameters.quad
+      local left,right,factor = setup.left or 1, setup.right or 1, setup.factor or 1
       for i, v in pairs(fontdata.characters) do
         local uni = v.unicode
         if uni then
@@ -2341,8 +2342,8 @@ otfregister {
           if lr then
             local wdq = v.width/quad*1000
             local l, r = lr[1], lr[2]
-            if l and l ~= 0 then v.left_protruding  = wdq*l end
-            if r and r ~= 0 then v.right_protruding = wdq*r end
+            if l and l ~= 0 then v.left_protruding  = wdq*l*left*factor end
+            if r and r ~= 0 then v.right_protruding = wdq*r*right*factor end
           end
         end
       end
@@ -2354,6 +2355,7 @@ otfregister {
       local setup = fonts.protrusions.setups[value] or {}
       local quad  = fontdata.parameters.quad
       local chrs  = fontdata.characters
+      local left,right,factor = setup.left or 1, setup.right or 1, setup.factor or 1
       for i, v in pairs(setup) do
         if chrs[i] then
           for _, ii in ipairs{i, get_HB_variant_char(fontdata,i)} do
@@ -2361,8 +2363,8 @@ otfregister {
             if chr then
               local wdq = chr.width/quad*1000
               local l, r = v[1], v[2]
-              if l and l ~= 0 then chr.left_protruding  = wdq*l end
-              if r and r ~= 0 then chr.right_protruding = wdq*r end
+              if l and l ~= 0 then chr.left_protruding  = wdq*l*left*factor end
+              if r and r ~= 0 then chr.right_protruding = wdq*r*right*factor end
             end
           end
         end
