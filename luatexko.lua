@@ -2358,11 +2358,11 @@ otfregister {
       local left,right,factor = setup.left or 1, setup.right or 1, setup.factor or 1
       for i, v in pairs(setup) do
         if chrs[i] then
+          local l, r = v[1], v[2]
           for _, ii in ipairs{i, get_HB_variant_char(fontdata,i)} do
             local chr = chrs[ii]
             if chr then
               local wdq = chr.width/quad*1000
-              local l, r = v[1], v[2]
               if l and l ~= 0 then chr.left_protruding  = wdq*l*left*factor end
               if r and r ~= 0 then chr.right_protruding = wdq*r*right*factor end
             end
