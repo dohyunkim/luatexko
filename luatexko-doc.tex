@@ -31,13 +31,14 @@
   fonts.protrusions.setups.notosanscjk = {
     % compresspunctuations 가 이미 반각을 강제했으므로 여기선 0.5만 준다.
     % +halt, +vhal 따위의 옵션이 주어진 때에도 마찬가지
-    [0x3001]  = { 0, .5 },
-    [0x3002]  = { 0, .5 },
-    [0xFF0C]  = { 0, .5 },
-    [0xFF0E]  = { 0, .5 },
-    [0xFE10]  = { 0, .5 },
-    [0xFE11]  = { 0, .5 },
-    [0xFE12]  = { 0, .5 },
+    factor = 0.5,
+    [0x3001]  = { 0, 1 },
+    [0x3002]  = { 0, 1 },
+    [0xFF0C]  = { 0, 1 },
+    [0xFF0E]  = { 0, 1 },
+    [0xFE10]  = { 0, 1 },
+    [0xFE11]  = { 0, 1 },
+    [0xFE12]  = { 0, 1 },
   }
 }
 \defaultfontfeatures+{Renderer=HarfBuzz}
@@ -201,14 +202,14 @@ fontspec 문서 참조.
 \end{verbatim}
 
 \begin{plaintex}
-  플레인텍에서 한글 글꼴 설정은 다음과 같이 할 수 있다:
+  플레인텍에서 한글 글꼴 설정은 다음과 같이 할 수 있다.
+  명시적 설정이 없더라도 기본값으로 \hemph{은바탕}을 로드한다.
 \begin{verbatim}
     \hangulfont=UnDotum\relax
     \hanjafont="Noto Sans CJK KR" at 10pt
     \fallbackfont=HanaMinA at 10pt
 \end{verbatim}
 
-  v3.2부터는 한글폰트의 기본값으로 \hemph{은바탕}을 로드한다.
   또한 다음 명령들도 제공한다:
 \begin{verbatim}
     \sethangulfont\taza=UnTaza at 12pt
@@ -268,6 +269,8 @@ verbatim 코드를 식자할 때는 이 기능이 작동하지 않으며,%
   \unregisterpunctuations{"2D, "2015}
 \end{verbatim}
 이상 문장부호 관련 명령들은 문단 중간에서도 쓸 수 있지만, 전역적 효과를 가진다.
+다시 말해서 그룹 안에서 \cs{hangulpunctuations=0}을 선언했더라도
+\cs{hangulpunctuations=1}을 선언할 때까지는 그룹이 끝나도 영문 문장부호가 찍힌다.
 
 \section{줄바꿈 허용}\label{sec:break}
 
