@@ -210,11 +210,12 @@
   \ifnum\luatexkodotemphcount=\@ne \directlua{ luatexko.activate"dotemph" }\fi
   \begingroup
   \count@=\luatexkodotemphcount
-  \setbox\z@\hbox{\raise\dotemphraise\hbox{\dotemphchar}}%
+  \setbox\z@\hbox{\raise\dotemphraise\hbox{\luatexkodotemphchar}}%
   \directlua{ luatexko.dotemphbox[\number\count@] = node.copy(tex.box[0]) }%
   \luatexkodotemphattr\count@ #1\relax
   \directlua{ luatexko.dotemphboundary(\number\count@) }%
   \endgroup }
+\def\luatexkodotemphchar{\dotemphchar}
 % uline
 \newcount\luatexkoulinecount
 \def\ulinedown{0.5ex }\def\ulinewidth{0.04em }
@@ -1049,11 +1050,11 @@
 {
   \tag_socket_use:n{luatexko/dotemph/end}
 }
-\AddToHook{cmd/dotemphchar/before}
+\AddToHook{cmd/luatexkodotemphchar/before}
 {
   \tag_socket_use:n{luatexko/dotemphchar/begin}
 }
-\AddToHook{cmd/dotemphchar/after}
+\AddToHook{cmd/luatexkodotemphchar/after}
 {
   \tag_socket_use:n{luatexko/dotemphchar/end}
 }
