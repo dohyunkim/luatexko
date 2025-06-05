@@ -1708,6 +1708,7 @@ local function process_reorder_tonemarks (head)
 
             local actual    = pdfliteral_direct_actual(syllable)
             local endactual = pdfliteral_direct_actual()
+            actual.attr, endactual.attr = TM.attr, TM.attr -- for tagged pdf
             head = insert_before(head, init, actual)
             head, curr = insert_after(head, curr, endactual)
 
@@ -1722,6 +1723,7 @@ local function process_reorder_tonemarks (head)
           if fontoptions.tonemark_xmax[curr.font] >= 0 then
             local actual    = pdfliteral_direct_actual{ init = curr, uni }
             local endactual = pdfliteral_direct_actual()
+            actual.attr, endactual.attr = dotcircle.attr, dotcircle.attr -- for tagged pdf
             head = insert_before(head, curr, actual)
             head, curr = insert_after(head, curr, dotcircle)
             head, curr = insert_after(head, curr, endactual)
@@ -1882,6 +1884,7 @@ local function fontdata_warning(activename, ...)
   end
 end
 
+local tagpdf_loaded = token.is_defined"ver@tagpdf.sty"
 local dfltfntsize = get_font_param(fontcurrent(), "quad") or 655360
 
 local function process_vertical_font (fontdata)
@@ -1913,6 +1916,7 @@ local function process_vertical_font (fontdata)
   local goffset = xheight/2 * (dfltfntsize / quad) -- TODO?
 
   -- declare shift amount of horizontal box inside vertical env.
+  if fontdata.vertcharraise then return end -- avoid multiple running
   fontdata.vertcharraise = goffset
 
   for i,v in pairs(fontdata.characters) do
@@ -1931,7 +1935,18 @@ local function process_vertical_font (fontdata)
       { "pdf", "Q" },
     }
     local vw = tsb_tab[gid] and tsb_tab[gid].ht
-    v.width  = vw and vw * scale or quad
+    vw = vw and vw * scale or quad
+
+    -- for tagged pdf: char width shall be consistent with the width in font
+    if tagpdf_loaded then
+      local diff = vw - v.width
+      if diff and diff ~= 0 then
+        v.luatexko_diff = diff
+      end
+    else
+      v.width = vw
+    end
+
     local ht = bbox[3] * scale + voff
     local dp = bbox[1] * scale + voff
     v.height = ht > 0 and  ht or nil
@@ -1939,9 +1954,13 @@ local function process_vertical_font (fontdata)
   end
   local spacechar = char_in_font(fontdata, 32)
   if spacechar then
-    parameters.space         = spacechar.width
-    parameters.space_stretch = spacechar.width/2
-    parameters.space_shrink  = spacechar.width/2
+    local wd = spacechar.width or parameters.space
+    if tagpdf_loaded then -- for tagged pdf
+      wd = wd + (spacechar.luatexko_diff or 0)
+    end
+    parameters.space         = wd
+    parameters.space_stretch = wd/2
+    parameters.space_shrink  = wd/2
   end
   parameters.ascender  = quad/2 + goffset
   parameters.descender = quad/2 - goffset
@@ -1958,8 +1977,8 @@ local function process_vertical_font (fontdata)
         for _,vv in pairs(v.steps or {}) do
           for _,vvv in pairs(vv.coverage or {}) do
             if type(vvv) == "table" and #vvv == 4 then
-              vvv[1], vvv[2], vvv[3], vvv[4], vvv[5] =
-              -vvv[2], vvv[1], vvv[4], vvv[3], 0 -- last 0 to avoid multiple run
+              vvv[1], vvv[2], vvv[3], vvv[4] =
+              -vvv[2], vvv[1], vvv[4], vvv[3]
             end
           end
         end
@@ -1969,8 +1988,8 @@ local function process_vertical_font (fontdata)
             for _,vvvv in pairs(vvv) do
               for _,vvvvv in pairs(vvvv) do
                 if type(vvvvv) == "table" and #vvvvv == 4 then
-                  vvvvv[1], vvvvv[2], vvvvv[3], vvvvv[4], vvvvv[5] =
-                  -vvvvv[2], vvvvv[1], vvvvv[4], vvvvv[3], 0
+                  vvvvv[1], vvvvv[2], vvvvv[3], vvvvv[4] =
+                  -vvvvv[2], vvvvv[1], vvvvv[4], vvvvv[3]
                 end
               end
             end
@@ -1979,6 +1998,26 @@ local function process_vertical_font (fontdata)
       end
     end
   end
+end
+
+local function process_vertical_diff (head)
+  local curr = head
+  while curr do
+    if curr.id == glyphid then
+      local attr = has_attribute(curr, classicattr)
+      if attr == 1 or attr == 4 or attr == 5 then
+        local chardata = char_in_font(curr.font, curr.char)
+        local diff = chardata and chardata.luatexko_diff
+        if diff and diff ~= 0 then
+          local k = nodenew(kernid)
+          k.kern = diff
+          head, curr = insert_after(head, curr, k)
+        end
+      end
+    end
+    curr = getnext(curr)
+  end
+  return head
 end
 
 function luatexko.gethorizboxmoveright ()
@@ -2173,9 +2212,9 @@ end, "luatexko.pre_shaping_filter")
 
 local otfregister = fonts.constructors.features.otf.register
 
-local function activate_process (cbnam, cbfun, name)
+local function activate_process (cbnam, cbfun, name, first)
   if not active_processes[name] then
-    add_to_callback(cbnam, cbfun, "luatexko."..cbnam.."."..name)
+    add_to_callback(cbnam, cbfun, "luatexko."..cbnam.."."..name, first)
     active_processes[name] = true
   end
 end
@@ -2271,7 +2310,12 @@ otfregister {
   description = "vertical typesetting",
   default = false,
   manipulators = {
-    node = process_vertical_font,
+    node = function(fontdata)
+      process_vertical_font(fontdata)
+      if tagpdf_loaded then
+        activate_process("post_shaping_filter", process_vertical_diff, "verticalwriting", 1)
+      end
+    end,
     plug = function(fontdata)
       local fullname = fontdata.fullname
       fontdata_warning("vertical."..fullname,

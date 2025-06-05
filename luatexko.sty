@@ -13,7 +13,7 @@
 
 \ifdefined\luatexkohangulfontattr \endinput\fi
 \ifdefined\ProvidesPackage
-  \NeedsTeXFormat{LaTeX2e}[2021/11/15]
+  \NeedsTeXFormat{LaTeX2e}[2025/06/01]
   \ProvidesPackage{luatexko}[2025/02/28 v3.8 typesetting Korean with LuaTeX]
   \RequirePackage{luatexbase}
   \RequirePackage{fontspec}[2020/02/03]
@@ -557,24 +557,16 @@
   \else
     \linewidth\hsize \columnwidth\hsize
   \fi
-  \IfFormatAtLeastTF{2025-06-01}{%
-    \AddToHook{build/page/before}[luatexko/beforeOR]{%
-      \luatexkorotatebox\@outputbox
-      \textwidth\textheight
-    }%
-  }{%
-    \expandafter\def\expandafter\@outputpage\expandafter{%
-      \expandafter\luatexkorotatebox\expandafter\@outputbox
-      \expandafter\textwidth\expandafter\textheight
-      \@outputpage
-    }%
+  \AddToHook{build/page/before}[luatexko/beforeOR]{%
+    \luatexkorotatebox\@outputbox
+    \textwidth\textheight
   }%
   \typesetvertical
   \let\verticaltypesetting\relax % prevent multiple running
 }
 \def\endverticaltypesetting{%
   \clearpage
-  \IfFormatAtLeastTF{2025-06-01}{\RemoveFromHook{build/page/before}[luatexko/beforeOR]}{}%
+  \RemoveFromHook{build/page/before}[luatexko/beforeOR]%
   \endgroup
   \global\@colroom\textheight
   \global\@colht\textheight
