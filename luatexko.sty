@@ -1053,21 +1053,34 @@
 % uline etc.
 \socket_new:nn{tagsupport/luatexko/markoverwith/begin}{0}
 \socket_new:nn{tagsupport/luatexko/markoverwith/end}{0}
-\socket_new_plug:nnn{tagsupport/luatexko/markoverwith/begin}{default}
+\socket_new_plug:nnn{tagsupport/luatexko/markoverwith/begin}{underline}
 {
   \leavevmode
   \tag_mc_end_push:
   \tag_struct_begin:n{tag=Em}
+  \tag_struct_gput:nnn{\tag_get:n{struct_num}}
+    {attribute}
+    {/O~/Layout~/TextDecorationType~(Underline)}
   \tag_mc_begin:n{}
 }
-\socket_new_plug:nnn{tagsupport/luatexko/markoverwith/end}{default}
+\socket_new_plug:nnn{tagsupport/luatexko/markoverwith/begin}{strikeout}
+{
+  \leavevmode
+  \tag_mc_end_push:
+  \tag_struct_begin:n{tag=Annot}
+  \tag_struct_gput:nnn{\tag_get:n{struct_num}}
+    {attribute}
+    {/O~/Layout~/TextDecorationType~(LineThrough)}
+  \tag_mc_begin:n{}
+}
+\socket_new_plug:nnn{tagsupport/luatexko/markoverwith/end}{common}
 {
   \tag_mc_end:
   \tag_struct_end:
   \tag_mc_begin_pop:n{}
 }
-\socket_assign_plug:nn{tagsupport/luatexko/markoverwith/begin}{default}
-\socket_assign_plug:nn{tagsupport/luatexko/markoverwith/end}{default}
+\socket_assign_plug:nn{tagsupport/luatexko/markoverwith/begin}{underline}
+\socket_assign_plug:nn{tagsupport/luatexko/markoverwith/end}{common}
 \AddToHook{cmd/luatexkomarkoverwith/before}
 {
   \tag_socket_use:n{luatexko/markoverwith/begin}
@@ -1075,6 +1088,19 @@
 \AddToHook{cmd/luatexkomarkoverwith/after}
 {
   \tag_socket_use:n{luatexko/markoverwith/end}
+}
+% but sout/xout is tagged as Annot
+\AddToHook{cmd/sout/before}
+{
+  \begingroup
+  \socket_assign_plug:nn{tagsupport/luatexko/markoverwith/begin}{strikeout}
+  \AddToHookNext{cmd/luatexkomarkoverwith/after}{\endgroup}
+}
+\AddToHook{cmd/xout/before}
+{
+  \begingroup
+  \socket_assign_plug:nn{tagsupport/luatexko/markoverwith/begin}{strikeout}
+  \AddToHookNext{cmd/luatexkomarkoverwith/after}{\endgroup}
 }
 % ruby
 \socket_new:nn{tagsupport/luatexko/ruby/begin}{0}
