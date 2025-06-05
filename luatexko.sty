@@ -1011,7 +1011,7 @@
 {
   \leavevmode
   \tag_mc_end_push:
-  \tag_struct_begin:n{tag=Em}
+  \tag_struct_begin:n{tag=Strong}
   \tag_mc_begin:n{}
 }
 \socket_new_plug:nnn{tagsupport/luatexko/dotemph/end}{default}
@@ -1051,26 +1051,26 @@
   \tag_socket_use:n{luatexko/dotemphchar/end}
 }
 % uline etc.
+\tagpdfsetup
+{
+  role/new-tag = StrikeOut/Span,
+  role/new-attribute = {TextDeco-underline}{/O~/Layout~/TextDecorationType~(Underline)},
+  role/new-attribute = {TextDeco-strikeout}{/O~/Layout~/TextDecorationType~(LineThrough)},
+}
 \socket_new:nn{tagsupport/luatexko/markoverwith/begin}{0}
 \socket_new:nn{tagsupport/luatexko/markoverwith/end}{0}
 \socket_new_plug:nnn{tagsupport/luatexko/markoverwith/begin}{underline}
 {
   \leavevmode
   \tag_mc_end_push:
-  \tag_struct_begin:n{tag=Em}
-  \tag_struct_gput:nnn{\tag_get:n{struct_num}}
-    {attribute}
-    {/O~/Layout~/TextDecorationType~(Underline)}
+  \tag_struct_begin:n{tag=Em, attribute=TextDeco-underline}
   \tag_mc_begin:n{}
 }
 \socket_new_plug:nnn{tagsupport/luatexko/markoverwith/begin}{strikeout}
 {
   \leavevmode
   \tag_mc_end_push:
-  \tag_struct_begin:n{tag=Annot}
-  \tag_struct_gput:nnn{\tag_get:n{struct_num}}
-    {attribute}
-    {/O~/Layout~/TextDecorationType~(LineThrough)}
+  \tag_struct_begin:n{tag=StrikeOut, attribute=TextDeco-strikeout}
   \tag_mc_begin:n{}
 }
 \socket_new_plug:nnn{tagsupport/luatexko/markoverwith/end}{common}
@@ -1089,7 +1089,6 @@
 {
   \tag_socket_use:n{luatexko/markoverwith/end}
 }
-% but sout/xout is tagged as Annot
 \AddToHook{cmd/sout/before}
 {
   \begingroup
