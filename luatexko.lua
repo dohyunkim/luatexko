@@ -1529,9 +1529,7 @@ local function process_uline (head, parent, level)
         end
       end
 
-      local to_free = curr
       head, curr = noderemove(head, curr)
-      nodefree(to_free)
       goto nextnode
 
     end
