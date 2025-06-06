@@ -1506,6 +1506,7 @@ local ulitems = {}
 
 local function process_uline (head, parent, level)
   local curr, level = head, level or 0
+  local to_free = { }
   while curr do
     if curr.list then
       curr.list = process_uline(curr.list, curr, level+1)
@@ -1529,6 +1530,7 @@ local function process_uline (head, parent, level)
         end
       end
 
+      tableinsert(to_free, curr)
       head, curr = noderemove(head, curr)
       goto nextnode
 
@@ -1544,6 +1546,7 @@ local function process_uline (head, parent, level)
     end
   end
 
+  for _, v in ipairs(to_free) do nodefree(v) end
   return head
 end
 
