@@ -1,9 +1,9 @@
-2025-0x-xx	Dohyun Kim <nomosnomos at gmail com>
+2025-06-07	Dohyun Kim <nomosnomos at gmail com>
 
 	Version 3.9
 
-	* luatexko.sty: support tagging on \ruby, \dotemph, and \uline etc
 	* luatexko.lua: fix a bug related to nested \uline
+	* luatexko.sty: support tagging on \ruby, \dotemph, and \uline etc
 
 2025-02-28	Dohyun Kim <nomosnomos at gmail com>
 

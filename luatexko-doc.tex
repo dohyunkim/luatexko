@@ -65,14 +65,14 @@
 \setmonofont{Inconsolatazi4}[
   Scale=0.98,
   CharRaise=0.125ex,
-  Color=MidnightBlue,
+  Color=191970, % Color=MidnightBlue,
 ]
 \setmonohangulfont{Noto Sans CJK KR}[
   Scale=0.98,
   UprightFont=* DemiLight,
   BoldFont=* Bold,
   CharRaise=-.125ex,
-  Color=MidnightBlue,
+  Color=191970, % Color=MidnightBlue,
 ]
 \setmathhangulfont{Noto Sans CJK KR}
 [
@@ -143,7 +143,7 @@
 \author{Dohyun Kim \normalsize |<nomosnomos at gmail com>| \and
         Soojin Nam \normalsize |<jsunam at gmail com>| \and
   \normalsize <\url{http://github.com/dohyunkim/luatexko}>}
-\date{Version 3.8\quad 2025/02/28}
+\date{Version 3.9\quad 2025/06/07}
 \maketitle
 
 \begin{quote}
@@ -607,9 +607,10 @@ v2.0부터는 고문헌 조판에서 한글^^b7한자와 영문자가 붙어 나
 \section{루비}\label{sec:ruby}
 
 루비를 달 수 있다. ruby 패키지가 이미 존재하지만 \luatexko와 궁합이 잘
-맞지 않아 새로 매크로를 제공한다.
+맞지 않아 새로 매크로를 제공한다.%
+\pkgkwd*{\ruby}
 \begin{quote}
-  \pkgkwd{\ruby}|{漢字}{한자}|\quad$\Rightarrow$\quad\ruby{漢字}{한자}
+  \cs{ruby}|{漢字}{한자}|\quad$\Rightarrow$\quad\ruby{漢字}{한자}
 \end{quote}
 이처럼 글자별로 따로 루비를 달 필요가 없다.  관련 설정은 다음처럼
 한다.
@@ -661,8 +662,10 @@ ulem 패키지가 \luatexko와 궁합이 맞지 않아{\small (줄바꿈에 문�
   \cs{dashuline{대시로 밑줄을 삼는다}}\RA\dashuline{대시로 밑줄을 삼는다}\\
   \cs{dotuline{밑줄을 점선으로 긋는다}}\RA\dotuline{밑줄을 점선으로 긋는다}
 \end{tabbing}
+참고로, |\uline{\uline{...}}|으로도 \cs{uuline{...}}과 동일한 효과를 볼 수 있으며
+사실 이쪽이 \cs{uuline}보다 더 \uline{\uline{효율적}}이다.
 
-관련하여 다음 설정을 할 수 있다.
+이상의 명령들 가운데 밑줄에 관련된 것에는 다음 설정을 할 수 있다.
 
 \medskip
 ①~|\def|\pkgkwd{\ulinedown}|{0.5ex}|: 밑줄을 베이스라인 아래로 끌어내리는 정도

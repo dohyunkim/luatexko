@@ -14,7 +14,7 @@
 \ifdefined\luatexkohangulfontattr \endinput\fi
 \ifdefined\ProvidesPackage
   \NeedsTeXFormat{LaTeX2e}[2025/06/01]
-  \ProvidesPackage{luatexko}[2025/02/28 v3.8 typesetting Korean with LuaTeX]
+  \ProvidesPackage{luatexko}[2025/06/07 v3.9 typesetting Korean with LuaTeX]
   \RequirePackage{luatexbase}
   \RequirePackage{fontspec}[2020/02/03]
   \let\luatexkoselectfont\selectfont
@@ -353,6 +353,7 @@
     \setbox\z@\hbox\bgroup
   \else
     \setbox\z@\vbox\bgroup \hsize#1\relax
+    \ifcsname ver@tagpdf.sty\endcsname \tagtool{para/tagging=false}\fi
   \fi
   \typesetvertical }
 \protected\def\endvertical{%
