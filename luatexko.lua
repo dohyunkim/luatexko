@@ -870,6 +870,7 @@ local function insert_glue_before (head, curr, par, br, brb, classic, ict, dim, 
     setglue(gl, dim, str, str*0.6)
   end
 
+  gl.attr = curr.attr
   head = insert_before(head, curr, pn)
   return insert_before(head, curr, gl)
 end
