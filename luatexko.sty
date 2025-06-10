@@ -1169,6 +1169,8 @@
   role/new-attribute = {WritingMode-TbRl}{/O~/Layout~/WritingMode~(TbRl)},
   role/new-attribute = {WritingMode-LrTb}{/O~/Layout~/WritingMode~(LrTb)},
 }
+\tl_new:N  \luatexko_block_writing_mode_tl
+\tl_set:Nn \luatexko_block_writing_mode_tl {Vertical}
 \socket_new:nn{tagsupport/luatexko/writingmode/begin}{1}
 \socket_new:nn{tagsupport/luatexko/writingmode/end}{0}
 \socket_new_plug:nnn{tagsupport/luatexko/writingmode/begin}{inline}
@@ -1186,7 +1188,7 @@
 \socket_new_plug:nnn{tagsupport/luatexko/writingmode/begin}{block}
 {
   \tag_mc_end_push:
-  \tag_struct_begin:n{tag=Vertical, attribute=WritingMode-#1}
+  \tag_struct_begin:n{tag=\luatexko_block_writing_mode_tl, attribute=WritingMode-#1}
 }
 \socket_new_plug:nnn{tagsupport/luatexko/writingmode/end}{block}
 {
@@ -1231,6 +1233,7 @@
     \socket_assign_plug:nn{tagsupport/luatexko/writingmode/end}{inline}
     \setbox\z@\hbox\bgroup
   \else
+    \tl_set:Nn \luatexko_block_writing_mode_tl {Horizontal}
     \begin{minipage}[b]{#1}
   \fi
   \tag_socket_use:nn{luatexko/writingmode/begin}{LrTb}
