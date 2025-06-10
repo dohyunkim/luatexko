@@ -353,7 +353,6 @@
     \setbox\z@\hbox\bgroup
   \else
     \setbox\z@\vbox\bgroup \hsize#1\relax
-    \ifcsname ver@tagpdf.sty\endcsname \tagtool{para/tagging=false}\fi
   \fi
   \typesetvertical }
 \protected\def\endvertical{%
@@ -1164,6 +1163,20 @@
   \tag_socket_use:n{luatexko/ruby/end}
 }
 % vertical environment
+\socket_new:nn{tagsupport/luatexko/rotatebox/begin}{0}
+\socket_new:nn{tagsupport/luatexko/rotatebox/end}{0}
+\socket_new_plug:nnn{tagsupport/luatexko/rotatebox/begin}{default}
+{
+  \tag_mc_end:
+  \tag_mc_begin:n{artifact}
+}
+\socket_new_plug:nnn{tagsupport/luatexko/rotatebox/end}{default}
+{
+  \tag_mc_end:
+  \tag_mc_begin:n{}
+}
+\socket_assign_plug:nn{tagsupport/luatexko/rotatebox/begin}{default}
+\socket_assign_plug:nn{tagsupport/luatexko/rotatebox/end}{default}
 \tagpdfsetup{
   role/new-tag = Vertical/Div,
   role/new-tag = Horizontal/Div,
@@ -1217,7 +1230,9 @@
     \end{minipage}
     \setbox\z@\lastbox
   \fi
+  \tag_socket_use:n{luatexko/rotatebox/begin}
   \luatexkorotatebox\z@
+  \tag_socket_use:n{luatexko/rotatebox/end}
   \box\z@
 }
 % horizontal environment
@@ -1269,7 +1284,9 @@
     \end{minipage}
     \setbox\z@\lastbox
   \fi
+  \tag_socket_use:n{luatexko/rotatebox/begin}
   \luatexkounrotatebox\z@
+  \tag_socket_use:n{luatexko/rotatebox/end}
   \raise\luatexkohorizboxmoveright
   \box\z@
 }
