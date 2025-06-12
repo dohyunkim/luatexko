@@ -670,6 +670,7 @@ end
 
 local function process_fonts (head)
   local curr, currfont, currlang, newfont = head, 0, nohyphen, 0
+  local to_free = { }
   while curr do
     local id = curr.id
     if id == glyphid then
@@ -787,9 +788,14 @@ local function process_fonts (head)
       if type(value) == "function" then
         value()
       end
+
+      noderemove(head, curr)
+      tableinsert(to_free, curr)
     end
     curr = getnext(curr)
   end
+
+  for _, v in ipairs(to_free) do nodefree(v) end
 end
 
 -- linebreak
@@ -1357,6 +1363,7 @@ end
 
 local function process_dotemph (head)
   local curr = head
+  local to_free = { }
   while curr do
     if curr.list then
       curr.list = process_dotemph(curr.list)
@@ -1381,7 +1388,8 @@ local function process_dotemph (head)
         end
 
         if ok then
-          local currwd = curr.width
+          local chardata = char_in_font(curr.font, curr.char) or {}
+          local currwd = curr.width + (chardata.luatexko_diff or 0)
           if currwd >= fontoptions.en_size[curr.font] then
             local box = nodecopy(dotemphbox[dotattr]).list
             -- bypass unwanted nodes injected by some other packages
@@ -1414,9 +1422,14 @@ local function process_dotemph (head)
       local val = curr.value
       nodefree(dotemphbox[val])
       dotemphbox[val] = nil
+
+      tableinsert(to_free, curr)
+      head = noderemove(head, curr)
     end
     curr = getnext(curr)
   end
+
+  for _, v in ipairs(to_free) do nodefree(v) end
   return head
 end
 
@@ -1532,12 +1545,10 @@ local function process_uline (head, parent, level)
       end
 
       tableinsert(to_free, curr)
-      head, curr = noderemove(head, curr)
-      goto nextnode
+      head = noderemove(head, curr)
 
     end
     curr = getnext(curr)
-    ::nextnode::
   end
 
   for _, item in pairs(ulitems) do
@@ -2338,10 +2349,12 @@ otfregister {
       end
     end,
     plug = function(fontdata, _, value)
+      ---[[ adapt to luaotfload
       local setup = fonts.expansions.setups[value] or {}
       fontdata.stretch = fontdata.stretch or (setup.stretch or 2)*10
       fontdata.shrink  = fontdata.shrink  or (setup.shrink  or 2)*10
       fontdata.step    = fontdata.step    or (setup.step    or .5)*10
+      --]]
       if tex.adjustspacing == 0 then
         texset("global", "adjustspacing", 2)
       end

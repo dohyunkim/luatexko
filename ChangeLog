@@ -1,3 +1,10 @@
+2025-xx-xx	Dohyun Kim <nomosnomos at gmail com>
+
+	Version 4.0
+
+	* luatexko.sty: support tagging on vertical writing
+	* luatexko.lua: remove redundant user whatsits
+
 2025-06-07	Dohyun Kim <nomosnomos at gmail com>
 
 	Version 3.9
