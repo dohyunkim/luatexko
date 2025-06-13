@@ -13,8 +13,8 @@
 
 luatexbase.provides_module {
   name        = 'luatexko',
-  date        = '2025/06/07',
-  version     = '3.9',
+  date        = '2025/06/14',
+  version     = '4.0',
   description = 'typesetting Korean with LuaTeX',
   author      = 'Dohyun Kim, Soojin Nam',
   license     = 'LPPL v1.3+',
@@ -1086,7 +1086,8 @@ local function process_glyph_width (head)
           gpos = gpos and gpos.id == kernid and gpos.subtype == fontkern
 
           if not gpos then
-            local wd = fontoptions.en_size[curr.font] - curr.width
+            local diff = char_in_font(curr.font, curr.char).luatexko_diff or 0
+            local wd = fontoptions.en_size[curr.font] - (curr.width + diff)
             if wd ~= 0 then
               local k = nodenew(kernid) -- fontkern (subtype 0) is default
               k.kern = class == 3 and wd/2 or wd
@@ -1371,6 +1372,7 @@ local function process_dotemph (head)
     elseif curr.id == glyphid then
       local dotattr = has_attribute(curr, dotemphattr)
       if dotattr and dotemphbox[dotattr] then
+        unset_attribute(curr, dotemphattr) -- avoid multiple run
 
         local ok
         if hangul_tonemark[curr.char] and harf_reordered_tonemark(curr) then
@@ -1388,9 +1390,10 @@ local function process_dotemph (head)
         end
 
         if ok then
-          local chardata = char_in_font(curr.font, curr.char) or {}
-          local currwd = curr.width + (chardata.luatexko_diff or 0)
-          if currwd >= fontoptions.en_size[curr.font] then
+          local basewd = 0
+          basewd = basewd + curr.width - (char_in_font(curr.font, curr.char).luatexko_diff or 0)
+
+          if basewd >= fontoptions.en_size[curr.font] then
             local box = nodecopy(dotemphbox[dotattr]).list
             -- bypass unwanted nodes injected by some other packages
             while box.id ~= hlistid do
@@ -1398,7 +1401,20 @@ local function process_dotemph (head)
               box = getnext(box)
             end
 
-            local shift = (currwd - box.width)/2
+            -- for tagged pdf: put the dot after syllable
+            local n = getnext(curr)
+            while n and n.id == glyphid do
+              local c = has_attribute(n, unicodeattr) or n.char
+              if is_jungsong(c) or is_jongsong(c) or is_combining(c) then
+                basewd = basewd + n.width - (char_in_font(n.font, n.char).luatexko_diff or 0)
+                curr = n
+              else
+                break
+              end
+              n = getnext(n)
+            end
+
+            local shift = (basewd - box.width)/2 - basewd
             if shift ~= 0 then
               local list = box.list
               local k = nodenew(kernid)
@@ -1410,7 +1426,7 @@ local function process_dotemph (head)
             box.shift = shift_put_top(curr, box)
 
             box.width = 0
-            head = insert_before(head, curr, box)
+            head, curr = insert_after(head, curr, box)
           end
         end
       end
@@ -2384,6 +2400,8 @@ end
 
 fonts.protrusions.setups.default[0xFF0C] = { 0, 1 }
 fonts.protrusions.setups.default[0xFF0E] = { 0, 1 }
+fonts.protrusions.setups.default[0xFF1A] = { 0, 1 }
+fonts.protrusions.setups.default[0xFF1B] = { 0, 1 }
 
 otfregister {
   name = "protrusion",
@@ -2399,7 +2417,7 @@ otfregister {
         if uni then
           local lr = setup[uni]
           if lr then
-            local wdq = v.width/quad*1000
+            local wdq = (v.width + (v.luatexko_diff or 0))/quad*1000
             local l, r = lr[1], lr[2]
             if l and l ~= 0 then v.left_protruding  = wdq*l*left*factor end
             if r and r ~= 0 then v.right_protruding = wdq*r*right*factor end

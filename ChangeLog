@@ -1,9 +1,13 @@
-2025-xx-xx	Dohyun Kim <nomosnomos at gmail com>
+2025-06-14	Dohyun Kim <nomosnomos at gmail com>
 
 	Version 4.0
 
 	* luatexko.sty: support tagging on vertical writing
-	* luatexko.lua: remove redundant user whatsits
+
+	* luatexko.lua:
+	- remove redundant user whatsits
+	- put dotemph box after the base characters
+	- add 0xFF1A and 0xFF1B to fonts.protrusions.setups.default
 
 2025-06-07	Dohyun Kim <nomosnomos at gmail com>
 

@@ -14,7 +14,7 @@
 \ifdefined\luatexkohangulfontattr \endinput\fi
 \ifdefined\ProvidesPackage
   \NeedsTeXFormat{LaTeX2e}[2025/06/01]
-  \ProvidesPackage{luatexko}[2025/06/07 v3.9 typesetting Korean with LuaTeX]
+  \ProvidesPackage{luatexko}[2025/06/14 v4.0 typesetting Korean with LuaTeX]
   \RequirePackage{luatexbase}
   \RequirePackage{fontspec}[2020/02/03]
   \let\luatexkoselectfont\selectfont
@@ -1002,11 +1002,23 @@
 %%% Tagged PDF
 \ifcsname ver@tagpdf.sty\endcsname\else \endinput\fi
 \ExplSyntaxOn
+\socket_new:nn{tagsupport/luatexko/artifact/begin}{0}
+\socket_new:nn{tagsupport/luatexko/artifact/end}{0}
+\socket_new_plug:nnn{tagsupport/luatexko/artifact/begin}{default}
+{
+  \tag_mc_end:
+  \tag_mc_begin:n{artifact}
+}
+\socket_new_plug:nnn{tagsupport/luatexko/artifact/end}{default}
+{
+  \tag_mc_end:
+  \tag_mc_begin:n{}
+}
+\socket_assign_plug:nn{tagsupport/luatexko/artifact/begin}{default}
+\socket_assign_plug:nn{tagsupport/luatexko/artifact/end}{default}
 % dotemph
 \socket_new:nn{tagsupport/luatexko/dotemph/begin}{0}
 \socket_new:nn{tagsupport/luatexko/dotemph/end}{0}
-\socket_new:nn{tagsupport/luatexko/artifact/begin}{0}
-\socket_new:nn{tagsupport/luatexko/artifact/end}{0}
 \socket_new_plug:nnn{tagsupport/luatexko/dotemph/begin}{default}
 {
   \leavevmode
@@ -1020,20 +1032,8 @@
   \tag_struct_end:
   \tag_mc_begin_pop:n{}
 }
-\socket_new_plug:nnn{tagsupport/luatexko/artifact/begin}{default}
-{
-  \tag_mc_end:
-  \tag_mc_begin:n{artifact}
-}
-\socket_new_plug:nnn{tagsupport/luatexko/artifact/end}{default}
-{
-  \tag_mc_end:
-  \tag_mc_begin:n{}
-}
 \socket_assign_plug:nn{tagsupport/luatexko/dotemph/begin}{default}
 \socket_assign_plug:nn{tagsupport/luatexko/dotemph/end}{default}
-\socket_assign_plug:nn{tagsupport/luatexko/artifact/begin}{default}
-\socket_assign_plug:nn{tagsupport/luatexko/artifact/end}{default}
 \AddToHook{cmd/dotemph/before}
 {
   \tag_socket_use:n{luatexko/dotemph/begin}
