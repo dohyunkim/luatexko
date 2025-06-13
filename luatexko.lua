@@ -1374,25 +1374,23 @@ local function process_dotemph (head)
       if dotattr and dotemphbox[dotattr] then
         unset_attribute(curr, dotemphattr) -- avoid multiple run
 
-        local ok
+        local init
         if hangul_tonemark[curr.char] and harf_reordered_tonemark(curr) then
           curr = getnext(curr)
           if is_hangul_jamo(has_attribute(curr, unicodeattr) or curr.char) then
-            ok = true
+            init = curr
           end
         else
           if not is_combining(curr.char) then -- bypass unicodeattr inherited
             local c = has_attribute(curr, unicodeattr) or curr.char
             if is_hangul(c) or is_compat_jamo(c) or is_chosong(c) or is_hanja(c) or is_kana(c) then
-              ok = true
+              init = curr
             end
           end
         end
 
-        if ok then
-          local basewd = 0
-          basewd = basewd + curr.width - (char_in_font(curr.font, curr.char).luatexko_diff or 0)
-
+        if init then
+          local basewd = curr.width
           if basewd >= fontoptions.en_size[curr.font] then
             local box = nodecopy(dotemphbox[dotattr]).list
             -- bypass unwanted nodes injected by some other packages
@@ -1401,16 +1399,22 @@ local function process_dotemph (head)
               box = getnext(box)
             end
 
-            -- for tagged pdf: put the dot after syllable
+            -- put the dot after base syllable
             local n = getnext(curr)
-            while n and n.id == glyphid do
-              local c = has_attribute(n, unicodeattr) or n.char
-              if is_jungsong(c) or is_jongsong(c) or is_combining(c) then
-                basewd = basewd + n.width - (char_in_font(n.font, n.char).luatexko_diff or 0)
-                curr = n
+            while n do
+              if n.id == glyphid then
+                local c = has_attribute(n, unicodeattr) or n.char
+                if is_jungsong(c) or is_jongsong(c) or is_combining(c) then
+                  basewd = basewd + n.width
+                else
+                  break
+                end
+              elseif n.id == kernid and n.subtype == fontkern then
+                basewd = basewd + n.kern
               else
                 break
               end
+              curr = n
               n = getnext(n)
             end
 
@@ -1423,7 +1427,7 @@ local function process_dotemph (head)
             end
 
             -- consider charraise
-            box.shift = shift_put_top(curr, box)
+            box.shift = shift_put_top(init, box)
 
             box.width = 0
             head, curr = insert_after(head, curr, box)
@@ -2006,8 +2010,8 @@ local function process_vertical_font (fontdata)
         for _,vv in pairs(v.steps or {}) do
           for _,vvv in pairs(vv.coverage or {}) do
             if type(vvv) == "table" and #vvv == 4 then
-              vvv[1], vvv[2], vvv[3], vvv[4] =
-              -vvv[2], vvv[1], vvv[4], vvv[3]
+              vvv[1], vvv[2], vvv[3], vvv[4], vvv[5] =
+              -vvv[2], vvv[1], vvv[4], vvv[3], 0 -- last 0 to avoid multiple run
             end
           end
         end
@@ -2017,8 +2021,8 @@ local function process_vertical_font (fontdata)
             for _,vvvv in pairs(vvv) do
               for _,vvvvv in pairs(vvvv) do
                 if type(vvvvv) == "table" and #vvvvv == 4 then
-                  vvvvv[1], vvvvv[2], vvvvv[3], vvvvv[4] =
-                  -vvvvv[2], vvvvv[1], vvvvv[4], vvvvv[3]
+                  vvvvv[1], vvvvv[2], vvvvv[3], vvvvv[4], vvvvv[5] =
+                  -vvvvv[2], vvvvv[1], vvvvv[4], vvvvv[3], 0
                 end
               end
             end
