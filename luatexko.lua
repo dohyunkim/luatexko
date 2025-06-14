@@ -876,7 +876,9 @@ local function insert_glue_before (head, curr, par, br, brb, classic, ict, dim, 
     setglue(gl, dim, str, str*0.6)
   end
 
-  gl.attr = curr.attr
+  local prev = getprev(curr)
+  gl.attr = prev and prev.attr or curr.attr -- for less tagging
+
   head = insert_before(head, curr, pn)
   return insert_before(head, curr, gl)
 end
@@ -1411,6 +1413,10 @@ local function process_dotemph (head)
                 end
               elseif n.id == kernid and n.subtype == fontkern then
                 basewd = basewd + n.kern
+              elseif n.id == whatsitid
+                and  n.mode == directmode
+                and  my_node_props(n).endactualtext then
+                -- pass
               else
                 break
               end
