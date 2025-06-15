@@ -1923,7 +1923,6 @@ local function fontdata_warning(activename, ...)
   end
 end
 
-local tagpdf_loaded = token.is_defined"ver@tagpdf.sty"
 local dfltfntsize = get_font_param(fontcurrent(), "quad") or 655360
 
 local function process_vertical_font (fontdata)
@@ -1976,14 +1975,10 @@ local function process_vertical_font (fontdata)
     local vw = tsb_tab[gid] and tsb_tab[gid].ht
     vw = vw and vw * scale or quad
 
-    -- for tagged pdf: char width shall be consistent with the width in font
-    if tagpdf_loaded then
-      local diff = vw - v.width
-      if diff and diff ~= 0 then
-        v.luatexko_diff = diff
-      end
-    else
-      v.width = vw
+    -- glyph width shall be consistent with the width in the font program
+    local diff = vw - v.width
+    if diff and diff ~= 0 then
+      v.luatexko_diff = diff
     end
 
     local ht = bbox[3] * scale + voff
@@ -1994,9 +1989,7 @@ local function process_vertical_font (fontdata)
   local spacechar = char_in_font(fontdata, 32)
   if spacechar then
     local wd = spacechar.width or parameters.space
-    if tagpdf_loaded then -- for tagged pdf
-      wd = wd + (spacechar.luatexko_diff or 0)
-    end
+    wd = wd + (spacechar.luatexko_diff or 0)
     parameters.space         = wd
     parameters.space_stretch = wd/2
     parameters.space_shrink  = wd/2
@@ -2351,9 +2344,7 @@ otfregister {
   manipulators = {
     node = function(fontdata)
       process_vertical_font(fontdata)
-      if tagpdf_loaded then
-        activate_process("post_shaping_filter", process_vertical_diff, "verticalwriting", 1)
-      end
+      activate_process("post_shaping_filter", process_vertical_diff, "verticalwriting", 1)
     end,
     plug = function(fontdata)
       local fullname = fontdata.fullname

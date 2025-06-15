@@ -1,3 +1,10 @@
+2025-xx-xx	Dohyun Kim <nomosnomos at gmail com>
+
+	Version 4.1
+
+	* luatexko.lua: in the vertical writing mode, character widths are
+	consistent with the glyph widths in the font program
+
 2025-06-14	Dohyun Kim <nomosnomos at gmail com>
 
 	Version 4.0
