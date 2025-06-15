@@ -1411,7 +1411,7 @@ local function process_dotemph (head)
                 else
                   break
                 end
-              elseif n.id == kernid and n.subtype == fontkern then
+              elseif n.id == kernid and n.subtype ~= userkern then
                 basewd = basewd + n.kern
               elseif n.id == whatsitid
                 and  n.mode == directmode

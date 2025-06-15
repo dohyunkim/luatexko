@@ -2,8 +2,10 @@
 
 	Version 4.1
 
-	* luatexko.lua: in the vertical writing mode, character widths are
-	consistent with the glyph widths in the font program
+	* luatexko.lua:
+	- in the vertical writing mode, character widths are consistent with
+	the glyph widths in the font program
+	- put dotemph box after italiccorrection kerns too
 
 2025-06-14	Dohyun Kim <nomosnomos at gmail com>
 
