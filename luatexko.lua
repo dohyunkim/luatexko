@@ -1411,7 +1411,7 @@ local function process_dotemph (head)
                 else
                   break
                 end
-              elseif n.id == kernid and n.subtype ~= userkern then
+              elseif n.id == kernid and n.subtype == fontkern then
                 basewd = basewd + n.kern
               elseif n.id == whatsitid
                 and  n.mode == directmode
@@ -1975,7 +1975,7 @@ local function process_vertical_font (fontdata)
     local vw = tsb_tab[gid] and tsb_tab[gid].ht
     vw = vw and vw * scale or quad
 
-    -- glyph width shall be consistent with the width in the font program
+    -- character width shall be consistent with the width in the font program
     local diff = vw - v.width
     if diff and diff ~= 0 then
       v.luatexko_diff = diff
