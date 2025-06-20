@@ -4,7 +4,7 @@
 
 	* luatexko.lua:
 	- character widths shall be consistent with the glyph widths in the
-	font program.
+	font program. (PDF standard document 9.2.4)
 
 2025-06-14	Dohyun Kim <nomosnomos at gmail com>
 

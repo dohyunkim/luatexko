@@ -115,7 +115,9 @@
 \def\XeTeX{\hologo{XeTeX}}
 \usepackage[hidelinks]{hyperref}
 
-\AddToHook{env/itemize/begin}{\small}
+\AddToHook{cmd/itemize/after}{\itemsep0pt plus1pt minus1pt}
+\AddToHook{cmd/description/after}{\itemsep0pt plus1pt minus1pt}
+\AddToHook{cmd/caption/before}{\linespread{1.3}\small}
 \AddToHook{env/verbatim/begin}{\linespread{1.1}}
 
 \catcode`|=13 \protected\def|{\verb|\let\\=\textbackslash} %|
@@ -135,21 +137,22 @@
 \def\ldots{$\dots$}
 \newenvironment{plaintex}{%
   \par\bigskip
-  \begin{narrower}\small\parindent=0pt
+  \begin{narrower}\small\parindent=-1em\leftskip2em\rightskip1em plus1fill
   \leavevmode\llap{\color{gray}plain \TeX\quad}\ignorespaces
 }{
   \par
   \end{narrower}%
 }
+\def\textdblrightarrow{\quad ⇒\quad}
 
 \widowpenalty5000
 \clubpenalty5000
 
 \begin{document}
 \title{\luatexko\ 간단 매뉴얼}
-\author{Dohyun Kim \normalsize |<nomosnomos at gmail com>| \and
-        Soojin Nam \normalsize |<jsunam at gmail com>| \and
-  \normalsize <\url{http://github.com/dohyunkim/luatexko}>}
+\author{\normalsize Dohyun Kim |<nomosnomos at gmail com>| \quad
+        Soojin Nam |<jsunam at gmail com>| \and
+        \normalsize <\url{http://github.com/dohyunkim/luatexko}>}
 \date{Version 4.0\quad 2025/06/14}
 \maketitle
 
@@ -161,9 +164,7 @@
 
 \section{부르기}\label{sec:loading}
 
-\hemph{\texlive\ 2021 이상}{ \small (\luatex\ v1.12 이상)}을 사용해야 한다.
-
-\luatexko\ 부르기: \cs{usepackage{luatexko}} 혹은 \cs{usepackage{kotex}}.%
+\luatexko 를 불러오려면 \cs{usepackage{luatexko}} 혹은 \cs{usepackage{kotex}}.%
 \footnote{%
   플레인텍에서는 \cs{input luatexko.sty} 혹은 \cs{input kotex.sty}. }
 
@@ -223,6 +224,7 @@ fontspec 문서 참조.
     \sethanjafont\dotum=UnDotum at 12pt
     \setfallbackfont\noto={Noto Sans CJK KR} at 12pt
 \end{verbatim}
+
   그리하여 다음처럼 지시할 수 있게 된다:
 \begin{verbatim}
     \expandafter\def\expandafter\tt\expandafter{\tt\taza\dotum\noto}
@@ -286,8 +288,8 @@ verbatim 코드를 식자할 때는 이 기능이 작동하지 않으며,%
 \pkgkwd*{\registerbreakablebefore}
 이들 명령을 문단 중간에서 사용하면 문단의 처음부터 전역적 효력을 가진다.
 \begin{verbatim}
-\registerbreakableafter{"2460, "2461}
-\registerbreakablebefore{"2460, "2461}
+  \registerbreakableafter{"2460, "2461}
+  \registerbreakablebefore{"2460, "2461}
 \end{verbatim}
 \luatexko는 다분히 보수적으로 줄바꿈을 허용하고 있다.
 예시한 유니코드는 `①'과 `②'인데 기본적으로
@@ -413,7 +415,7 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
 
 \item[Protrusion] \pkgkwd*{Protrusion}%
   특정 글자가 행 끝에 왔을 때 판면 바깥으로 끌어내는
-  기능이다. \luatex은 기본값으로 온점 반점 등을 완전 글자내밀기 한다.
+  기능이다. \luatex은 기본으로 온점 반점 등을 완전 글자내밀기 한다.
   |Protrusion|은 |Protrusion=default|와 같은 뜻이다.%
   \footnote{%
     플레인텍에서는 |protrusion=default|. }
@@ -503,7 +505,8 @@ v2.0부터는 고문헌 조판에서 한글^^b7한자와 영문자가 붙어 나
 세로쓰기에서 |CharRaise| 옵션의 효과에 대해서는 제\ref{sec:fontoption}절을
 참조.
 
-문서의 일부를 세로쓰기하려면
+\begin{itemize}
+  \item 문서의 일부를 세로쓰기하려면
 |\begin{|\pkgkwd{vertical}|}{<dimen>}| \ldots\ |\end{vertical}|
 환경을 이용한다. 인자 |<dimen>|으로 세로쓰기 박스의 높이를 지시한다.
 그림~\ref{fig:vertical},~\ref{fig:vertical3} 및 \ref{fig:vertical2} 참조.
@@ -571,20 +574,21 @@ v2.0부터는 고문헌 조판에서 한글^^b7한자와 영문자가 붙어 나
   }\label{fig:vertical2}
 \end{figure}
 
-문서 전체를 세로쓰기한다면 이 환경을 쓰는 대신
+\item 문서 전체를 세로쓰기한다면
 \pkgkwd{\verticaltypesetting} 명령을 전처리부에 선언한다.
 이때 면주는 가로로 식자되며 면주 폰트의 설정은 사용자의 몫이다.
 
-몇몇 페이지를 세로쓰기로 식자하려면 본문 중에
+\item 몇몇 페이지를 세로쓰기로 식자하려면 본문 중에
 |\begin{|\pkgkwd{verticaltypesetting}|}| \ldots\ |\end{verticaltypesetting}|
 환경을 이용한다.
 이때도 면주는 가로로 식자되며, 환경의 시작과 끝에서 쪽나눔이 행해진다.
 
-세로쓰기 도중에 문서의 일부를 가로쓰기하려면
+\item 세로쓰기 도중에 문서의 일부를 가로쓰기하려면
 |\begin{|\pkgkwd{horizontal}|}{<dimen>}| \ldots\ |\end{horizontal}|
 환경을 이용한다. |<dimen>|은 가로쓰기 박스의 너비를 지시한다.
 만약 인자가 비어있거나 \cs{empty}이면 본문을 한 줄짜리 박스로 식자하며,
 이때 너비는 당연히 natural width가 된다.
+\end{itemize}
 
 \begin{plaintex}
   문서의 일부를 세로쓰기하려면 |\vertical{<dimen>}| \ldots\ |\endvertical|.
@@ -605,11 +609,11 @@ v2.0부터는 고문헌 조판에서 한글^^b7한자와 영문자가 붙어 나
 다음과 같이 명령을 주어 개인적으로 선호하는 기호를 드러냄표로 쓸 수
 있다.
 
-\medskip
-①~|\def|\pkgkwd{\dotemphraise}|{0.4em }|:
+\begin{itemize}
+  \item |\def|\pkgkwd{\dotemphraise}|{0.4em }|:
 드러냄표를 피강조 글자 위로 끌어올리는 길이
-
-②~|\def|\pkgkwd{\dotemphchar}|{\bfseries ^^^^02d9}|: 드러냄표 기호 자체를 정의.
+  \item |\def|\pkgkwd{\dotemphchar}|{\bfseries ^^^^02d9}|: 드러냄표 기호 자체를 정의.
+\end{itemize}
 
 \section{루비}\label{sec:ruby}
 
@@ -617,31 +621,31 @@ v2.0부터는 고문헌 조판에서 한글^^b7한자와 영문자가 붙어 나
 맞지 않아 새로 매크로를 제공한다.%
 \pkgkwd*{\ruby}
 \begin{quote}
-  \cs{ruby}|{漢字}{한자}|\quad$\Rightarrow$\quad\ruby{漢字}{한자}
+  \cs{ruby}|{漢字}{한자}|\textdblrightarrow\ruby{漢字}{한자}
 \end{quote}
 이처럼 글자별로 따로 루비를 달 필요가 없다.  관련 설정은 다음처럼
 한다.
 
-\medskip
-①~\pkgkwd{\rubyfont}: 루비를 식자할 폰트를 지시해 둔다. 기본값은 현재 폰트%
+\begin{itemize}
+  \item \pkgkwd{\rubyfont}: 루비를 식자할 폰트를 지시해 둔다. 기본값은 현재 폰트%
 \footnote{%
   루비는 글자 크기가 작기 때문에 본문 폰트보다 약간 굵은 폰트로
   지정하는 것이 좋다. }
 
-②~|\def|\pkgkwd{\rubysize}|{0.6}|:
+  \item |\def|\pkgkwd{\rubysize}|{0.6}|:
 루비 글자 크기를 본문 글자 크기에 대한 비율로 지정%
 \footnote{%
   플레인텍에서는 루비의 글꼴크기를 따로 조정해주지 않는다.
   사용자가 \cs{rubyfont}를 설정할 때 크기도 함께 지시하도록 한다.
   가령: |\\font\\rubyfont=UnBatang at \\rubysize em| }
 
-③~|\def|\pkgkwd{\rubysep}|{0.1ex}|: 루비와 본문 글자 사이의 간격을 지정
+  \item |\def|\pkgkwd{\rubysep}|{0.1ex}|: 루비와 본문 글자 사이의 간격을 지정
 
-④~\pkgkwd{\rubynooverlap}: 루비의 폭이 본문 글자의 폭보다 클 때 루비가 이웃
+  \item \pkgkwd{\rubynooverlap}: 루비의 폭이 본문 글자의 폭보다 클 때 루비가 이웃
 글자들 위로 삐져나가지 못하게 한다. 본문 글자의 흐름을 중시하여
 \pkgkwd{\rubyoverlap}을 기본값으로 하였으므로 이는 따로 선언할 필요가 없다.
+\end{itemize}
 
-\medskip
 한편, 연속된 본문 글자들에 각각 한 글자씩 루비를 달고자 한다면
 \pkgkwd{\xxruby}|{...}{...}| 명령을 사용한다. 글자들 사이에 줄바꿈이 허용된다.
 두 인자의 글자 수가 동일해야 한다.
@@ -658,29 +662,28 @@ ulem 패키지가 \luatexko와 궁합이 맞지 않아{\small (줄바꿈에 문�
 \pkgkwd*{\dashuline}%
 \pkgkwd*{\dotuline}
 
-\def\RA{\>$\Rightarrow$\>}
-\begin{tabbing}
-  \cs{dotuline{밑줄을 점선으로 긋는다}}\quad\=$\Rightarrow$\quad\= \kill
-  \cs{uline{밑줄을 그을 수 있다}}\RA\uline{밑줄을 그을 수 있다}\\
-  \cs{sout{취소선을 그을 수 있다}}\RA\sout{취소선을 그을 수 있다}\\
-  \cs{uuline{밑줄을 두 줄 긋는다}}\RA\uuline{밑줄을 두 줄 긋는다}\\
-  \cs{xout{빗금으로 취소할 수 있다}}\RA\xout{빗금으로 취소할 수 있다}\\
-  \cs{uwave{물결표로 밑줄을 삼는다}}\RA\uwave{물결표로 밑줄을 삼는다}\\
-  \cs{dashuline{대시로 밑줄을 삼는다}}\RA\dashuline{대시로 밑줄을 삼는다}\\
-  \cs{dotuline{밑줄을 점선으로 긋는다}}\RA\dotuline{밑줄을 점선으로 긋는다}
-\end{tabbing}
+\begin{flushleft}
+\begin{tabular}{l@{\textdblrightarrow}l}
+  \cs{uline{밑줄을 그을 수 있다}}&\uline{밑줄을 그을 수 있다}\\
+  \cs{sout{취소선을 그을 수 있다}}&\sout{취소선을 그을 수 있다}\\
+  \cs{uuline{밑줄을 두 줄 긋는다}}&\uuline{밑줄을 두 줄 긋는다}\\
+  \cs{xout{빗금으로 취소할 수 있다}}&\xout{빗금으로 취소할 수 있다}\\
+  \cs{uwave{물결표로 밑줄을 삼는다}}&\uwave{물결표로 밑줄을 삼는다}\\
+  \cs{dashuline{대시로 밑줄을 삼는다}}&\dashuline{대시로 밑줄을 삼는다}\\
+  \cs{dotuline{밑줄을 점선으로 긋는다}}&\dotuline{밑줄을 점선으로 긋는다}
+\end{tabular}
+\end{flushleft}
 참고로, |\uline{\uline{...}}|으로도 \cs{uuline{...}}과 동일한 효과를 볼 수 있으며
 사실 이쪽이 \cs{uuline}보다 더 \uline{\uline{효율적}}이다.
 
-이상의 명령들 가운데 밑줄에 관련된 것에는 다음 설정을 할 수 있다.
+이들 명령 가운데 밑줄에 관련된 것에는 다음 설정을 할 수 있다.
 
-\medskip
-①~|\def|\pkgkwd{\ulinedown}|{0.5ex}|: 밑줄을 베이스라인 아래로 끌어내리는 정도
+\begin{itemize}
+  \item |\def|\pkgkwd{\ulinedown}|{0.5ex}|: 밑줄을 베이스라인 아래로 끌어내리는 정도
+  \item |\def|\pkgkwd{\ulinewidth}|{0.04em}|: 밑줄의 굵기
+\end{itemize}
 
-②~|\def|\pkgkwd{\ulinewidth}|{0.04em}|: 밑줄의 굵기
-
-\medskip
-사실 위 밑줄 양식들을 만드는 데는 예외없이
+이상의 밑줄 양식들을 만드는 데는 예외없이
 \pkgkwd{\markoverwith} 명령이 사용되었다.
 따라서 사용자는 이를 이용해 원하는 양식을 만들 수 있다.
 가령 노란색 마커펜을 흉내내려면,%
@@ -700,7 +703,7 @@ ulem 패키지가 \luatexko와 궁합이 맞지 않아{\small (줄바꿈에 문�
 \def\ymarker{\markoverwith{%
   \hbox{\color{yellow!50}\vrule width 1pt height 9pt depth 2pt}}}
 
-\cs{ymarker{노란색을 칠해서 강조한다}}\quad$\Rightarrow$\quad
+\cs{ymarker{노란색을 칠해서 강조한다}}\textdblrightarrow
 \ymarker{노란색을 칠해서 강조한다}.
 
 \section{자동조사}\label{sec:autojosa}
@@ -712,11 +715,11 @@ ulem 패키지가 \luatexko와 궁합이 맞지 않아{\small (줄바꿈에 문�
 |0|이 선언되면 원래 방식으로 돌아간다.
 \begin{quote}
   \cs{josaignoreparens=1} \josaignoreparens=1 \\
-  |홍길동(1992)\는|\quad$\Rightarrow$\quad 홍길동(1992)\는\\
-  |홍길동(2001)\로|\quad$\Rightarrow$\quad 홍길동(2001)\로\par
+  |홍길동(1992)\는|\textdblrightarrow 홍길동(1992)\는\\
+  |홍길동(2001)\로|\textdblrightarrow 홍길동(2001)\로\par
   \cs{josaignoreparens=0} \josaignoreparens=0 \\
-  |홍길동(1992)\는|\quad$\Rightarrow$\quad 홍길동(1992)\는\\
-  |홍길동(2001)\로|\quad$\Rightarrow$\quad 홍길동(2001)\로
+  |홍길동(1992)\는|\textdblrightarrow 홍길동(1992)\는\\
+  |홍길동(2001)\로|\textdblrightarrow 홍길동(2001)\로
 \end{quote}
 
 \section{루아 모듈의 제거 및 복원}\label{sec:luamodule}
@@ -732,7 +735,7 @@ ulem 패키지가 \luatexko와 궁합이 맞지 않아{\small (줄바꿈에 문�
 \section{수식 한글}\label{sec:mathhangul}
 
 \begin{quote}
-  |$가^{나^다}$|\quad$\Rightarrow\quad가^{나^다}$
+  |$가^{나^다}$|\textdblrightarrow$가^{나^다}$
 \end{quote}
 수식 한글 폰트를 설정하면 수식 모드에서도 한글을 {\small(hbox로 감싸지 않고)}
 직접 입력할 수 있다.%
@@ -812,13 +815,13 @@ v2.0부터는 자동으로 수식 한글을 잡아주지 않는다.%
   대신 |luatex -cmdx ...|, |lualatex -cmdx ...|와 같이 컴파일시 명령행에
   |-cmdx| 옵션을 주면 된다고 하니 테스트해 보시기 바란다. }
 
-\smallskip
-\hbox to\linewidth{\hss\vrule width .4\linewidth height.4pt \hss}
-\smallskip
+\begin{center}
+*\qquad *\qquad *
+\end{center}
 
 \section*{주요 변경 이력}
 
-\begin{itemize}\linespread{1.1}\selectfont
+\begin{itemize}\linespread{1.1}\small
   \item[v4.0] ------
   \item \LaTeX 의 Tagged PDF 기능 지원
   \item[v3.2] ------
