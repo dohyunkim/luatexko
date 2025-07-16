@@ -1,10 +1,11 @@
-2025-xx-xx	Dohyun Kim <nomosnomos at gmail com>
+2025-07-16	Dohyun Kim <nomosnomos at gmail com>
 
 	Version 4.1
 
 	* luatexko.lua:
 	- character widths shall be consistent with the glyph widths in the
 	font program. (PDF standard document 9.2.4)
+	- tagging: make sure that uline is always artifact
 
 2025-06-14	Dohyun Kim <nomosnomos at gmail com>
 

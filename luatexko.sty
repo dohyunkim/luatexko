@@ -14,7 +14,7 @@
 \ifdefined\luatexkohangulfontattr \endinput\fi
 \ifdefined\ProvidesPackage
   \NeedsTeXFormat{LaTeX2e}[2025/06/01]
-  \ProvidesPackage{luatexko}[2025/06/14 v4.0 typesetting Korean with LuaTeX]
+  \ProvidesPackage{luatexko}[2025/07/16 v4.1 typesetting Korean with LuaTeX]
   \RequirePackage{luatexbase}
   \RequirePackage{fontspec}[2020/02/03]
   \let\luatexkoselectfont\selectfont
@@ -994,8 +994,8 @@
 \protected\def\hellipsis{\char"2026\char"2026 }
 \if@hangul
   \RequirePackage{konames-utf}
-  \linespread{1.3888}
-  \footnotesep=1.3888\footnotesep
+  \linespread{1.38889}
+  \footnotesep=1.38889\footnotesep
   \skip\footins=\glueexpr\skip\footins/72*100\relax
   \frenchspacing
 \fi

@@ -16,12 +16,12 @@
 %}
 
 \documentclass[a4paper]{article}
-\usepackage[hmargin=3.8cm]{geometry}
+\usepackage[hmargin={3.4cm,4.2cm}]{geometry}
 \usepackage[svgnames]{xcolor}
 \usepackage{luacolor}
 \usepackage[hangul]{luatexko}
 \directlua{
-  fonts.protrusions.setups.notoserifcjk = {
+  fonts.protrusions.setups.latin = {
     [0x28]   = { 0.5, 0   }, % (
     [0x29]   = { 0,   0.5 }, % )
     [0x2C]   = { 0,   1   }, % ,
@@ -35,7 +35,7 @@
     [0x201C] = { 0.5, 0   }, % “
     [0x201D] = { 0,   0.5 }, % ”
   }
-  fonts.protrusions.setups.notosanscjk = {
+  fonts.protrusions.setups.cjk = {
     % compresspunctuations 가 이미 반각을 강제했으므로 여기선 0.5만 준다.
     % +halt, +vhal 따위의 옵션이 주어진 때에도 마찬가지
     factor = 0.5,
@@ -58,7 +58,7 @@
   BoldFont=* Bold,
   InterLatinCJK=.125em,
   CompressPunctuations,
-  Expansion, Protrusion=notoserifcjk,
+  Expansion, Protrusion=latin,
 ]
 \setsanshangulfont{Noto Sans CJK KR}[
   Scale=0.98,
@@ -68,6 +68,7 @@
   BoldFont=* Bold,
   InterLatinCJK=.125em,
   CompressPunctuations,
+  Expansion, Protrusion=latin,
 ]
 \setmonofont{Inconsolatazi4}[
   Scale=0.98,
@@ -104,7 +105,7 @@
   InterCharStretch=1pt,
   CharRaise=1pt,
   CharacterWidth=Full,
-  Protrusion=notosanscjk,
+  Protrusion=cjk,
 ]
 \newhangulfontface\rubyfont{Noto Serif CJK KR Medium}[
   Script=Hangul,
@@ -115,10 +116,9 @@
 \def\XeTeX{\hologo{XeTeX}}
 \usepackage[hidelinks]{hyperref}
 
-\AddToHook{cmd/itemize/after}{\itemsep0pt plus1pt minus1pt}
-\AddToHook{cmd/description/after}{\itemsep0pt plus1pt minus1pt}
-\AddToHook{cmd/caption/before}{\linespread{1.3}\small}
+\AddToHook{cmd/caption/before}{\linespread{1.3}\sffamily}
 \AddToHook{env/verbatim/begin}{\linespread{1.1}}
+\AssignSocketPlug{build/column/outputbox}{space-floats-footnotes}
 
 \catcode`|=13 \protected\def|{\verb|\let\\=\textbackslash} %|
 \def\nohyphen{\language\csname l@nohyphenation\endcsname}
@@ -136,12 +136,12 @@
 \def\hemph#1{\textsf{\bfseries #1}}
 \def\ldots{$\dots$}
 \newenvironment{plaintex}{%
-  \par\bigskip
-  \begin{narrower}\small\parindent=-1em\leftskip2em\rightskip1em plus1fill
-  \leavevmode\llap{\color{gray}plain \TeX\quad}\ignorespaces
+  \begin{itemize}\linespread{1.2}\small
+    \itemsep0pt plus1pt minus1pt
+    \topsep=\itemsep
+    \item[\color{gray}plain \TeX]
 }{
-  \par
-  \end{narrower}%
+  \end{itemize}%
 }
 \def\textdblrightarrow{\quad ⇒\quad}
 
@@ -150,10 +150,10 @@
 
 \begin{document}
 \title{\luatexko\ 간단 매뉴얼}
-\author{\normalsize Dohyun Kim |<nomosnomos at gmail com>| \quad
-        Soojin Nam |<jsunam at gmail com>| \and
+\author{\normalsize Dohyun Kim |<nomosnomos at gmail com>| \and
+        \normalsize Soojin Nam |<jsunam at gmail com>| \and
         \normalsize <\url{http://github.com/dohyunkim/luatexko}>}
-\date{Version 4.0\quad 2025/06/14}
+\date{Version 4.1\quad\normalsize 2025/07/16}
 \maketitle
 
 \begin{quote}
@@ -174,9 +174,7 @@ CP949 인코딩에 관해서는 제\ref{sec:uhcencoding}절 참조.
 
 \section{패키지 옵션}\label{sec:packageopt}
 
-패키지 옵션으로 \pkgkwd{hangul}과 \pkgkwd{hanja}가 제공된다.%
-\footnote{%
-  |[nofontspec]| 옵션은 v2.0부터 더는 제공되지 않는다. }
+패키지 옵션으로 \pkgkwd{hangul}과 \pkgkwd{hanja}가 제공된다.
 행간격 조정이 행해지며
 장 제목이나 표·그림 캡션 따위가 한글 또는 한자 방식으로 표시된다.
 장(chapter) 제목과 편(part) 제목에만 ``제(第)''가 붙어 ``제~1 편''
@@ -301,10 +299,8 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
 \footnote{%
   옛한글 식자를 위해서는 적어도 |Script=Hangul|
   (플레인텍이라면 |script=hang|)을 주어야 한다.
-  옛한글이 아니더라도 한글을 쓴다면 이 옵션과 |Language=Korean|
-  (플레인텍은 |language=KOR|)을 주는 것이 좋다. }\,%
-\footnote{%
-  |PunctRaise|, |NoEmbedding| 옵션은 v2.0부터 더는 제공하지 않는다. }
+  옛한글이 아니더라도 한글폰트에는 이 옵션과 |Language=Korean|
+  (플레인텍은 |language=KOR|)을 주는 것이 좋다. }
 
 \def\hunmintxt{%
   \noindent\textbf{%
@@ -340,7 +336,7 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
   \caption{옛한글 조판 보기}\label{fig:yethangul}
 \end{figure}
 
-\begin{description}
+\begin{description}\itemsep 0pt plus 1pt minus 1pt
   \item[InterHangul] \pkgkwd*{InterHangul}%
     {\addhangulfontfeature{InterHangul=.5ex}한글 글자
     사이의 자간}.  아래는 $-0.04$em 만큼 한글 자간을 지시한다.%
@@ -390,7 +386,7 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
   세로쓰기에서는 모든 글자들을 지정한 값만큼 오른쪽으로 이동시킨다.%
   \footnote{%
     세로쓰기에서는 이 옵션 값을 고정길이(가령 |pt| 단위)로 주어야
-    크기가 다른 폰트들간에 중앙정렬이 유지된다. }
+    크기가 다른 폰트들 간에 중앙정렬이 유지된다. }
 
 \item[RemoveClassicSpaces] \pkgkwd*{RemoveClassicSpaces}%
   고문헌 조판시에 CJK 글자들 사이의 공백을 없애준다.%
@@ -402,9 +398,8 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
   반각으로 만든다.%
   \footnote{%
     플레인텍에서는 |+compresspunctuations|.
-  }\,\footnote{%
-    v2.0부터는 사용자가 지시하지 않는 한 자동으로 글자폭을 줄여주지 않는다.
   }
+  버전 2.0부터는 사용자가 지시하지 않는 한 글자폭을 자동으로 줄여주지 않는다.
   이 옵션은 |CharacterWidth=AlternateHalf| 내지 {\small (세로쓰기의 경우)}
   |Vertical=HalfMetrics|와 거의 같은 기능을 한다.%
   \footnote{%
@@ -465,11 +460,10 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
   그렇더라도 중국어나 일본어 폰트를 사용한다면 이들 환경을 사용하는 것이 좋다.
   |chinese|는 |Schinese|와 동의어이다. }
 그림~\ref{fig:gomun} 참조.
-
-v2.0부터는 고문헌 조판에서 한글^^b7한자와 영문자가 붙어 나오더라도 자동으로
-간격을 잡아주지 않으므로 이런 경우 사용자가 |InterLatinCJK| 옵션을
+버전 2.0부터는 고문헌 조판에서 한글^^b7한자와 영문자가 붙어 나오더라도 자동으로
+간격을 조정해주지 않으므로 사용자가 |InterLatinCJK| 옵션을
 지정해야 한다.
-또한 불필요한 공백이 오더라도 자동으로 제거해주지 않으므로 이런 경우
+또한 불필요한 공백이 오더라도 자동으로 제거해주지 않으므로
 사용자가 |RemoveClassicSpaces| 옵션을 주어야 한다.
 
 \pkgkwd{typesetmodern} 환경은 고문헌 조판 중에 잠깐 현대 한국어를 조판하는 데
@@ -479,7 +473,7 @@ v2.0부터는 고문헌 조판에서 한글^^b7한자와 영문자가 붙어 나
   \cs{typesetmodern}을 사용한다. }
 
 고문헌 조판 중 \luatexko가 글자 사이에 삽입하는 미세간격을 사용자가
-영{\small(zero)}으로 강제하기 위해선 \pkgkwd{\inhibitglue} 명령을 이용한다.
+영{\small(零)}으로 강제하기 위해선 \pkgkwd{\inhibitglue} 명령을 이용한다.
 
 \section{세로쓰기}\label{sec:verttype}
 
@@ -505,7 +499,7 @@ v2.0부터는 고문헌 조판에서 한글^^b7한자와 영문자가 붙어 나
 세로쓰기에서 |CharRaise| 옵션의 효과에 대해서는 제\ref{sec:fontoption}절을
 참조.
 
-\begin{itemize}
+\begin{itemize}\itemsep 0pt plus 1pt minus 1pt
   \item 문서의 일부를 세로쓰기하려면
 |\begin{|\pkgkwd{vertical}|}{<dimen>}| \ldots\ |\end{vertical}|
 환경을 이용한다. 인자 |<dimen>|으로 세로쓰기 박스의 높이를 지시한다.
@@ -609,7 +603,7 @@ v2.0부터는 고문헌 조판에서 한글^^b7한자와 영문자가 붙어 나
 다음과 같이 명령을 주어 개인적으로 선호하는 기호를 드러냄표로 쓸 수
 있다.
 
-\begin{itemize}
+\begin{itemize}\itemsep 0pt plus 1pt minus 1pt
   \item |\def|\pkgkwd{\dotemphraise}|{0.4em }|:
 드러냄표를 피강조 글자 위로 끌어올리는 길이
   \item |\def|\pkgkwd{\dotemphchar}|{\bfseries ^^^^02d9}|: 드러냄표 기호 자체를 정의.
@@ -626,7 +620,7 @@ v2.0부터는 고문헌 조판에서 한글^^b7한자와 영문자가 붙어 나
 이처럼 글자별로 따로 루비를 달 필요가 없다.  관련 설정은 다음처럼
 한다.
 
-\begin{itemize}
+\begin{itemize}\itemsep 0pt plus 1pt minus 1pt
   \item \pkgkwd{\rubyfont}: 루비를 식자할 폰트를 지시해 둔다. 기본값은 현재 폰트%
 \footnote{%
   루비는 글자 크기가 작기 때문에 본문 폰트보다 약간 굵은 폰트로
@@ -678,7 +672,7 @@ ulem 패키지가 \luatexko와 궁합이 맞지 않아{\small (줄바꿈에 문�
 
 이들 명령 가운데 밑줄에 관련된 것에는 다음 설정을 할 수 있다.
 
-\begin{itemize}
+\begin{itemize}\itemsep 0pt plus 1pt minus 1pt
   \item |\def|\pkgkwd{\ulinedown}|{0.5ex}|: 밑줄을 베이스라인 아래로 끌어내리는 정도
   \item |\def|\pkgkwd{\ulinewidth}|{0.04em}|: 밑줄의 굵기
 \end{itemize}
@@ -747,7 +741,7 @@ ulem 패키지가 \luatexko와 궁합이 맞지 않아{\small (줄바꿈에 문�
   저러한 기능을 써야 할 경우가 있을까 의문이기 때문이다.
   사용자의 요청이 있으면 즉시 반영하겠다.
 }
-v2.0부터는 자동으로 수식 한글을 잡아주지 않는다.%
+버전 2.0부터는 자동으로 수식 한글을 잡아주지 않는다.%
 \pkgkwd*{\setmathhangulfont}
 \begin{verbatim}
   \setmathhangulfont{Noto Sans CJK KR}
@@ -808,12 +802,7 @@ v2.0부터는 자동으로 수식 한글을 잡아주지 않는다.%
   CP949라고도 하며 EUC-KR을 포함한다. }%
 로 되어 있는 파일을 처리할 때는 \pkgkwd{\luatexuhcinputencoding}|=1|을 선언한다.
 |0|을 할당하면 다시 UTF-8 입력으로 간주한다. \XeTeX의 \cs{XeTeXinputencoding}
-명령과 유사하나, 오직 한국어 문자만 처리할 수 있다.%
-\footnote{%
-  CP949 인코딩 파일시스템을 사용하는 윈도 운영체제에서의
-  한글 파일이름 불러오기 기능은 v2.0부터는 제공하지 않는다.
-  대신 |luatex -cmdx ...|, |lualatex -cmdx ...|와 같이 컴파일시 명령행에
-  |-cmdx| 옵션을 주면 된다고 하니 테스트해 보시기 바란다. }
+명령과 유사하나, 오직 한국어 문자만 처리할 수 있다.
 
 \begin{center}
 *\qquad *\qquad *
@@ -821,7 +810,7 @@ v2.0부터는 자동으로 수식 한글을 잡아주지 않는다.%
 
 \section*{주요 변경 이력}
 
-\begin{itemize}\linespread{1.1}\small
+\begin{itemize}\linespread{1.1}\small\itemsep 0pt plus 1pt minus 1pt
   \item[v4.0] ------
   \item \LaTeX 의 Tagged PDF 기능 지원
   \item[v3.2] ------

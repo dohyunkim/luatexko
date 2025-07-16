@@ -13,8 +13,8 @@
 
 luatexbase.provides_module {
   name        = 'luatexko',
-  date        = '2025/06/14',
-  version     = '4.0',
+  date        = '2025/07/16',
+  version     = '4.1',
   description = 'typesetting Korean with LuaTeX',
   author      = 'Dohyun Kim, Soojin Nam',
   license     = 'LPPL v1.3+',
@@ -1533,6 +1533,7 @@ local function draw_uline (head, curr, parent, t, final)
       setglue(g, len)
       g.subtype = subtype
       g.leader  = final and list or nodecopy(list)
+      g.attr = curr.attr
       local k = nodenew(kernid)
       k.kern = -len
       head = insert_before(head, start, g)
