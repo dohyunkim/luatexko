@@ -1394,7 +1394,7 @@ local function process_dotemph (head)
         if init then
           local basewd = curr.width
           if basewd >= fontoptions.en_size[curr.font] then
-            local box = nodecopy(dotemphbox[dotattr]).list
+            local box = nodecopy(dotemphbox[dotattr])
             -- bypass unwanted nodes injected by some other packages
             while box.id ~= hlistid do
               warning[[\dotemph should be an hbox]]
@@ -1446,6 +1446,7 @@ local function process_dotemph (head)
       curr.type    == lua_number then
 
       local val = curr.value
+      nodefree(dotemphbox[val].attr)
       nodefree(dotemphbox[val])
       dotemphbox[val] = nil
 

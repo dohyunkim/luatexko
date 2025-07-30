@@ -211,7 +211,7 @@
   \begingroup
   \count@=\luatexkodotemphcount
   \setbox\z@\hbox{\raise\dotemphraise\hbox{\luatexkodotemphchar}}%
-  \directlua{ luatexko.dotemphbox[\number\count@] = node.copy(tex.box[0]) }%
+  \directlua{ luatexko.dotemphbox[\number\count@] = node.copy(tex.box[0]).list }%
   \luatexkodotemphattr\count@ #1\relax
   \directlua{ luatexko.dotemphboundary(\number\count@) }%
   \endgroup }

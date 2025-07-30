@@ -116,6 +116,7 @@
 \def\XeTeX{\hologo{XeTeX}}
 \usepackage[hidelinks]{hyperref}
 
+\AddToHook{cmd/item/before}{\itemsep 0pt plus 1pt minus 1pt}
 \AddToHook{cmd/caption/before}{\linespread{1.3}\sffamily}
 \AddToHook{env/verbatim/begin}{\linespread{1.1}}
 \AssignSocketPlug{build/column/outputbox}{space-floats-footnotes}
@@ -336,7 +337,7 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
   \caption{옛한글 조판 보기}\label{fig:yethangul}
 \end{figure}
 
-\begin{description}\itemsep 0pt plus 1pt minus 1pt
+\begin{description}
   \item[InterHangul] \pkgkwd*{InterHangul}%
     {\addhangulfontfeature{InterHangul=.5ex}한글 글자
     사이의 자간}.  아래는 $-0.04$em 만큼 한글 자간을 지시한다.%
@@ -499,7 +500,7 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
 세로쓰기에서 |CharRaise| 옵션의 효과에 대해서는 제\ref{sec:fontoption}절을
 참조.
 
-\begin{itemize}\itemsep 0pt plus 1pt minus 1pt
+\begin{itemize}
   \item 문서의 일부를 세로쓰기하려면
 |\begin{|\pkgkwd{vertical}|}{<dimen>}| \ldots\ |\end{vertical}|
 환경을 이용한다. 인자 |<dimen>|으로 세로쓰기 박스의 높이를 지시한다.
@@ -603,7 +604,7 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
 다음과 같이 명령을 주어 개인적으로 선호하는 기호를 드러냄표로 쓸 수
 있다.
 
-\begin{itemize}\itemsep 0pt plus 1pt minus 1pt
+\begin{itemize}
   \item |\def|\pkgkwd{\dotemphraise}|{0.4em }|:
 드러냄표를 피강조 글자 위로 끌어올리는 길이
   \item |\def|\pkgkwd{\dotemphchar}|{\bfseries ^^^^02d9}|: 드러냄표 기호 자체를 정의.
@@ -620,7 +621,7 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
 이처럼 글자별로 따로 루비를 달 필요가 없다.  관련 설정은 다음처럼
 한다.
 
-\begin{itemize}\itemsep 0pt plus 1pt minus 1pt
+\begin{itemize}
   \item \pkgkwd{\rubyfont}: 루비를 식자할 폰트를 지시해 둔다. 기본값은 현재 폰트%
 \footnote{%
   루비는 글자 크기가 작기 때문에 본문 폰트보다 약간 굵은 폰트로
@@ -672,7 +673,7 @@ ulem 패키지가 \luatexko와 궁합이 맞지 않아{\small (줄바꿈에 문�
 
 이들 명령 가운데 밑줄에 관련된 것에는 다음 설정을 할 수 있다.
 
-\begin{itemize}\itemsep 0pt plus 1pt minus 1pt
+\begin{itemize}
   \item |\def|\pkgkwd{\ulinedown}|{0.5ex}|: 밑줄을 베이스라인 아래로 끌어내리는 정도
   \item |\def|\pkgkwd{\ulinewidth}|{0.04em}|: 밑줄의 굵기
 \end{itemize}
@@ -810,7 +811,7 @@ ulem 패키지가 \luatexko와 궁합이 맞지 않아{\small (줄바꿈에 문�
 
 \section*{주요 변경 이력}
 
-\begin{itemize}\linespread{1.1}\small\itemsep 0pt plus 1pt minus 1pt
+\begin{itemize}\linespread{1.1}\small
   \item[v4.0] ------
   \item \LaTeX 의 Tagged PDF 기능 지원
   \item[v3.2] ------
