@@ -1446,7 +1446,6 @@ local function process_dotemph (head)
       curr.type    == lua_number then
 
       local val = curr.value
-      nodefree(dotemphbox[val].attr)
       nodefree(dotemphbox[val])
       dotemphbox[val] = nil
 
