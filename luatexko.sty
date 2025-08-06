@@ -160,10 +160,17 @@
       \expandafter\expandafter\expandafter\luatexkotoks@appendchars
     \fi
   \fi }
-\def\luatexkodoluacode#1{\directlua{
+\def\luatexkodoluacode#1{\luatexkobsphack\directlua{
   \ifhmode luatexko.updateforcehangul(function() \fi
   #1
-  \ifhmode end) \fi }}
+  \ifhmode end) \fi }\luatexkoesphack}
+\ifcsname @bsphack\endcsname
+  \let\luatexkobsphack\@bsphack
+  \let\luatexkoesphack\@esphack
+\else
+  \let\luatexkobsphack\relax
+  \let\luatexkoesphack\relax
+\fi
 \protected\def\registerpunctuations#1{%
   \toks@{}\luatexkotoks@appendchars#1,*,\luatexkodoluacode{
     local t = luatexko.forcehangulchars
