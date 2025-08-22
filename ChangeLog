@@ -1,9 +1,12 @@
-2025-xx-xx	Dohyun Kim <nomosnomos at gmail com>
+2025-08-22	Dohyun Kim <nomosnomos at gmail com>
 
 	Version 4.2
 
 	* luatexko.sty:
 	- bsphack/esphack for punctuation-related commands
+
+	* luatexko.lua:
+	- fix a bug related to spacing between CJK punctuation and ruby
 
 2025-07-16	Dohyun Kim <nomosnomos at gmail com>
 

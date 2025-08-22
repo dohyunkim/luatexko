@@ -13,8 +13,8 @@
 
 luatexbase.provides_module {
   name        = 'luatexko',
-  date        = '2025/07/16',
-  version     = '4.1',
+  date        = '2025/08/22',
+  version     = '4.2',
   description = 'typesetting Korean with LuaTeX',
   author      = 'Dohyun Kim, Soojin Nam',
   license     = 'LPPL v1.3+',
@@ -811,6 +811,9 @@ local allowbreak_false_nodes = {
 
 local function is_blocking_node (curr)
   local id, subtype = curr.id, curr.subtype
+  if id == glueid and curr.width == 0 then
+    return false
+  end
   return allowbreak_false_nodes[id] or id == kernid and subtype == userkern
 end
 
