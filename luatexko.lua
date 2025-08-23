@@ -1005,6 +1005,9 @@ local function do_interlatincjk_option (head, curr, pc, pf, pcl, c, cf, par)
     if brb then
       local f = cc == 1 and cf or pf
       local dim = fontoptions.interlatincjk[f]
+      -- in case of Latin + pxrubrica ruby
+      local dim2 = fontoptions.en_size[pf]/fontoptions.en_size[f] * dim
+      if dim2 > dim then dim = dim2 end
       if dim then
         local ict = old and intercharclass[pcl][ccl] -- under classic env. only
         if ict then
