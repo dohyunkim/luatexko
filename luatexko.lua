@@ -13,8 +13,8 @@
 
 luatexbase.provides_module {
   name        = 'luatexko',
-  date        = '2025/08/22',
-  version     = '4.2',
+  date        = '2025/08/23',
+  version     = '4.3',
   description = 'typesetting Korean with LuaTeX',
   author      = 'Dohyun Kim, Soojin Nam',
   license     = 'LPPL v1.3+',
@@ -811,13 +811,14 @@ local allowbreak_false_nodes = {
 
 local function is_blocking_node (curr)
   local id, subtype = curr.id, curr.subtype
-  if id == glueid and curr.width == 0 then
-    return false
+  if id == glueid and curr.width == 0 and curr.stretch == 0 and curr.shrink == 0 then
+    return false -- for pxrubrica
   end
   return allowbreak_false_nodes[id] or id == kernid and subtype == userkern
 end
 
 local function hbox_char_font (box, init, glyfonly)
+  if has_attribute(box,rubyattr) then glyfonly = true end
   local mynext = init and getnext  or getprev
   local curr   = init and box.list or nodeslide(box.list)
   while curr do
@@ -897,27 +898,27 @@ local function maybe_linebreak (head, curr, pc, pcl, cc, old, fid, par)
       head = insert_glue_before(head, curr, par, br, brb, old, ict, dim, fid)
     end
   end
-  return head, cc, ccl
+  return head, cc, ccl, fid
 end
 
 local function process_linebreak (head, par)
-  local curr, pc, pcl = head, false, 0
+  local curr, pc, pcl, pf = head, false, 0, false
   while curr do
     local id = curr.id
     if id == glyphid then
       local c = has_attribute(curr, unicodeattr) or curr.char
       if c and not is_combining(curr.char) then -- we are in pre-shaping stage
         local old = has_attribute(curr, classicattr)
-        head, pc, pcl = maybe_linebreak(head, curr, pc, pcl, c, old, curr.font, par)
+        head, pc, pcl, pf = maybe_linebreak(head, curr, pc, pcl, c, old, curr.font, par)
       end
 
     elseif id == hlistid and curr.list then
       local old = has_attribute(curr, classicattr)
       local c, f = hbox_char_font(curr, true)
       if c and f then
-        head = maybe_linebreak(head, curr, pc, pcl, c, old, f, par)
+        head = maybe_linebreak(head, curr, pc, pcl, c, old, pf or f, par)
       end
-      pc = hbox_char_font(curr)
+      pc, pf = hbox_char_font(curr)
       pcl = pc and get_char_class(pc, old) or 0
 
     elseif id == whatsitid and curr.mode == directmode then
@@ -925,15 +926,15 @@ local function process_linebreak (head, par)
       if c and fin and glyf then
         local old = has_attribute(glyf, classicattr)
         head = maybe_linebreak(head, curr, pc, pcl, c, old, glyf.font, par)
-        pc, pcl, curr = fin, 0, goto_end_actualtext(curr)
+        pc, pcl, curr, pf = fin, 0, goto_end_actualtext(curr), glyf.font
       end
 
     elseif id == mathid then
-      pc, pcl, curr = 0x30, 0, end_of_math(curr)
+      pc, pcl, curr, pf = 0x30, 0, end_of_math(curr), false
     elseif id == dirid then
-      pc, pcl = curr.dir:sub(1,1) == "-" and 0x30, 0 -- pop dir
+      pc, pcl, pf = curr.dir:sub(1,1) == "-" and 0x30, 0, false -- pop dir
     elseif is_blocking_node(curr) then
-      pc, pcl = false, 0
+      pc, pcl, pf = false, 0, false
     end
     curr = getnext(curr)
   end
@@ -952,17 +953,17 @@ local function do_interhangul_option (head, curr, pc, c, fontid, par)
     end
   end
 
-  return head, cc
+  return head, cc, fontid
 end
 
 local function process_interhangul (head, par)
-  local curr, pc = head, 0
+  local curr, pc, pf = head, 0, false
   while curr do
     local id = curr.id
     if id == glyphid then
       local c = has_attribute(curr, unicodeattr) or curr.char
       if c and not is_combining(curr.char) then -- we are in pre-shaping stage
-        head, pc = do_interhangul_option(head, curr, pc, c, curr.font, par)
+        head, pc, pf = do_interhangul_option(head, curr, pc, c, curr.font, par)
 
         if is_jungsong(c) or is_jongsong(c) or hangul_tonemark[c] then
           pc = 1
@@ -972,22 +973,22 @@ local function process_interhangul (head, par)
     elseif id == hlistid and curr.list then
       local c, f = hbox_char_font(curr, true)
       if c and f then
-        head = do_interhangul_option(head, curr, pc, c, f, par)
+        head = do_interhangul_option(head, curr, pc, c, pf or f, par)
       end
-      c = hbox_char_font(curr)
+      c, pf = hbox_char_font(curr)
       pc = c and is_hangul_jamo(c) and 1 or 0
 
     elseif id == whatsitid and curr.mode == directmode then
       local glyf, c = get_actualtext(curr)
       if c and glyf then
         head = do_interhangul_option(head, curr, pc, c, glyf.font, par)
-        pc, curr = 1, goto_end_actualtext(curr)
+        pc, curr, pf = 1, goto_end_actualtext(curr), glyf.font
       end
 
     elseif id == mathid then
-      pc, curr = 0, end_of_math(curr)
+      pc, curr, pf = 0, end_of_math(curr), false
     elseif is_blocking_node(curr) or id == dirid then
-      pc = 0
+      pc, pf = 0, false
     end
     curr = getnext(curr)
   end

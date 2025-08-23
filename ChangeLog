@@ -1,3 +1,9 @@
+2025-08-23	Dohyun Kim <nomosnomos at gmail com>
+
+	Version 4.3
+
+	* luatexko.lua: more fix over spacing before pxrubrica ruby
+
 2025-08-22	Dohyun Kim <nomosnomos at gmail com>
 
 	Version 4.2
