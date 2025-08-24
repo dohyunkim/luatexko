@@ -1,3 +1,13 @@
+2025-xx-xx	Dohyun Kim <nomosnomos at gmail com>
+
+	Version 4.4
+
+	* luatexko.lua:
+	- ignore non-glyph nodes in hbox_char_font(); so a box is now treated
+	just like a character even if it starts or ends with a glue.
+	- insert 0pt userkern between ruby and base boxes, to prevent possible
+	glue made possible by previous change
+
 2025-08-23	Dohyun Kim <nomosnomos at gmail com>
 
 	Version 4.3

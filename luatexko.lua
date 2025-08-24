@@ -817,8 +817,7 @@ local function is_blocking_node (curr)
   return allowbreak_false_nodes[id] or id == kernid and subtype == userkern
 end
 
-local function hbox_char_font (box, init, glyfonly)
-  if has_attribute(box,rubyattr) then glyfonly = true end
+local function hbox_char_font (box, init, glyfonly) -- ignore glyfonly
   local mynext = init and getnext  or getprev
   local curr   = init and box.list or nodeslide(box.list)
   while curr do
@@ -830,8 +829,6 @@ local function hbox_char_font (box, init, glyfonly)
       end
     elseif curr.list then
       return hbox_char_font(curr, init, glyfonly)
-    elseif not glyfonly and is_blocking_node(curr) then
-      return
     end
     curr = mynext(curr)
   end
@@ -1681,6 +1678,10 @@ local function process_ruby_post_linebreak (head)
 
           ruby.shift = shift - ascender - descender - ruby_t[2] -- rubysep
           head = insert_before(head, curr, ruby)
+
+          local k = nodenew(kernid)
+          k.subtype, k.kern = userkern, 0
+          head = insert_before(head, curr, k) -- prevent possible glue insertion (unhbox etc)
         end
         rubybox[rubyid] = nil
       end
