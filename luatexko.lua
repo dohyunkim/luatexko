@@ -13,8 +13,8 @@
 
 luatexbase.provides_module {
   name        = 'luatexko',
-  date        = '2025/08/23',
-  version     = '4.3',
+  date        = '2025/08/24',
+  version     = '4.4',
   description = 'typesetting Korean with LuaTeX',
   author      = 'Dohyun Kim, Soojin Nam',
   license     = 'LPPL v1.3+',
