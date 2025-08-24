@@ -7,6 +7,7 @@
 	just like a character even if it starts or ends with a glue.
 	- insert 0pt userkern between ruby and base boxes, to prevent possible
 	glue made possible by previous change
+	- insert the same userken between base character and dotemph box
 
 2025-08-23	Dohyun Kim <nomosnomos at gmail com>
 

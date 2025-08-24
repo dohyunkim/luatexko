@@ -1442,6 +1442,10 @@ local function process_dotemph (head)
 
             box.width = 0
             head, curr = insert_after(head, curr, box)
+
+            local k = nodenew(kernid)
+            k.subtype, k.kern = userkern, 0
+            head = insert_before(head, curr, k)
           end
         end
       end
@@ -1541,6 +1545,7 @@ local function draw_uline (head, curr, parent, t, final)
       g.attr = curr.attr
       local k = nodenew(kernid)
       k.kern = -len
+      k.subtype = userkern
       head = insert_before(head, start, g)
       head = insert_before(head, start, k)
     end
