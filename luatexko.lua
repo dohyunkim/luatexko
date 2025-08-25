@@ -912,10 +912,10 @@ local function process_linebreak (head, par)
     elseif id == hlistid and curr.list then
       local old = has_attribute(curr, classicattr)
       local c, f = hbox_char_font(curr, true)
-      if c and f then
-        head = maybe_linebreak(head, curr, pc, pcl, c, old, pf or f, par)
+      if c and f and pf then
+        head = maybe_linebreak(head, curr, pc, pcl, c, old, pf, par)
       end
-      pc, pf = hbox_char_font(curr)
+      pc = hbox_char_font(curr)
       pcl = pc and get_char_class(pc, old) or 0
 
     elseif id == whatsitid and curr.mode == directmode then
@@ -969,10 +969,10 @@ local function process_interhangul (head, par)
 
     elseif id == hlistid and curr.list then
       local c, f = hbox_char_font(curr, true)
-      if c and f then
-        head = do_interhangul_option(head, curr, pc, c, pf or f, par)
+      if c and f and pf then
+        head = do_interhangul_option(head, curr, pc, c, pf, par)
       end
-      c, pf = hbox_char_font(curr)
+      c = hbox_char_font(curr)
       pc = c and is_hangul_jamo(c) and 1 or 0
 
     elseif id == whatsitid and curr.mode == directmode then
