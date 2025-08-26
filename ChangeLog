@@ -1,3 +1,11 @@
+2025-08-27	Dohyun Kim <nomosnomos at gmail com>
+
+	Version 4.5
+
+	* luatexko.lua:
+	- new function cjk_punctuation_spacing for classic mode
+	- box is sort of hanja/hangul character in linebreak process.
+
 2025-08-24	Dohyun Kim <nomosnomos at gmail com>
 
 	Version 4.4

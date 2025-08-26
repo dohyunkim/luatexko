@@ -13,8 +13,8 @@
 
 luatexbase.provides_module {
   name        = 'luatexko',
-  date        = '2025/08/24',
-  version     = '4.4',
+  date        = '2025/08/27',
+  version     = '4.5',
   description = 'typesetting Korean with LuaTeX',
   author      = 'Dohyun Kim, Soojin Nam',
   license     = 'LPPL v1.3+',
@@ -113,6 +113,7 @@ local dotemphattr      = attributes.luatexkodotemphattr
 local rubyattr         = attributes.luatexkorubyattr
 local hangulbyhangulattr = attributes.luatexkohangulbyhangulattr
 local hanjabyhanjaattr   = attributes.luatexkohanjabyhanjaattr
+local inhibitglueattr  = attributes.luatexkoinhibitglueattr
 
 local unicodeattr = new_attribute"luatexkounicodeattr"
 
@@ -811,13 +812,10 @@ local allowbreak_false_nodes = {
 
 local function is_blocking_node (curr)
   local id, subtype = curr.id, curr.subtype
-  if id == glueid and curr.width == 0 and curr.stretch == 0 and curr.shrink == 0 then
-    return false -- for pxrubrica
-  end
   return allowbreak_false_nodes[id] or id == kernid and subtype == userkern
 end
 
-local function hbox_char_font (box, init, glyfonly) -- ignore glyfonly
+local function hbox_char_font (box, init)
   local mynext = init and getnext  or getprev
   local curr   = init and box.list or nodeslide(box.list)
   while curr do
@@ -828,7 +826,7 @@ local function hbox_char_font (box, init, glyfonly) -- ignore glyfonly
         return c, curr.font
       end
     elseif curr.list then
-      return hbox_char_font(curr, init, glyfonly)
+      return hbox_char_font(curr, init)
     end
     curr = mynext(curr)
   end
@@ -898,6 +896,57 @@ local function maybe_linebreak (head, curr, pc, pcl, cc, old, fid, par)
   return head, cc, ccl, fid
 end
 
+local function process_cjk_punctuation_spacing (head, par)
+  local pcl, pc, pf, old = 0, 0x4E00, false
+  local curr = head
+  if par then
+    while curr do
+      if curr.id == localparid or curr.id == hlistid and curr.subtype == indentbox then
+      else
+        break
+      end
+      curr = getnext(curr)
+    end
+    if curr.char and charclass[curr.char] == 1 then -- 1 is always 1
+      pc = false
+    end
+  end
+  while curr do
+    local id = curr.id
+    if id == glyphid and curr.lang ~= nohyphen then
+      local cc = curr.char
+      local cf = charclass[cc] == 0 and pf or curr.font
+      old = has_attribute(curr, classicattr)
+      local ccl = get_char_class(cc, old)
+      if old and intercharclass[pcl][ccl] then
+        head = maybe_linebreak(head, curr, pc, pcl, cc, old, cf, par)
+      end
+      pcl, pc, pf = ccl, cc, curr.font
+    elseif id == glueid and has_attribute(curr, inhibitglueattr) then
+      pcl, pc, pf = 0, false, false
+    else
+      if pf and (not par or node.length(curr) > 2) then -- penalty, parfillskip
+        old = has_attribute(curr, classicattr)
+        if old and intercharclass[pcl][0] then
+          head = maybe_linebreak(head, curr, pc, pcl, 0x4E00, old, pf, par)
+        end
+      end
+      pcl, pc, pf = 0, 0x4E00, false
+    end
+    curr = getnext(curr)
+  end
+  if not par and pf and old then
+    local ict = intercharclass[pcl][0]
+    if ict then
+      local gl = nodenew(glueid)
+      local en = fontoptions.en_size[pf]
+      setglue(gl, en * ict[1], nil, en * ict[2])
+      insert_after(head, nodeslide(head), gl)
+    end
+  end
+  return head
+end
+
 local function process_linebreak (head, par)
   local curr, pc, pcl, pf = head, false, 0, false
   while curr do
@@ -911,12 +960,11 @@ local function process_linebreak (head, par)
 
     elseif id == hlistid and curr.list then
       local old = has_attribute(curr, classicattr)
-      local c, f = hbox_char_font(curr, true)
-      if c and f and pf then
-        head = maybe_linebreak(head, curr, pc, pcl, c, old, pf, par)
+      if pf then
+        head = maybe_linebreak(head, curr, pc, pcl, 0x4E00, old, pf, par)
       end
-      pc = hbox_char_font(curr)
-      pcl = pc and get_char_class(pc, old) or 0
+      _, pf = hbox_char_font(curr)
+      pc, pcl = 0x4E00, 0
 
     elseif id == whatsitid and curr.mode == directmode then
       local glyf, c, fin = get_actualtext(curr)
@@ -968,12 +1016,11 @@ local function process_interhangul (head, par)
       end
 
     elseif id == hlistid and curr.list then
-      local c, f = hbox_char_font(curr, true)
-      if c and f and pf then
-        head = do_interhangul_option(head, curr, pc, c, pf, par)
+      if pf then
+        head = do_interhangul_option(head, curr, pc, 0xAC00, pf, par)
       end
-      c = hbox_char_font(curr)
-      pc = c and is_hangul_jamo(c) and 1 or 0
+      _, pf = hbox_char_font(curr)
+      pc = 1
 
     elseif id == whatsitid and curr.mode == directmode then
       local glyf, c = get_actualtext(curr)
@@ -1007,7 +1054,6 @@ local function do_interlatincjk_option (head, curr, pc, pf, pcl, c, cf, par)
         if ict then
           dim = fontoptions.intercharacter[f] or 0
         elseif f == cf then
-          -- in case of Latin + pxrubrica ruby
           local dim2 = fontoptions.en_size[pf]/fontoptions.en_size[f] * dim
           if dim2 > dim then dim = dim2 end
         end
@@ -1031,18 +1077,12 @@ local function process_interlatincjk (head, par)
       end
 
     elseif id == hlistid and curr.list then
-      local c, f = hbox_char_font(curr, true)
-      if c and f then
-        head = do_interlatincjk_option(head, curr, pc, pf, pcl, c, f, par)
+      local _, f = hbox_char_font(curr, true)
+      if f then
+        head = do_interlatincjk_option(head, curr, pc, pf, pcl, 0x4E00, f, par)
       end
-      c, f = hbox_char_font(curr)
-      if c and breakable_after[c] then
-        pc = is_cjk_char(c) and 1 or is_noncjk_char(c) and 2 or 0
-      else
-        pc = 0
-      end
-      pcl = c and get_char_class(c, has_attribute(curr, classicattr)) or 0
-      pf  = f or 0
+      _, f = hbox_char_font(curr)
+      pc, pcl, pf = 1, 0, f or 0
 
     elseif id == whatsitid and curr.mode == directmode then
       local glyf, c = get_actualtext(curr)
@@ -1127,7 +1167,6 @@ local function process_remove_spaces (head)
     local id = curr.id
     if id == glueid then
       if curr.subtype == spaceskip and has_attribute(curr, classicattr) then
-
         for k, v in pairs{ p = getprev(curr), n = getnext(curr) } do
           local ok
           while v do
@@ -1158,6 +1197,12 @@ local function process_remove_spaces (head)
             tableinsert(to_free, curr)
             break
           end
+        end
+      elseif curr.width == 0 and curr.stretch == 0 and curr.shrink == 0 then
+        local attr = has_attribute(curr, rubyattr)
+        if attr and attr < 0 then -- pxrubrica
+          head = noderemove(head, curr)
+          tableinsert(to_free, curr)
         end
       end
     elseif id == mathid then
@@ -1433,7 +1478,7 @@ local function process_dotemph (head)
             if shift ~= 0 then
               local list = box.list
               local k = nodenew(kernid)
-              k.kern = shift
+              k.kern, k.subtype = shift, userkern
               box.list = insert_before(list, list, k)
             end
 
@@ -1667,7 +1712,7 @@ local function process_ruby_post_linebreak (head)
           if side ~= 0 then
             local list = ruby.list
             local k = nodenew(kernid)
-            k.kern = side
+            k.kern, k.subtype = side, userkern
             ruby.list = insert_before(list, list, k)
           end
           ruby.width = 0
@@ -2253,6 +2298,7 @@ add_to_callback("pre_shaping_filter", function(h, gc)
            or gc == "insert"
            or gc == "vcenter"
   h = call_callback("luatexko_prelinebreak_first", h, par)
+  h = process_cjk_punctuation_spacing(h, par)
   h = call_callback("luatexko_prelinebreak_second", h, par)
   return process_linebreak(h, par)
 end, "luatexko.pre_shaping_filter")

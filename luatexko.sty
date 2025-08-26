@@ -14,7 +14,7 @@
 \ifdefined\luatexkohangulfontattr \endinput\fi
 \ifdefined\ProvidesPackage
   \NeedsTeXFormat{LaTeX2e}[2025/06/01]
-  \ProvidesPackage{luatexko}[2025/08/24 v4.4 typesetting Korean with LuaTeX]
+  \ProvidesPackage{luatexko}[2025/08/27 v4.5 typesetting Korean with LuaTeX]
   \RequirePackage{luatexbase}
   \RequirePackage{fontspec}[2020/02/03]
   \let\luatexkoselectfont\selectfont
@@ -35,6 +35,7 @@
 \newattribute\luatexkorubyattr \chardef\luatexkorubyalloc\allocationnumber
 \newattribute\luatexkohangulbyhangulattr
 \newattribute\luatexkohanjabyhanjaattr
+\newattribute\luatexkoinhibitglueattr
 \directlua{ require"luatexko" }
 % classics
 % 0: horizontal KO, JP
@@ -69,7 +70,7 @@
   \fi
   }
 \protected\def\typesetmodern{\unsetattribute\luatexkoclassicattr}
-\protected\def\inhibitglue{\penalty\z@}
+\protected\def\inhibitglue{\begingroup\luatexkoinhibitglueattr\@ne\hskip\z@skip\endgroup}
 \protected\def\japanese{% 0, 5
   \chardef\luatexkolangCJK=\@ne
   \ifcase\luatexkoclassicattr
@@ -995,7 +996,10 @@
     \def\는{는}\def\은{은}\def\을{을}\def\를{를}\def\와{와}\def\과{과}%
     \def\가{가}\def\이{이}\def\라{라}\def\으{으}\def\로{로}%
     \def\hellipsis{...}}}
-\AddToHook{package/pxrubrica/after}{\let\ruby\jruby}
+\AddToHook{package/pxrubrica/after}{\let\ruby\jruby
+  \AddToHook{cmd/pxrr@jprologue/before}{\begingroup\luatexkorubyattr\m@ne}
+  \AddToHook{cmd/pxrr@jepilogue/after}{\endgroup}
+}
 % misc
 \RequirePackage{kolabels-utf}
 \protected\def\hellipsis{\char"2026\char"2026 }
