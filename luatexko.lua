@@ -955,15 +955,17 @@ local function process_linebreak (head, par)
       local c = has_attribute(curr, unicodeattr) or curr.char
       if c and not is_combining(curr.char) then -- we are in pre-shaping stage
         local old = has_attribute(curr, classicattr)
-        head, pc, pcl, pf = maybe_linebreak(head, curr, pc, pcl, c, old, curr.font, par)
+        local f = is_noncjk_char(c) and pf or curr.font
+        head, pc, pcl, pf = maybe_linebreak(head, curr, pc, pcl, c, old, f, par)
       end
 
     elseif id == hlistid and curr.list then
-      local old = has_attribute(curr, classicattr)
       if pf then
+        local old = has_attribute(curr, classicattr)
         head = maybe_linebreak(head, curr, pc, pcl, 0x4E00, old, pf, par)
+      else
+        _, pf = hbox_char_font(curr)
       end
-      _, pf = hbox_char_font(curr)
       pc, pcl = 0x4E00, 0
 
     elseif id == whatsitid and curr.mode == directmode then
@@ -975,11 +977,11 @@ local function process_linebreak (head, par)
       end
 
     elseif id == mathid then
-      pc, pcl, curr, pf = 0x30, 0, end_of_math(curr), false
+      pc, pcl, curr = 0x30, 0, end_of_math(curr)
     elseif id == dirid then
-      pc, pcl, pf = curr.dir:sub(1,1) == "-" and 0x30, 0, false -- pop dir
+      pc, pcl = curr.dir:sub(1,1) == "-" and 0x30, 0 -- pop dir
     elseif is_blocking_node(curr) then
-      pc, pcl, pf = false, 0, false
+      pc, pcl = false, 0
     end
     curr = getnext(curr)
   end
@@ -1014,13 +1016,6 @@ local function process_interhangul (head, par)
           pc = 1
         end
       end
-
-    elseif id == hlistid and curr.list then
-      if pf then
-        head = do_interhangul_option(head, curr, pc, 0xAC00, pf, par)
-      end
-      _, pf = hbox_char_font(curr)
-      pc = 1
 
     elseif id == whatsitid and curr.mode == directmode then
       local glyf, c = get_actualtext(curr)
@@ -1072,17 +1067,22 @@ local function process_interlatincjk (head, par)
     if id == glyphid then
       local c = has_attribute(curr, unicodeattr) or curr.char
       if c and not is_combining(curr.char) then -- we are in pre-shaping stage
-        head, pc, pf, pcl = do_interlatincjk_option(head, curr, pc, pf, pcl, c, curr.font, par)
-        pc = breakable_after[c] and pc or 0
+        if pc < 0 and is_noncjk_char(c) then -- box + latin
+          if pf then
+            local old = has_attribute(curr, classicattr)
+            local dim = fontoptions.intercharacter[pf] or 0
+            head = insert_glue_before(head, curr, par, true, false, old, false, dim, pf)
+          end
+          pc, pcl, pf = 2, 0, curr.font
+        else
+          head, pc, pf, pcl = do_interlatincjk_option(head, curr, pc, pf, pcl, c, curr.font, par)
+          pc = breakable_after[c] and pc or 0
+        end
       end
 
     elseif id == hlistid and curr.list then
-      local _, f = hbox_char_font(curr, true)
-      if f then
-        head = do_interlatincjk_option(head, curr, pc, pf, pcl, 0x4E00, f, par)
-      end
-      _, f = hbox_char_font(curr)
-      pc, pcl, pf = 1, 0, f or 0
+      local _, f = hbox_char_font(curr)
+      pc, pcl, pf = -1, 0, pf > 0 and pf or f or 0
 
     elseif id == whatsitid and curr.mode == directmode then
       local glyf, c = get_actualtext(curr)
