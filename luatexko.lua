@@ -1038,31 +1038,38 @@ local function do_interlatincjk_option (head, curr, pc, pf, pcl, c, cf, par)
   local cc = is_cjk_char(c) and 1 or is_noncjk_char(c) and 2 or 0
   local old = has_attribute(curr, classicattr)
   local ccl = get_char_class(c, old)
+  local f = cc == 1 and cf or pf
 
   if cc*pc == 2 and curr.lang ~= nohyphen then
     local brb = cc == 2 or breakable_before[c] -- numletter != br_before
     if brb then
-      local f = cc == 1 and cf or pf
-      local dim = fontoptions.interlatincjk[f]
-      if dim then
+      local dimc = fontoptions.interlatincjk[cf] or 0
+      local dimp = fontoptions.interlatincjk[pf] or 0
+      local dim  = mathmax(dimc, dimp)
+      if dim ~= 0 then
         local ict = old and intercharclass[pcl][ccl] -- under classic env. only
         if ict then
           dim = fontoptions.intercharacter[f] or 0
-        elseif f == cf then
-          local dim2 = fontoptions.en_size[pf]/fontoptions.en_size[f] * dim
-          if dim2 > dim then dim = dim2 end
         end
         head = insert_glue_before(head, curr, par, true, brb, old, ict, dim, f)
       end
-      cf = f
     end
   end
 
-  return head, cc, cf, ccl
+  return head, cc, f, ccl
 end
 
 local function process_interlatincjk (head, par)
-  local curr, pc, pf, pcl = head, 0, 0, 0
+  local curr, pc, pf, pcl = head, 0, false, 0
+  while curr do
+    if curr.id == glyphid and is_cjk_char(curr.char) then
+      pf = curr.font
+      break
+    end
+    curr = getnext(curr)
+  end
+
+  curr = head
   while curr do
     local id = curr.id
     if id == glyphid then
@@ -1074,10 +1081,9 @@ local function process_interlatincjk (head, par)
 
     elseif id == hlistid and curr.list then
       local _, f = hbox_char_font(curr, true)
-      f = pf > 0 and pf or f or 0
-      head = do_interlatincjk_option(head, curr, pc, pf, pcl, 0x4E00, f, par)
+      head = do_interlatincjk_option(head, curr, pc, pf, pcl, 0x4E00, pf or f, par)
       _, f = hbox_char_font(curr)
-      pc, pcl, pf = 1, 0, pf > 0 and pf or f or 0
+      pc, pcl, pf = 1, 0, pf or f
 
     elseif id == whatsitid and curr.mode == directmode then
       local glyf, c = get_actualtext(curr)
@@ -1100,7 +1106,7 @@ local function process_interlatincjk (head, par)
       pc, pcl = 0, 0
 
     elseif is_blocking_node(curr) then
-      pc, pf, pcl = 0, 0, 0
+      pc, pcl = 0, 0
     end
 
     curr = getnext(curr)
