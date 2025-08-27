@@ -6,6 +6,9 @@
 	- new function cjk_punctuation_spacing for classic mode
 	- hbox is sort of hanja character in linebreak process.
 
+	* luatexko.sty:
+	- remove blocking glues inserted by pxrubrica
+
 2025-08-24	Dohyun Kim <nomosnomos at gmail com>
 
 	Version 4.4
