@@ -999,6 +999,20 @@
 \AddToHook{package/pxrubrica/after}{\let\ruby\jruby
   \AddToHook{cmd/pxrr@jprologue/before}{\begingroup\luatexkorubyattr\m@ne}
   \AddToHook{cmd/pxrr@jepilogue/after}{\endgroup}
+  \directlua{
+    luatexbase.add_to_callback("pre_shaping_filter", function(head)
+      local tofree = {}
+      for n in node.traverse_id(node.id"glue", head) do
+        if n.width == 0 and n.stretch == 0 and n.shrink == 0
+          and node.has_attribute(n, \the\luatexkorubyalloc, -1) then
+          head = node.remove(head, n)
+          table.insert(tofree, n)
+        end
+      end
+      for _,v in ipairs(tofree) do node.free(v) end
+      return head
+    end, "luatexko.pxrubrica.removeglues", 1)
+  }
 }
 % misc
 \RequirePackage{kolabels-utf}

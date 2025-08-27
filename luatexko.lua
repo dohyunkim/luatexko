@@ -1075,9 +1075,8 @@ local function process_interlatincjk (head, par)
         if c and not is_combining(curr.char) then -- we are in pre-shaping stage
           if postbox and is_noncjk_char(c) then -- box + latin
             if pf > 0 then -- process_linebreak
-              local old = has_attribute(curr, classicattr)
               local dim = fontoptions.intercharacter[pf] or 0
-              head = insert_glue_before(head, curr, par, true, false, old, false, dim, pf)
+              head = insert_glue_before(head, curr, par, true, false, false, false, dim, pf)
             end
             pc, pcl = 2, 0
           else
@@ -1202,12 +1201,6 @@ local function process_remove_spaces (head)
             tableinsert(to_free, curr)
             break
           end
-        end
-      elseif curr.width == 0 and curr.stretch == 0 and curr.shrink == 0 then
-        local attr = has_attribute(curr, rubyattr)
-        if attr and attr < 0 then -- pxrubrica
-          head = noderemove(head, curr)
-          tableinsert(to_free, curr)
         end
       end
     elseif id == mathid then
