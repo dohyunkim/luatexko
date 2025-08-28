@@ -100,6 +100,7 @@ local italcorr   = 3
 local lua_number = 100
 local lua_value  = 108
 local spaceskip  = 13
+local parfillskip = 15
 local indentbox  = 3
 local nohyphen = registernumber"l@nohyphenation" or -1 -- verbatim
 local langkor  = registernumber"koreanlanguage"  or 16383
@@ -807,7 +808,6 @@ local allowbreak_false_nodes = {
   [ruleid]    = true,
   [discid]    = true,
   [glueid]    = true,
-  [penaltyid] = true,
 }
 
 local function is_blocking_node (curr)
@@ -853,15 +853,22 @@ local function goto_end_actualtext (curr)
 end
 
 local function insert_glue_before (head, curr, par, br, brb, classic, ict, dim, fid)
-  local pn = nodenew(penaltyid)
-  if not br then
-    pn.penalty = 10000
-  elseif type(brb) == "number" then
-    pn.penalty = brb
-  elseif par and nodecount(glyphid, curr) <= 2 then
-    pn.penalty = 1000 -- supress orphan
+  local prev = getprev(curr)
+
+  if prev and prev.penalty then
+    -- repect user's penalty
   else
-    pn.penalty = 50
+    local pn = nodenew(penaltyid)
+    if not br then
+      pn.penalty = 10000
+    elseif type(brb) == "number" then
+      pn.penalty = brb
+    elseif par and nodecount(glyphid, curr) <= 2 then
+      pn.penalty = 1000 -- supress orphan
+    else
+      pn.penalty = 50
+    end
+    head = insert_before(head, curr, pn)
   end
 
   dim = dim or 0
@@ -875,10 +882,8 @@ local function insert_glue_before (head, curr, par, br, brb, classic, ict, dim, 
     setglue(gl, dim, str, str*0.6)
   end
 
-  local prev = getprev(curr)
   gl.attr = prev and prev.attr or curr.attr -- for less tagging
 
-  head = insert_before(head, curr, pn)
   return insert_before(head, curr, gl)
 end
 
@@ -907,7 +912,7 @@ local function process_cjk_punctuation_spacing (head, par)
       end
       curr = getnext(curr)
     end
-    if curr.char and charclass[curr.char] == 1 then -- 1 is always 1
+    if curr.char then
       pc = false
     end
   end
@@ -922,16 +927,16 @@ local function process_cjk_punctuation_spacing (head, par)
         head = maybe_linebreak(head, curr, pc, pcl, cc, old, cf, par)
       end
       pcl, pc, pf = ccl, cc, curr.font
-    elseif id == glueid and has_attribute(curr, inhibitglueattr) then
-      pcl, pc, pf = 0, false, false
-    else
-      if pf and (not par or node.length(curr) > 2) then -- penalty, parfillskip
-        old = has_attribute(curr, classicattr)
-        if old and intercharclass[pcl][0] then
+    elseif is_blocking_node(curr) then
+      if id == glueid and (curr.subtype >= spaceskip and curr.subtype <= parfillskip
+        or has_attribute(curr, inhibitglueattr)) then
+        pcl, pc, pf = 0, false, false
+      else
+        if pf and old and intercharclass[pcl][0] then
           head = maybe_linebreak(head, curr, pc, pcl, 0x4E00, old, pf, par)
         end
+        pcl, pc, pf = 0, 0x4E00, false
       end
-      pcl, pc, pf = 0, 0x4E00, false
     end
     curr = getnext(curr)
   end
