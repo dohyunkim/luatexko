@@ -1,3 +1,11 @@
+
+	* luatexko.lua:
+	- inspect the most outer nodes to get character code of a box
+	in linebreak processes
+
+	* luatexko.sty:
+	- revert previous release
+
 2025-08-27	Dohyun Kim <nomosnomos at gmail com>
 
 	Version 4.5

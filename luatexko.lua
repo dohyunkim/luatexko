@@ -971,11 +971,13 @@ local function process_linebreak (head, par)
 
     elseif id == hlistid and is_blocking_node(curr) then
       local old = has_attribute(curr, classicattr)
-      local c, f = hbox_char_font(curr, true)
+      local n = curr.head or {}
+      local c, f = n.char, n.font
       if c then
         head = maybe_linebreak(head, curr, pc, pcl, c, old, pf or f, par)
       end
-      c, f = hbox_char_font(curr)
+      n = curr.list and node.tail(curr.list) or {}
+      c, f = n.char, n.font
       pc, pf, pcl  = c, pf or f, c and get_char_class(c, old) or 0
 
     elseif id == whatsitid and curr.mode == directmode then
@@ -1028,11 +1030,13 @@ local function process_interhangul (head, par)
       end
 
     elseif id == hlistid and is_blocking_node(curr) then
-      local c, f = hbox_char_font(curr, true)
+      local n = curr.head or {}
+      local c, f = n.char, n.font
       if c then
         head, pc, pf = do_interhangul_option(head, curr, pc, c, pf or f, par)
       end
-      c, f = hbox_char_font(curr)
+      n = curr.list and node.tail(curr.list) or {}
+      c, f = n.char, n.font
       pc, pf = c and (is_hangul_jamo(c) or hangul_tonemark[c]) and 1 or 0, pf or f
 
     elseif id == whatsitid and curr.mode == directmode then
