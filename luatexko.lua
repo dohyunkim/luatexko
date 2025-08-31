@@ -85,6 +85,7 @@ local discid    = node.id"disc"
 local glueid    = node.id"glue"
 local glyphid   = node.id"glyph"
 local hlistid   = node.id"hlist"
+local ins_id    = node.id"ins"
 local kernid    = node.id"kern"
 local localparid = node.id"local_par"
 local mathid    = node.id"math"
@@ -812,6 +813,10 @@ local allowbreak_false_nodes = {
 
 local function is_blocking_node (curr)
   local id, subtype = curr.id, curr.subtype
+  if id == hlistid then
+    if subtype == indentbox then return false end
+    if curr.next and curr.next.id == ins_id then return false end -- footnote
+  end
   return allowbreak_false_nodes[id] or id == kernid and subtype == userkern
 end
 
@@ -960,18 +965,18 @@ local function process_linebreak (head, par)
       local c = has_attribute(curr, unicodeattr) or curr.char
       if c and not is_combining(curr.char) then -- we are in pre-shaping stage
         local old = has_attribute(curr, classicattr)
-        local f = is_noncjk_char(c) and pf or curr.font
+        local f = is_cjk_char(c) and curr.font or pf
         head, pc, pcl, pf = maybe_linebreak(head, curr, pc, pcl, c, old, f, par)
       end
 
-    elseif id == hlistid and curr.list then
-      if pf then
-        local old = has_attribute(curr, classicattr)
-        head = maybe_linebreak(head, curr, pc, pcl, 0x4E00, old, pf, par)
-      else
-        _, pf = hbox_char_font(curr)
+    elseif id == hlistid and is_blocking_node(curr) then
+      local old = has_attribute(curr, classicattr)
+      local c, f = hbox_char_font(curr, true)
+      if c then
+        head = maybe_linebreak(head, curr, pc, pcl, c, old, pf or f, par)
       end
-      pc, pcl = 0x4E00, 0
+      c, f = hbox_char_font(curr)
+      pc, pf, pcl  = c, pf or f, c and get_char_class(c, old) or 0
 
     elseif id == whatsitid and curr.mode == directmode then
       local glyf, c, fin = get_actualtext(curr)
@@ -1021,6 +1026,14 @@ local function process_interhangul (head, par)
           pc = 1
         end
       end
+
+    elseif id == hlistid and is_blocking_node(curr) then
+      local c, f = hbox_char_font(curr, true)
+      if c then
+        head, pc, pf = do_interhangul_option(head, curr, pc, c, pf or f, par)
+      end
+      c, f = hbox_char_font(curr)
+      pc, pf = c and (is_hangul_jamo(c) or hangul_tonemark[c]) and 1 or 0, pf or f
 
     elseif id == whatsitid and curr.mode == directmode then
       local glyf, c = get_actualtext(curr)
@@ -1084,11 +1097,17 @@ local function process_interlatincjk (head, par)
         pc = breakable_after[c] and pc or 0
       end
 
-    elseif id == hlistid and curr.list then
-      local _, f = hbox_char_font(curr, true)
-      head = do_interlatincjk_option(head, curr, pc, pf, pcl, 0x4E00, pf or f, par)
-      _, f = hbox_char_font(curr)
-      pc, pcl, pf = 1, 0, pf or f
+    elseif id == hlistid and is_blocking_node(curr) then
+      local n = curr.head or {}
+      local c, f = n.char, n.font
+      if c then
+        head = do_interlatincjk_option(head, curr, pc, pf, pcl, c, pf or f, par)
+      end
+      n = curr.list and node.tail(curr.list) or {}
+      c, f = n.char, n.font
+      pc  = c and breakable_after[c] and (is_cjk_char(c) and 1 or is_noncjk_char(c) and 2) or 0
+      pcl = c and get_char_class(c, has_attribute(curr, classicattr)) or 0
+      pf  = pf or f
 
     elseif id == whatsitid and curr.mode == directmode then
       local glyf, c = get_actualtext(curr)
