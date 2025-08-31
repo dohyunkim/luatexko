@@ -809,6 +809,8 @@ local allowbreak_false_nodes = {
   [ruleid]    = true,
   [discid]    = true,
   [glueid]    = true,
+  [mathid]    = true,
+  [dirid]     = true,
 }
 
 local function is_blocking_node (curr)
@@ -820,7 +822,7 @@ local function is_blocking_node (curr)
   return allowbreak_false_nodes[id] or id == kernid and subtype == userkern
 end
 
-local function hbox_char_font (box, init)
+local function hbox_char_font (box, init, deep)
   local mynext = init and getnext  or getprev
   local curr   = init and box.list or nodeslide(box.list)
   while curr do
@@ -832,6 +834,10 @@ local function hbox_char_font (box, init)
       end
     elseif curr.list then
       return hbox_char_font(curr, init)
+    elseif deep then
+    elseif curr.id == glueid and curr.width == 0 then -- ruby
+    elseif is_blocking_node(curr) then
+      return
     end
     curr = mynext(curr)
   end
@@ -965,19 +971,17 @@ local function process_linebreak (head, par)
       local c = has_attribute(curr, unicodeattr) or curr.char
       if c and not is_combining(curr.char) then -- we are in pre-shaping stage
         local old = has_attribute(curr, classicattr)
-        local f = is_cjk_char(c) and curr.font or pf
+        local f = is_cjk_char(c) and curr.font or pf or curr.font
         head, pc, pcl, pf = maybe_linebreak(head, curr, pc, pcl, c, old, f, par)
       end
 
     elseif id == hlistid and is_blocking_node(curr) then
       local old = has_attribute(curr, classicattr)
-      local n = curr.head or {}
-      local c, f = n.char, n.font
+      local c, f = hbox_char_font(curr, true)
       if c then
         head = maybe_linebreak(head, curr, pc, pcl, c, old, pf or f, par)
       end
-      n = curr.list and node.tail(curr.list) or {}
-      c, f = n.char, n.font
+      c, f = hbox_char_font(curr)
       pc, pf, pcl  = c, pf or f, c and get_char_class(c, old) or 0
 
     elseif id == whatsitid and curr.mode == directmode then
@@ -1030,13 +1034,11 @@ local function process_interhangul (head, par)
       end
 
     elseif id == hlistid and is_blocking_node(curr) then
-      local n = curr.head or {}
-      local c, f = n.char, n.font
+      local c, f = hbox_char_font(curr, true)
       if c then
         head, pc, pf = do_interhangul_option(head, curr, pc, c, pf or f, par)
       end
-      n = curr.list and node.tail(curr.list) or {}
-      c, f = n.char, n.font
+      c, f = hbox_char_font(curr)
       pc, pf = c and (is_hangul_jamo(c) or hangul_tonemark[c]) and 1 or 0, pf or f
 
     elseif id == whatsitid and curr.mode == directmode then
@@ -1047,9 +1049,9 @@ local function process_interhangul (head, par)
       end
 
     elseif id == mathid then
-      pc, curr, pf = 0, end_of_math(curr), false
-    elseif is_blocking_node(curr) or id == dirid then
-      pc, pf = 0, false
+      pc, curr = 0, end_of_math(curr)
+    elseif is_blocking_node(curr) then
+      pc = 0
     end
     curr = getnext(curr)
   end
@@ -1102,13 +1104,11 @@ local function process_interlatincjk (head, par)
       end
 
     elseif id == hlistid and is_blocking_node(curr) then
-      local n = curr.head or {}
-      local c, f = n.char, n.font
+      local c, f = hbox_char_font(curr, true)
       if c then
         head = do_interlatincjk_option(head, curr, pc, pf, pcl, c, pf or f, par)
       end
-      n = curr.list and node.tail(curr.list) or {}
-      c, f = n.char, n.font
+      c, f = hbox_char_font(curr)
       pc  = c and breakable_after[c] and (is_cjk_char(c) and 1 or is_noncjk_char(c) and 2) or 0
       pcl = c and get_char_class(c, has_attribute(curr, classicattr)) or 0
       pf  = pf or f
