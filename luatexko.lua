@@ -833,7 +833,7 @@ local function hbox_char_font (box, init, deep)
         return c, curr.font
       end
     elseif curr.list then
-      return hbox_char_font(curr, init)
+      return hbox_char_font(curr, init, deep)
     elseif deep then
     elseif curr.id == glueid and curr.width == 0 then -- ruby
     elseif is_blocking_node(curr) then
