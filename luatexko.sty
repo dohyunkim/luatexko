@@ -14,7 +14,7 @@
 \ifdefined\luatexkohangulfontattr \endinput\fi
 \ifdefined\ProvidesPackage
   \NeedsTeXFormat{LaTeX2e}[2025/06/01]
-  \ProvidesPackage{luatexko}[2025/08/27 v4.5 typesetting Korean with LuaTeX]
+  \ProvidesPackage{luatexko}[2025/09/01 v4.6 typesetting Korean with LuaTeX]
   \RequirePackage{luatexbase}
   \RequirePackage{fontspec}[2020/02/03]
   \let\luatexkoselectfont\selectfont
@@ -996,24 +996,7 @@
     \def\는{는}\def\은{은}\def\을{을}\def\를{를}\def\와{와}\def\과{과}%
     \def\가{가}\def\이{이}\def\라{라}\def\으{으}\def\로{로}%
     \def\hellipsis{...}}}
-\AddToHook{package/pxrubrica/after}{\let\ruby\jruby
-  \AddToHook{cmd/pxrr@jprologue/before}{\begingroup\luatexkorubyattr\m@ne}
-  \AddToHook{cmd/pxrr@jepilogue/after}{\endgroup}
-  \directlua{
-    luatexbase.add_to_callback("pre_linebreak_filter", function(head)
-      local tofree = {}
-      for n in node.traverse_id(node.id"glue", head) do
-        if n.width == 0 and n.stretch == 0 and n.shrink == 0
-          and node.has_attribute(n, \the\luatexkorubyalloc, -1) then
-          head = node.remove(head, n)
-          table.insert(tofree, n)
-        end
-      end
-      for _,v in ipairs(tofree) do node.free(v) end
-      return head
-    end, "luatexko.pxrubrica.removeglues", 1)
-  }
-}
+\AddToHook{package/pxrubrica/after}{\let\ruby\jruby}
 % misc
 \RequirePackage{kolabels-utf}
 \protected\def\hellipsis{\char"2026\char"2026 }
