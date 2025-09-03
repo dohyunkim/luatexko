@@ -811,6 +811,7 @@ local allowbreak_false_nodes = {
   [glueid]    = true,
   [mathid]    = true,
   [dirid]     = true,
+  [glyphid]   = true,
 }
 
 local function is_blocking_node (curr)
@@ -913,28 +914,19 @@ local function maybe_linebreak (head, curr, pc, pcl, cc, old, fid, par)
 end
 
 local function process_cjk_punctuation_spacing (head, par)
-  local pcl, pc, pf, old = 0, 0x4E00, false
+  local pcl, pc, pf, old = 0, false, false
   local curr = head
-  if par then
-    while curr do
-      if curr.id == localparid or curr.id == hlistid and curr.subtype == indentbox then
-      else
-        break
-      end
-      curr = getnext(curr)
-    end
-    if curr.char then
-      pc = false
-    end
+  if not par then
+    pc = 0x4E00
   end
   while curr do
     local id = curr.id
     if id == glyphid and curr.lang ~= nohyphen then
       local cc = curr.char
-      local cf = charclass[cc] == 0 and pf or curr.font
       old = has_attribute(curr, classicattr)
       local ccl = get_char_class(cc, old)
       if old and intercharclass[pcl][ccl] then
+        local cf = charclass[cc] == 0 and pf or curr.font
         head = maybe_linebreak(head, curr, pc, pcl, cc, old, cf, par)
       end
       pcl, pc, pf = ccl, cc, curr.font
@@ -1192,45 +1184,26 @@ end
 -- remove classic spaces
 
 local function process_remove_spaces (head)
-  local curr, to_free = head, {}
+  local curr, to_free, sp, cjk = head, {}, false, false
   while curr do
     local id = curr.id
-    if id == glueid then
-      if curr.subtype == spaceskip and has_attribute(curr, classicattr) then
-        for k, v in pairs{ p = getprev(curr), n = getnext(curr) } do
-          local ok
-          while v do
-            local id = v.id
-            if id ~= whatsitid -- skip whatsit or kern except userkern
-              and ( id ~= kernid or v.subtype == userkern ) then
-
-              local vchar, vfont
-              if id == glyphid and v.lang ~= nohyphen then
-                local c = has_attribute(v, unicodeattr) or v.char or 0
-                if is_combining(c) then
-                  v = getprev(v) or v
-                end
-                vchar, vfont = has_attribute(v, unicodeattr) or v.char, v.font
-              elseif id == hlistid and v.list then
-                vchar, vfont = hbox_char_font(v, k == "n")
-              end
-              if vchar and vfont and fontoptions.removeclassicspaces[vfont] then
-                ok = is_cjk_char(vchar)
-              end
-
-              break
-            end
-            v = k == "p" and getprev(v) or getnext(v)
-          end
-          if ok then
-            head = noderemove(head, curr)
-            tableinsert(to_free, curr)
-            break
-          end
+    if id == glyphid and curr.lang ~= nohyphen and has_attribute(curr, classicattr) then
+      local c = has_attribute(curr, unicodeattr) or curr.char or 0
+      if not is_combining(c) then
+        local cc = is_cjk_char(c) and 1 or 0
+        if sp and cjk and (cjk + cc) == 2 then
+          head = noderemove(head, sp)
+          tableinsert(to_free, sp)
         end
+        cjk, sp = cc, false
       end
+    elseif cjk and id == glueid
+      and curr.subtype == spaceskip and has_attribute(curr, classicattr) then
+      sp = curr
     elseif id == mathid then
-      curr = end_of_math(curr)
+      curr, cjk, sp = end_of_math(curr), false, false
+    elseif id == hlistid or is_blocking_node(curr) then
+      cjk, sp = false, false
     end
     curr = getnext(curr)
   end
