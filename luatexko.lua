@@ -1187,7 +1187,8 @@ local function process_remove_spaces (head)
   local curr, to_free, sp, cjk = head, {}, false, false
   while curr do
     local id = curr.id
-    if id == glyphid and curr.lang ~= nohyphen and has_attribute(curr, classicattr) then
+    if id == glyphid and curr.lang ~= nohyphen and has_attribute(curr, classicattr)
+      and fontoptions.removeclassicspaces[curr.font] then
       local c = has_attribute(curr, unicodeattr) or curr.char or 0
       if not is_combining(c) then
         local cc = is_cjk_char(c) and 1 or 0
@@ -1847,129 +1848,132 @@ end
 
 -- vertical font
 
-local streamreader = utilities.files
-local openfile     = streamreader.open
-local closefile    = streamreader.close
-local readstring   = streamreader.readstring
-local readulong    = streamreader.readcardinal4
-local readushort   = streamreader.readcardinal2
-local readfixed    = streamreader.readfixed4
-local readshort    = streamreader.readinteger2
-local setpos       = streamreader.setposition
+local get_tsb_table
+do
+  local streamreader = utilities.files
+  local openfile     = streamreader.open
+  local closefile    = streamreader.close
+  local readstring   = streamreader.readstring
+  local readulong    = streamreader.readcardinal4
+  local readushort   = streamreader.readcardinal2
+  local readfixed    = streamreader.readfixed4
+  local readshort    = streamreader.readinteger2
+  local setpos       = streamreader.setposition
 
-local function get_otf_tables (f, subfont)
-  if f then
-    local sfntversion = readstring(f,4)
-    if sfntversion == "ttcf" then
-      local ttcversion = readfixed(f)
-      local numfonts   = readulong(f)
-      if subfont >= 1 and subfont <= numfonts then
-        local offsets = {}
-        for i = 1, numfonts do
-          offsets[i] = readulong(f)
+  local function get_otf_tables (f, subfont)
+    if f then
+      local sfntversion = readstring(f,4)
+      if sfntversion == "ttcf" then
+        local ttcversion = readfixed(f)
+        local numfonts   = readulong(f)
+        if subfont >= 1 and subfont <= numfonts then
+          local offsets = {}
+          for i = 1, numfonts do
+            offsets[i] = readulong(f)
+          end
+          setpos(f, offsets[subfont])
+          sfntversion = readstring(f,4)
         end
-        setpos(f, offsets[subfont])
-        sfntversion = readstring(f,4)
+      end
+      if sfntversion == "OTTO" or sfntversion == "true" or sfntversion == "\0\1\0\0" then
+        local numtables     = readushort(f)
+        local searchrange   = readushort(f)
+        local entryselector = readushort(f)
+        local rangeshift    = readushort(f)
+        local tables        = {}
+        for i= 1, numtables do
+          local tag = readstring(f,4)
+          tables[tag] = {
+            checksum = readulong(f),
+            offset   = readulong(f),
+            length   = readulong(f),
+          }
+        end
+        return tables
       end
     end
-    if sfntversion == "OTTO" or sfntversion == "true" or sfntversion == "\0\1\0\0" then
-      local numtables     = readushort(f)
-      local searchrange   = readushort(f)
-      local entryselector = readushort(f)
-      local rangeshift    = readushort(f)
-      local tables        = {}
-      for i= 1, numtables do
-        local tag = readstring(f,4)
-        tables[tag] = {
-          checksum = readulong(f),
-          offset   = readulong(f),
-          length   = readulong(f),
+  end
+
+  local function read_maxp (f, t)
+    if f and t then
+      setpos(f, t.offset)
+      return {
+        version   = readfixed(f),
+        numglyphs = readushort(f),
+      }
+    end
+  end
+
+  local function read_vhea (f, t)
+    if f and t then
+      setpos(f, t.offset)
+      return {
+        version               = readfixed(f),
+        ascent                = readshort(f),
+        descent               = readshort(f),
+        lineGap               = readshort(f),
+        advanceheightmax      = readshort(f),
+        mintopsidebearing     = readshort(f),
+        minbottomsidebrearing = readshort(f),
+        ymaxextent            = readshort(f),
+        caretsloperise        = readshort(f),
+        caretsloperun         = readshort(f),
+        caretoffset           = readshort(f),
+        reserved1             = readshort(f),
+        reserved2             = readshort(f),
+        reserved3             = readshort(f),
+        reserved4             = readshort(f),
+        metricdataformat      = readshort(f),
+        numheights            = readushort(f),
+      }
+    end
+  end
+
+  local function read_vmtx (f, t, numofheights, numofglyphs)
+    if f and t and numofheights and numofglyphs then
+      setpos(f, t.offset)
+      local vmtx = {}
+      local height = 0
+      for i = 0, numofheights-1 do
+        height = readushort(f)
+        vmtx[i] = {
+          ht  = height,
+          tsb = readshort(f),
         }
       end
-      return tables
+      for i = numofheights, numofglyphs-1 do
+        vmtx[i] = {
+          ht  = height,
+          tsb = readshort(f),
+        }
+      end
+      return vmtx
     end
   end
-end
 
-local function read_maxp (f, t)
-  if f and t then
-    setpos(f, t.offset)
-    return {
-      version   = readfixed(f),
-      numglyphs = readushort(f),
-    }
-  end
-end
+  local tsb_font_data = {}
 
-local function read_vhea (f, t)
-  if f and t then
-    setpos(f, t.offset)
-    return {
-      version               = readfixed(f),
-      ascent                = readshort(f),
-      descent               = readshort(f),
-      lineGap               = readshort(f),
-      advanceheightmax      = readshort(f),
-      mintopsidebearing     = readshort(f),
-      minbottomsidebrearing = readshort(f),
-      ymaxextent            = readshort(f),
-      caretsloperise        = readshort(f),
-      caretsloperun         = readshort(f),
-      caretoffset           = readshort(f),
-      reserved1             = readshort(f),
-      reserved2             = readshort(f),
-      reserved3             = readshort(f),
-      reserved4             = readshort(f),
-      metricdataformat      = readshort(f),
-      numheights            = readushort(f),
-    }
-  end
-end
-
-local function read_vmtx (f, t, numofheights, numofglyphs)
-  if f and t and numofheights and numofglyphs then
-    setpos(f, t.offset)
-    local vmtx = {}
-    local height = 0
-    for i = 0, numofheights-1 do
-      height = readushort(f)
-      vmtx[i] = {
-        ht  = height,
-        tsb = readshort(f),
-      }
+  function get_tsb_table (filename, subfont)
+    subfont = tonumber(subfont) or 1
+    local key = stringformat("%s::%s", filename, subfont)
+    if tsb_font_data[key] then
+      return tsb_font_data[key]
     end
-    for i = numofheights, numofglyphs-1 do
-      vmtx[i] = {
-        ht  = height,
-        tsb = readshort(f),
-      }
+    local f = openfile(filename, true) -- true: zero-based
+    if f then
+      local vmtx
+      local tables = get_otf_tables(f, subfont)
+      if tables then
+        local vhea = read_vhea(f, tables.vhea)
+        local numofheights = vhea and vhea.numheights
+        local maxp = read_maxp(f, tables.maxp)
+        local numofglyphs = maxp and maxp.numglyphs
+        vmtx = read_vmtx(f, tables.vmtx, numofheights, numofglyphs)
+      end
+      closefile(f)
+      tsb_font_data[key] = vmtx
+      return vmtx
     end
-    return vmtx
-  end
-end
-
-local tsb_font_data = {}
-
-local function get_tsb_table (filename, subfont)
-  subfont = tonumber(subfont) or 1
-  local key = stringformat("%s::%s", filename, subfont)
-  if tsb_font_data[key] then
-    return tsb_font_data[key]
-  end
-  local f = openfile(filename, true) -- true: zero-based
-  if f then
-    local vmtx
-    local tables = get_otf_tables(f, subfont)
-    if tables then
-      local vhea = read_vhea(f, tables.vhea)
-      local numofheights = vhea and vhea.numheights
-      local maxp = read_maxp(f, tables.maxp)
-      local numofglyphs = maxp and maxp.numglyphs
-      vmtx = read_vmtx(f, tables.vmtx, numofheights, numofglyphs)
-    end
-    closefile(f)
-    tsb_font_data[key] = vmtx
-    return vmtx
   end
 end
 
