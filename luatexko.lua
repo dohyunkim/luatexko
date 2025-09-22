@@ -916,9 +916,6 @@ end
 local function process_cjk_punctuation_spacing (head, par)
   local pcl, pc, pf, old = 0, false, false
   local curr = head
-  if not par then
-    pc = 0x4E00
-  end
   while curr do
     local id = curr.id
     if id == glyphid and curr.lang ~= nohyphen then
@@ -942,15 +939,6 @@ local function process_cjk_punctuation_spacing (head, par)
       end
     end
     curr = getnext(curr)
-  end
-  if not par and pf and old then
-    local ict = intercharclass[pcl][0]
-    if ict then
-      local gl = nodenew(glueid)
-      local en = fontoptions.en_size[pf]
-      setglue(gl, en * ict[1], nil, en * ict[2])
-      insert_after(head, nodeslide(head), gl)
-    end
   end
   return head
 end

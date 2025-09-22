@@ -1,3 +1,11 @@
+2025-09-26	Dohyun Kim <nomosnomos at gmail com>
+
+	Version 4.7
+
+	* luatexko.lua:
+	- redact remove_classic_spaces function
+	- insert nothing before/after the outermost node in a box
+
 2025-09-01	Dohyun Kim <nomosnomos at gmail com>
 
 	Version 4.6
