@@ -13,8 +13,8 @@
 
 luatexbase.provides_module {
   name        = 'luatexko',
-  date        = '2025/09/01',
-  version     = '4.6',
+  date        = '2025/09/26',
+  version     = '4.7',
   description = 'typesetting Korean with LuaTeX',
   author      = 'Dohyun Kim, Soojin Nam',
   license     = 'LPPL v1.3+',
@@ -836,7 +836,7 @@ local function hbox_char_font (box, init, deep)
     elseif curr.list then
       return hbox_char_font(curr, init, deep)
     elseif deep then
-    elseif curr.id == glueid and curr.width == 0 then -- ruby
+    elseif curr.id == glueid and curr.width == 0 and has_attribute(box, rubyattr) then -- ruby
     elseif is_blocking_node(curr) then
       return
     end
@@ -882,6 +882,7 @@ local function insert_glue_before (head, curr, par, br, brb, classic, ict, dim, 
     end
     head = insert_before(head, curr, pn)
   end
+  if not fid then return head end -- penalty only for non-glyph box + cjk
 
   dim = dim or 0
   local gl = nodenew(glueid)
@@ -951,24 +952,36 @@ local function process_linebreak (head, par)
       local c = has_attribute(curr, unicodeattr) or curr.char
       if c and not is_combining(curr.char) then -- we are in pre-shaping stage
         local old = has_attribute(curr, classicattr)
-        local f = is_cjk_char(c) and curr.font or pf or curr.font
-        head, pc, pcl, pf = maybe_linebreak(head, curr, pc, pcl, c, old, f, par)
+        local cjk = is_cjk_char(c)
+        local f = cjk and curr.font or pf or curr.font
+        if old and cjk and pc == -1 then -- penalty only (f is nil below) for non-glyph box + cjk
+          head = insert_glue_before(head, curr, par, true, false)
+          pc, pf, pcl = c, f, get_char_class(c, old)
+        else
+          head, pc, pcl, pf = maybe_linebreak(head, curr, pc, pcl, c, old, f, par)
+        end
       end
 
-    elseif id == hlistid and is_blocking_node(curr) then
+    elseif (id == hlistid or id == vlistid) and is_blocking_node(curr) then
       local old = has_attribute(curr, classicattr)
       local c, f = hbox_char_font(curr, true)
       if c then
         head = maybe_linebreak(head, curr, pc, pcl, c, old, pf or f, par)
+      elseif old and pc and is_cjk_char(pc) then -- penalty only
+        head = insert_glue_before(head, curr, par, true, false)
       end
       c, f = hbox_char_font(curr)
-      pc, pf, pcl  = c, pf or f, c and get_char_class(c, old) or 0
+      pc, pf, pcl  = c or -1, pf or f, c and get_char_class(c, old) or 0
 
     elseif id == whatsitid and curr.mode == directmode then
       local glyf, c, fin = get_actualtext(curr)
       if c and fin and glyf then
         local old = has_attribute(glyf, classicattr)
-        head = maybe_linebreak(head, curr, pc, pcl, c, old, glyf.font, par)
+        if old and pc == -1 then -- penalty only
+          head = insert_glue_before(head, curr, par, true, false)
+        else
+          head = maybe_linebreak(head, curr, pc, pcl, c, old, glyf.font, par)
+        end
         pc, pcl, curr, pf = fin, 0, goto_end_actualtext(curr), glyf.font
       end
 
