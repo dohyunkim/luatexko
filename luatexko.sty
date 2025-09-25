@@ -70,7 +70,8 @@
   \fi
   }
 \protected\def\typesetmodern{\unsetattribute\luatexkoclassicattr}
-\protected\def\inhibitglue{\begingroup\luatexkoinhibitglueattr\@ne\hskip\z@skip\endgroup}
+\protected\def\inhibitglue{\begingroup\luatexkoinhibitglueattr\@ne
+  \penalty50\hskip\z@ plus.025em minus.015em\endgroup}
 \protected\def\japanese{% 0, 5
   \chardef\luatexkolangCJK=\@ne
   \ifcase\luatexkoclassicattr
