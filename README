@@ -122,9 +122,20 @@ Set spacing between Hangul characters.
     [InterLatinCJK=<dimen>]
 Set spacing between CJK and Latin characters.
 
+    [InterCharacter=<dimen>]
+Set spacing between CJK characters.
+
+    [InterCharStretch=<dimen>]
+Set stretching of the glue between CJK characters.
+
     [CharRaise=<dimen>]
 Raise CJK characters by <dimen>.
 
+    [CompressPunctuations]
+Make CJK punctuations half-width.
+
+    [RemoveClassicSpaces]
+Remove spaces between CJK characters for old document.
 
 Other User Commands
 -------------------
@@ -148,5 +159,18 @@ Typeset ruby annotations.
     \dotuline{...}
 Same functionality as those ulem package provides.
 
+    \typesetclassic
+Command/environment for typesetting old document in horizontal writing mode.
+
+    \begin{vertical}{<dimen>}
+    \end{vertical}
+This environment makes a box vertically typeset. <dimen> is an
+argument to indicate the box height. When the <dimen> is \empty,
+a box with natural height will result. For vertical writing of
+entire document, use the command \verticaltypesetting instead.
+
+    \은 \는 \이 \가 \을 \를 \와 \과 \로 \으로 \라 \이라
+Commands for automatic Josa selection. Unlike those of cjk-ko
+package, these commands work correctly even after Hangul or Hanja.
 
 *END of README*
