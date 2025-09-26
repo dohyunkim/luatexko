@@ -902,14 +902,12 @@ end
 
 local function maybe_linebreak (head, curr, pc, pcl, cc, old, fid, par)
   local ccl = get_char_class(cc, old)
-  if pc and cc and curr.lang ~= nohyphen then
+  if pc and cc and curr.lang ~= nohyphen and (is_cjk_char(pc) or is_cjk_char(cc)) then
     local ict = intercharclass[pcl][ccl]
     local brb = breakable_before[cc]
     local br  = brb and breakable_after[pc]
     local dim = fontoptions.intercharacter[fid]
-    if ict or br or dim and (pcl >= 1 or ccl >= 1) then
-      head = insert_glue_before(head, curr, par, br, brb, old, ict, dim, fid)
-    end
+    head = insert_glue_before(head, curr, par, br, brb, old, ict, dim, fid)
   end
   return head, cc, ccl, fid
 end
