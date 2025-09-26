@@ -294,7 +294,7 @@ local fontoptions = {
 
   en_size = setmetatable( {}, { __index = function(t, fid)
     if fid then
-      val = (get_font_param(fid, "quad") or 655360)/2
+      local val = (get_font_param(fid, "quad") or 655360)/2
       t[fid] = val
       return val
     end
