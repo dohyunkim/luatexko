@@ -955,7 +955,8 @@ local function process_linebreak (head, par)
     local id = curr.id
     if id == glyphid then
       local c = has_attribute(curr, unicodeattr) or curr.char
-      if c and not is_combining(curr.char) then -- we are in pre-shaping stage
+      if c and not (is_jungsong(c) or is_jongsong(c) or is_combining(curr.char)) then
+                                                        -- we are in pre-shaping stage
         local old = has_attribute(curr, classicattr)
         local cjk = is_cjk_char(c)
         local f = cjk and curr.font or pf or curr.font
