@@ -571,8 +571,8 @@ local breakable_after = setmetatable({
   [0x29] = true,   [0x2C] = true,   [0x2D] = true,   [0x2E] = true,
   [0x3A] = true,   [0x3B] = true,   [0x3E] = true,   [0x3F] = true,
   [0x5D] = true,   [0x7D] = true,   [0x7E] = true,   [0xBB] = true,
-  [0x2013] = 1,    [0x2014] = 1,    [0x2015] = 1,    [0x2025] = 1, -- 1: dashes
-  [0x2026] = 1,    [0xFE19] = 1,    [0xFE30] = 1,    [0xFE31] = 1,
+  [0x2013] = 50,   [0x2014] = 50,   [0x2015] = 50,   [0x2025] = 50, -- 50: dashes
+  [0x2026] = 50,   [0xFE19] = 50,   [0xFE30] = 50,   [0xFE31] = 50,
   [0x25A1] = true, [0x25CB] = true, [0x2E80] = true, [0x3003] = true,
   [0x3005] = true, [0x3007] = true, [0x301C] = true, [0x3035] = true,
   [0x303B] = true, [0x303C] = true, [0x309B] = true, [0x309C] = true,
@@ -598,6 +598,9 @@ local breakable_before = setmetatable({
   [0x7B] = true,   [0xAB] = true,   [0x25A1] = true, [0x25CB] = true,
   [0x3007] = true, [0xFE59] = true, [0xFE5B] = true, [0xFE5D] = true,
   [0xFF1C] = true, [0x226A] = true, -- ≪
+  -- dashes : nobreak but stretching
+  [0x2013] = 10000, [0x2014] = 10000, [0x2015] = 10000, [0x2025] = 10000,
+  [0x2026] = 10000, [0xFE19] = 10000, [0xFE30] = 10000, [0xFE31] = 10000,
   -- small kana
   [0x3041] = 1000, [0x3043] = 1000, [0x3045] = 1000, [0x3047] = 1000,
   [0x3049] = 1000, [0x3063] = 1000, [0x3083] = 1000, [0x3085] = 1000,
@@ -904,12 +907,11 @@ end
 local function maybe_linebreak (head, curr, pc, pcl, cc, old, fid, par)
   local ccl = get_char_class(cc, old)
   if pc and cc and curr.lang ~= nohyphen and (is_cjk_char(pc) or is_cjk_char(cc)) then
-    local brap = breakable_after[pc]
-    if brap == 1 and breakable_after[cc] == 1 then -- skip dash-dash
+    local brap, brbc = breakable_after[pc], breakable_before[cc]
+    if brap == 50 and brbc == 10000 then -- skip dash-dash
     else
       local ict = intercharclass[pcl][ccl]
-      local brbc = breakable_before[cc]
-      local br  = brap and brbc or brap == 1 and is_noncjk_char(cc) -- also allow dash-latin
+      local br  = brap and brbc or brap == 50 -- allow dash-latin as well
       local dim = fontoptions.intercharacter[fid]
       head = insert_glue_before(head, curr, par, br, brbc, old, ict, dim, fid)
     end
@@ -1062,7 +1064,7 @@ local function do_interlatincjk_option (head, curr, pc, pf, pcl, c, cf, par)
 
   if cc*pc == 2 and curr.lang ~= nohyphen then
     local brb = cc == 2 or breakable_before[c] -- numletter != br_before
-    if brb then
+    if brb and brb ~= 10000 then -- skip latin-dash
       local dimc = fontoptions.interlatincjk[cf] or 0
       local dimp = fontoptions.interlatincjk[pf] or 0
       local dim  = mathmax(dimc, dimp)
@@ -1096,7 +1098,7 @@ local function process_interlatincjk (head, par)
       local c = has_attribute(curr, unicodeattr) or curr.char
       if c and not is_combining(curr.char) then -- we are in pre-shaping stage
         head, pc, pf, pcl = do_interlatincjk_option(head, curr, pc, pf, pcl, c, curr.font, par)
-        pc = breakable_after[c] == true and pc or 0
+        pc = breakable_after[c] == true and pc or 0 -- to skip dash-latin
       end
 
     elseif id == hlistid and is_blocking_node(curr) then
