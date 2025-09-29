@@ -571,10 +571,11 @@ local breakable_after = setmetatable({
   [0x29] = true,   [0x2C] = true,   [0x2D] = true,   [0x2E] = true,
   [0x3A] = true,   [0x3B] = true,   [0x3E] = true,   [0x3F] = true,
   [0x5D] = true,   [0x7D] = true,   [0x7E] = true,   [0xBB] = true,
-  [0x2013] = true, [0x2014] = true, [0x25A1] = true, [0x25CB] = true,
-  [0x2E80] = true, [0x3003] = true, [0x3005] = true, [0x3007] = true,
-  [0x301C] = true, [0x3035] = true, [0x303B] = true, [0x303C] = true,
-  [0x309B] = true, [0x309C] = true,
+  [0x2013] = 1,    [0x2014] = 1,    [0x2015] = 1,    [0x2025] = 1, -- 1: dashes
+  [0x2026] = 1,    [0xFE19] = 1,    [0xFE30] = 1,    [0xFE31] = 1,
+  [0x25A1] = true, [0x25CB] = true, [0x2E80] = true, [0x3003] = true,
+  [0x3005] = true, [0x3007] = true, [0x301C] = true, [0x3035] = true,
+  [0x303B] = true, [0x303C] = true, [0x309B] = true, [0x309C] = true,
   [0x309D] = true, [0x309E] = true, [0x30A0] = true, [0x30FC] = true,
   [0x30FD] = true, [0x30FE] = true, [0xFE13] = true, [0xFE14] = true,
   [0xFE32] = true, [0xFE50] = true, [0xFE51] = true, [0xFE52] = true,
@@ -903,11 +904,15 @@ end
 local function maybe_linebreak (head, curr, pc, pcl, cc, old, fid, par)
   local ccl = get_char_class(cc, old)
   if pc and cc and curr.lang ~= nohyphen and (is_cjk_char(pc) or is_cjk_char(cc)) then
-    local ict = intercharclass[pcl][ccl]
-    local brb = breakable_before[cc]
-    local br  = brb and breakable_after[pc]
-    local dim = fontoptions.intercharacter[fid]
-    head = insert_glue_before(head, curr, par, br, brb, old, ict, dim, fid)
+    local brap = breakable_after[pc]
+    if brap == 1 and breakable_after[cc] == 1 then -- skip dash-dash
+    else
+      local ict = intercharclass[pcl][ccl]
+      local brbc = breakable_before[cc]
+      local br  = brap and brbc or brap == 1 and is_noncjk_char(cc) -- also allow dash-latin
+      local dim = fontoptions.intercharacter[fid]
+      head = insert_glue_before(head, curr, par, br, brbc, old, ict, dim, fid)
+    end
   end
   return head, cc, ccl, fid
 end
@@ -1091,7 +1096,7 @@ local function process_interlatincjk (head, par)
       local c = has_attribute(curr, unicodeattr) or curr.char
       if c and not is_combining(curr.char) then -- we are in pre-shaping stage
         head, pc, pf, pcl = do_interlatincjk_option(head, curr, pc, pf, pcl, c, curr.font, par)
-        pc = breakable_after[c] and pc or 0
+        pc = breakable_after[c] == true and pc or 0
       end
 
     elseif id == hlistid and is_blocking_node(curr) then
@@ -1100,7 +1105,7 @@ local function process_interlatincjk (head, par)
         head = do_interlatincjk_option(head, curr, pc, pf, pcl, c, pf or f, par)
       end
       c, f = hbox_char_font(curr)
-      pc  = c and breakable_after[c] and (is_cjk_char(c) and 1 or is_noncjk_char(c) and 2) or 0
+      pc  = c and breakable_after[c] == true and (is_cjk_char(c) and 1 or is_noncjk_char(c) and 2) or 0
       pcl = c and get_char_class(c, has_attribute(curr, classicattr)) or 0
       pf  = pf or f
 
