@@ -456,7 +456,9 @@ local function is_compat_jamo (c)
 end
 
 local function is_combining (c)
-  return c >= 0x302A and c <= 0x302F
+  return is_jungsong(c)
+  or     is_jongsong(c)
+  or     c >= 0x302A and c <= 0x302F
   or     c == 0x3099 or  c == 0x309A
   -- variation selectors
   or     c >= 0xFE00  and c <= 0xFE0F
@@ -499,6 +501,7 @@ local function is_hangul_jamo (c)
   or     is_chosong(c)
   or     is_jungsong(c)
   or     is_jongsong(c)
+  or     hangul_tonemark[c]
 end
 
 local intercharclass = { [0] =
@@ -632,7 +635,6 @@ luatexko.breakablebefore = breakable_before
 local function is_cjk_char (c)
   return is_hangul_jamo(c)
   or     is_hanja(c)
-  or     hangul_tonemark[c]
   or     is_kana(c)
   or     charclass[c] >= 1
   or     rawget(breakable_before, c) and c >= 0x2000
@@ -702,11 +704,8 @@ local function process_fonts (head)
                  fontoptions.is_hangulscript[curr.font] then
                 luatexko.activate("reorderTM") -- activate reorderTM here
               end
-
-              set_attribute(curr, unicodeattr, c)
-            else
-              curr.attr = p.attr -- inherit previous attr including unicodeattr
             end
+            set_attribute(curr, unicodeattr, c)
             done = true
           end
         end
@@ -955,8 +954,7 @@ local function process_linebreak (head, par)
     local id = curr.id
     if id == glyphid then
       local c = has_attribute(curr, unicodeattr) or curr.char
-      if c and not (is_jungsong(c) or is_jongsong(c) or is_combining(curr.char)) then
-                                                        -- we are in pre-shaping stage
+      if c and not is_combining(c) then
         local old = has_attribute(curr, classicattr)
         local cjk = is_cjk_char(c)
         local f = cjk and curr.font or pf or curr.font
@@ -1024,12 +1022,8 @@ local function process_interhangul (head, par)
     local id = curr.id
     if id == glyphid then
       local c = has_attribute(curr, unicodeattr) or curr.char
-      if c and not is_combining(curr.char) then -- we are in pre-shaping stage
+      if c and not is_combining(c) then
         head, pc, pf = do_interhangul_option(head, curr, pc, c, curr.font, par)
-
-        if is_jungsong(c) or is_jongsong(c) or hangul_tonemark[c] then
-          pc = 1
-        end
       end
 
     elseif id == hlistid and is_blocking_node(curr) then
@@ -1038,7 +1032,7 @@ local function process_interhangul (head, par)
         head, pc, pf = do_interhangul_option(head, curr, pc, c, pf or f, par)
       end
       c, f = hbox_char_font(curr)
-      pc, pf = c and (is_hangul_jamo(c) or hangul_tonemark[c]) and 1 or 0, pf or f
+      pc, pf = c and is_hangul_jamo(c) and 1 or 0, pf or f
 
     elseif id == whatsitid and curr.mode == directmode then
       local glyf, c = get_actualtext(curr)
@@ -1431,72 +1425,61 @@ local function process_dotemph (head)
       if dotattr and dotemphbox[dotattr] then
         unset_attribute(curr, dotemphattr) -- avoid multiple run
 
-        local init
-        if hangul_tonemark[curr.char] and harf_reordered_tonemark(curr) then
-          curr = getnext(curr)
-          if is_hangul_jamo(has_attribute(curr, unicodeattr) or curr.char) then
-            init = curr
+        local c = has_attribute(curr, unicodeattr) or curr.char
+        if is_hangul(c) or is_compat_jamo(c) or is_chosong(c) or is_hanja(c) or is_kana(c) then
+          if hangul_tonemark[curr.char] and harf_reordered_tonemark(curr) then
+            curr = getnext(curr) -- harf mode reorders positive-width hangul tonemark.
+                                 -- Vertical is forbidden, so we can test curr.char
           end
-        else
-          if not is_combining(curr.char) then -- bypass unicodeattr inherited
-            local c = has_attribute(curr, unicodeattr) or curr.char
-            if is_hangul(c) or is_compat_jamo(c) or is_chosong(c) or is_hanja(c) or is_kana(c) then
-              init = curr
-            end
-          end
-        end
 
-        if init then
+          local box = nodecopy(dotemphbox[dotattr])
+          -- bypass unwanted nodes injected by some other packages
+          while box.id ~= hlistid do
+            warning[[\dotemph should be an hbox]]
+            box = getnext(box)
+          end
+
+          -- consider charraise
+          box.shift = shift_put_top(curr, box)
+
           local basewd = curr.width
-          if basewd >= fontoptions.en_size[curr.font] then
-            local box = nodecopy(dotemphbox[dotattr])
-            -- bypass unwanted nodes injected by some other packages
-            while box.id ~= hlistid do
-              warning[[\dotemph should be an hbox]]
-              box = getnext(box)
-            end
-
-            -- put the dot after base syllable
-            local n = getnext(curr)
-            while n do
-              if n.id == glyphid then
-                local c = has_attribute(n, unicodeattr) or n.char
-                if is_jungsong(c) or is_jongsong(c) or is_combining(c) then
-                  basewd = basewd + n.width
-                else
-                  break
-                end
-              elseif n.id == kernid and n.subtype == fontkern then
-                basewd = basewd + n.kern
-              elseif n.id == whatsitid
-                and  n.mode == directmode
-                and  my_node_props(n).endactualtext then
-                -- pass
+          -- put the dot after base syllable
+          local n = getnext(curr)
+          while n do
+            if n.id == glyphid then
+              local c = has_attribute(n, unicodeattr) or n.char
+              if is_combining(c) then
+                basewd = basewd + n.width
               else
                 break
               end
-              curr = n
-              n = getnext(n)
+            elseif n.id == kernid and n.subtype == fontkern then
+              basewd = basewd + n.kern
+            elseif n.id == whatsitid
+              and  n.mode == directmode
+              and  my_node_props(n).endactualtext then
+              -- pass
+            else
+              break
             end
-
-            local shift = (basewd - box.width)/2 - basewd
-            if shift ~= 0 then
-              local list = box.list
-              local k = nodenew(kernid)
-              k.kern, k.subtype = shift, userkern
-              box.list = insert_before(list, list, k)
-            end
-
-            -- consider charraise
-            box.shift = shift_put_top(init, box)
-
-            box.width = 0
-            head, curr = insert_after(head, curr, box)
-
-            local k = nodenew(kernid)
-            k.subtype, k.kern = userkern, 0
-            head = insert_before(head, curr, k)
+            curr = n
+            n = getnext(n)
           end
+
+          local shift = (basewd - box.width)/2 - basewd
+          if shift ~= 0 then
+            local list = box.list
+            local k = nodenew(kernid)
+            k.kern, k.subtype = shift, userkern
+            box.list = insert_before(list, list, k)
+          end
+
+          box.width = 0
+          head, curr = insert_after(head, curr, box)
+
+          local k = nodenew(kernid)
+          k.subtype, k.kern = userkern, 0
+          head = insert_before(head, curr, k)
         end
       end
 
