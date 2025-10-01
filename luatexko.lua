@@ -992,7 +992,14 @@ local function process_linebreak (head, par)
     elseif id == mathid then
       pc, pcl, curr = 0x30, 0, end_of_math(curr)
     elseif id == dirid then
-      pc, pcl = curr.dir:sub(1,1) == "-" and 0x30, 0 -- pop dir
+      if curr.dir:sub(1,1) == "+" then -- push dir
+        local n = getnext(curr)
+        if n.id == glyphid then
+          local old = has_attribute(n, classicattr)
+          head = maybe_linebreak(head, curr, pc, pcl, n.char, old, n.font, par)
+        end
+        pc, pcl = false, 0
+      end
     elseif is_blocking_node(curr) then
       pc, pcl = false, 0
     end
@@ -1043,6 +1050,14 @@ local function process_interhangul (head, par)
 
     elseif id == mathid then
       pc, curr = 0, end_of_math(curr)
+    elseif id == dirid then
+      if curr.dir:sub(1,1) == "+" then
+        local n = getnext(curr)
+        if n.id == glyphid then
+          head = do_interhangul_option(head, curr, pc, n.char, n.font, par)
+        end
+        pc = 0
+      end
     elseif is_blocking_node(curr) then
       pc = 0
     end
@@ -1051,33 +1066,28 @@ local function process_interhangul (head, par)
   return head
 end
 
-local function do_interlatincjk_option (head, curr, pc, pf, pcl, c, cf, par)
+local function do_interlatincjk_option (head, curr, p, pc, pf, c, cf, par)
   local cc = is_cjk_char(c) and 1 or is_noncjk_char(c) and 2 or 0
-  local old = has_attribute(curr, classicattr)
-  local ccl = get_char_class(c, old)
   local f = cc == 1 and cf or pf
 
-  if cc*pc == 2 and curr.lang ~= nohyphen then
+  if p and cc*pc == 2 and curr.lang ~= nohyphen then
     local brb = cc == 2 or breakable_before[c] -- numletter != br_before
-    if brb and brb ~= 10000 then -- skip latin-dash
+    local br = brb and breakable_after[p] == true -- skip dash-latin
+    if br and brb ~= 10000 then -- skip latin-dash
       local dimc = fontoptions.interlatincjk[cf] or 0
       local dimp = fontoptions.interlatincjk[pf] or 0
       local dim  = mathmax(dimc, dimp)
       if dim ~= 0 then
-        local ict = old and intercharclass[pcl][ccl] -- under classic env. only
-        if ict then
-          dim = fontoptions.intercharacter[f] or 0
-        end
-        head = insert_glue_before(head, curr, par, true, brb, old, ict, dim, f)
+        head = insert_glue_before(head, curr, par, br, brb, false, false, dim, f)
       end
     end
   end
 
-  return head, cc, f, ccl
+  return head, cc, f, c
 end
 
 local function process_interlatincjk (head, par)
-  local curr, pc, pf, pcl = head, 0, false, 0
+  local curr, pc, pf, p = head, 0, false, false
   while curr do
     if curr.id == glyphid and is_cjk_char(curr.char) then
       pf = curr.font
@@ -1091,43 +1101,43 @@ local function process_interlatincjk (head, par)
     local id = curr.id
     if id == glyphid then
       local c = has_attribute(curr, unicodeattr) or curr.char
-      if c and not is_combining(curr.char) then -- we are in pre-shaping stage
-        head, pc, pf, pcl = do_interlatincjk_option(head, curr, pc, pf, pcl, c, curr.font, par)
-        pc = breakable_after[c] == true and pc or 0 -- to skip dash-latin
+      if c and not is_combining(c) then
+        head, pc, pf, p = do_interlatincjk_option(head, curr, p, pc, pf, c, curr.font, par)
       end
 
     elseif id == hlistid and is_blocking_node(curr) then
       local c, f = hbox_char_font(curr, true)
       if c then
-        head = do_interlatincjk_option(head, curr, pc, pf, pcl, c, pf or f, par)
+        head = do_interlatincjk_option(head, curr, p, pc, pf, c, pf or f, par)
       end
       c, f = hbox_char_font(curr)
-      pc  = c and breakable_after[c] == true and (is_cjk_char(c) and 1 or is_noncjk_char(c) and 2) or 0
-      pcl = c and get_char_class(c, has_attribute(curr, classicattr)) or 0
-      pf  = pf or f
+      pc = c and (is_cjk_char(c) and 1 or is_noncjk_char(c) and 2) or 0
+      pf, p  = pf or f, c
 
     elseif id == whatsitid and curr.mode == directmode then
       local glyf, c = get_actualtext(curr)
       if c and glyf then
-        head, pc, pf, pcl = do_interlatincjk_option(head, curr, pc, pf, pcl, c, glyf.font, par)
+        head, pc, pf, p = do_interlatincjk_option(head, curr, p, pc, pf, c, glyf.font, par)
         curr = goto_end_actualtext(curr)
       end
 
     elseif id == mathid then
       if pc == 1 then
-        head = do_interlatincjk_option(head, curr, pc, pf, pcl, 0x30, pf, par)
+        head = do_interlatincjk_option(head, curr, p, pc, pf, 0x30, pf, par)
       end
-      pc, pcl = 2, 0
-      curr = end_of_math(curr)
+      curr, pc, p = end_of_math(curr), 2, 0x30
 
     elseif id == dirid then
-      if pc == 1 and curr.dir:sub(1,1) == "+" then
-        head = do_interlatincjk_option(head, curr, pc, pf, pcl, 0x30, pf, par)
+      if curr.dir:sub(1,1) == "+" then
+        local n = getnext(curr)
+        if n.id == glyphid then
+          head = do_interlatincjk_option(head, curr, p, pc, pf, n.char, n.font, par)
+        end
+        pc, p = 0, false
       end
-      pc, pcl = 0, 0
 
     elseif is_blocking_node(curr) then
-      pc, pcl = 0, 0
+      pc, p = 0, false
     end
 
     curr = getnext(curr)
