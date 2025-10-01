@@ -1072,13 +1072,12 @@ local function do_interlatincjk_option (head, curr, p, pc, pf, c, cf, par)
 
   if p and cc*pc == 2 and curr.lang ~= nohyphen then
     local brb = cc == 2 or breakable_before[c] -- numletter != br_before
-    local br = brb and breakable_after[p] == true -- skip dash-latin
-    if br and brb ~= 10000 then -- skip latin-dash
+    if brb and brb ~= 10000 and breakable_after[p] == true then -- skip latin-dash and dash-latin
       local dimc = fontoptions.interlatincjk[cf] or 0
       local dimp = fontoptions.interlatincjk[pf] or 0
       local dim  = mathmax(dimc, dimp)
       if dim ~= 0 then
-        head = insert_glue_before(head, curr, par, br, brb, false, false, dim, f)
+        head = insert_glue_before(head, curr, par, true, brb, false, false, dim, f)
       end
     end
   end
