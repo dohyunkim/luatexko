@@ -424,6 +424,9 @@ end
 local function is_hanja (c)
   return c >= 0x3400 and c <= 0xA4C6
   or     c >= 0xF900 and c <= 0xFAFF
+  or     c >= 0xFF10 and c <= 0xFF19
+  or     c >= 0xFF21 and c <= 0xFF3A
+  or     c >= 0xFF41 and c <= 0xFF5A
   or     c >= 0x20000 and c <= 0x3FFFD
   or     c >= 0x2E81 and c <= 0x2FD5
 end
@@ -584,7 +587,7 @@ local breakable_after = setmetatable({
   [0xFE32] = true, [0xFE50] = true, [0xFE51] = true, [0xFE52] = true,
   [0xFE54] = true, [0xFE55] = true, [0xFE57] = true, [0xFE57] = true,
   [0xFE58] = true, [0xFE5A] = true, [0xFE5C] = true, [0xFE5E] = true,
-  [0xFF1E] = true, [0xFF5E] = true, [0xFF70] = true, [0x226B] = true, -- ≫
+  [0xFF1E] = true, [0xFF5E] = 50,   [0xFF70] = true, [0x226B] = true, -- ≫
   [0xFF9E] = true, [0xFF9F] = true,
 },{ __index = function (_,c)
   return is_hangul_jamo(c) -- chosong also is breakable_after

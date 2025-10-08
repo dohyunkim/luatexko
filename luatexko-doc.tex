@@ -136,7 +136,7 @@
 \def\kotex{\logoko\kern-.1ex .\kern-.1667em \TeX}
 \def\hemph#1{\textsf{\bfseries #1}}
 \makeatletter
-\def\hparen#1{\begingroup\fontsize{.9\dimexpr\f@size pt\relax}{0pt}\selectfont
+\def\hparen#1{\begingroup\fontsize{.9\dimexpr\f@size pt\relax}\z@\selectfont
   \ifdim\lastskip>\z@\else \ifdim\lastkern>\z@\else
   \hskip.1em plus.01em\relax\fi\fi (#1)\futurelet\@let@token\hparenstop}
 \def\hparenstop{\ifx\@let@token\@sptoken\else
