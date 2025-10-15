@@ -909,7 +909,7 @@ local function maybe_linebreak (head, curr, pc, pcl, cc, old, fid, par)
     if brap == 50 and brbc == 10000 then -- skip dash-dash
     else
       local ict = intercharclass[pcl][ccl]
-      local br  = brap and brbc or brap == 50 -- allow dash-latin as well
+      local br  = brap and brbc or brap == 50 and is_noncjk_char(cc) -- allow dash-latin as well
       local dim = fontoptions.intercharacter[fid]
       head = insert_glue_before(head, curr, par, br, brbc, old, ict, dim, fid)
     end
