@@ -446,7 +446,7 @@ local function is_combining (c)
   return is_jungsong(c)
   or     is_jongsong(c)
   or     c >= 0x302A and c <= 0x302F
-  or     c == 0x3099 or  c == 0x309A
+  or     c == 0x3099 or  c == 0x309A or c == 0x3035
   -- variation selectors
   or     c >= 0xFE00  and c <= 0xFE0F
   or     c >= 0xE0100 and c <= 0xE01EF
@@ -573,6 +573,8 @@ local breakable_after = setmetatable({
   [0xFE58] = true, [0xFE5A] = true, [0xFE5C] = true, [0xFE5E] = true,
   [0xFF1E] = true, [0xFF5E] = 50,   [0xFF70] = true, [0x226B] = true, -- ≫
   [0xFF9E] = true, [0xFF9F] = true,
+  [0x3000] = true, [0x3030] = true, [0x3031] = true, [0x3032] = true,
+  [0x3033] = true, [0x3034] = true, -- as 0x3035 is combining
 },{ __index = function (_,c)
   return is_hangul_jamo(c) -- chosong also is breakable_after
   or     is_noncjk_char(c)
@@ -588,6 +590,7 @@ local breakable_before = setmetatable({
   [0x7B] = true,   [0xAB] = true,   [0x25A1] = true, [0x25CB] = true,
   [0x3007] = true, [0xFE59] = true, [0xFE5B] = true, [0xFE5D] = true,
   [0xFF1C] = true, [0x226A] = true, -- ≪
+  [0x3000] = true, [0x303C] = true,
   -- dashes : nobreak but stretching
   [0x2013] = 10000, [0x2014] = 10000, [0x2015] = 10000, [0x2025] = 10000,
   [0x2026] = 10000, [0xFE19] = 10000, [0xFE30] = 10000, [0xFE31] = 10000,
@@ -744,6 +747,7 @@ local function process_fonts (head)
       local oldwd, oldst, oldsh, oldsto, oldsho = getglue(curr)
       if params and oldsto == 0 and oldsho == 0 then
         local p = getprev(curr)
+        while p and p.id == whatsitid do p = getprev(p) end
         local sf = p and p.char and tex.getsfcode(p.char) or 1000
         if sf == 0 or sf > 1000 then
           local p, pf = getprev(p), 0
@@ -865,10 +869,18 @@ local function insert_glue_before (head, curr, par, br, brb, classic, ict, dim, 
       pn.penalty = 10000
     elseif type(brb) == "number" then
       pn.penalty = brb
-    elseif par and nodecount(glyphid, curr) <= 2 then
-      pn.penalty = 1000 -- supress orphan
     else
       pn.penalty = 50
+      if par then
+        local nn = getnext(curr)
+        while nn.id == whatsitid or nn.penalty == 10000 or nn.char and
+          (rawget(breakable_after, nn.char) or charclass[nn.char] >= 2 or is_combining(nn.char)) do
+          nn = getnext(nn)
+        end
+        if nn.id == glueid and nn.subtype == parfillskip then
+          pn.penalty = 1000 -- supress orphan
+        end
+      end
     end
     head = insert_before(head, curr, pn)
   end
@@ -964,18 +976,6 @@ local function process_linebreak (head, par)
       c, f = hbox_char_font(curr)
       pc, pf, pcl  = c or -1, pf or f, c and get_char_class(c, old) or 0
 
-    elseif id == whatsitid and curr.mode == directmode then
-      local glyf, c, fin = get_actualtext(curr)
-      if c and fin and glyf then
-        local old = has_attribute(glyf, classicattr)
-        if old and pc == -1 then -- penalty only
-          head = insert_glue_before(head, curr, par, true, false)
-        else
-          head = maybe_linebreak(head, curr, pc, pcl, c, old, glyf.font, par)
-        end
-        pc, pcl, curr, pf = fin, 0, goto_end_actualtext(curr), glyf.font
-      end
-
     elseif id == mathid then
       pc, pcl, curr = 0x30, 0, end_of_math(curr)
     elseif id == dirid then
@@ -1027,13 +1027,6 @@ local function process_interhangul (head, par)
       end
       c, f = hbox_char_font(curr)
       pc, pf = c and is_hangul_jamo(c) and 1 or 0, pf or f
-
-    elseif id == whatsitid and curr.mode == directmode then
-      local glyf, c = get_actualtext(curr)
-      if c and glyf then
-        head = do_interhangul_option(head, curr, pc, c, glyf.font, par)
-        pc, curr, pf = 1, goto_end_actualtext(curr), glyf.font
-      end
 
     elseif id == mathid then
       pc, curr = 0, end_of_math(curr)
@@ -1099,13 +1092,6 @@ local function process_interlatincjk (head, par)
       c, f = hbox_char_font(curr)
       pc = c and (is_cjk_char(c) and 1 or is_noncjk_char(c) and 2) or 0
       pf, p  = pf or f, c
-
-    elseif id == whatsitid and curr.mode == directmode then
-      local glyf, c = get_actualtext(curr)
-      if c and glyf then
-        head, pc, pf, p = do_interlatincjk_option(head, curr, p, pc, pf, c, glyf.font, par)
-        curr = goto_end_actualtext(curr)
-      end
 
     elseif id == mathid then
       if pc == 1 then
@@ -2277,17 +2263,16 @@ end,
 
 create_callback("luatexko_prelinebreak_first",  "data", function(...) return ... end)
 create_callback("luatexko_prelinebreak_second", "data", function(...) return ... end)
+create_callback("luatexko_prelinebreak_third",  "data", function(...) return ... end)
 
-add_to_callback("pre_shaping_filter", function(h, gc)
-  local par = gc == ""
-           or gc == "vbox"
-           or gc == "vtop"
-           or gc == "insert"
-           or gc == "vcenter"
+add_to_callback("pre_shaping_filter", function(h)
+  local par = h.id == localparid
   h = call_callback("luatexko_prelinebreak_first", h, par)
   h = process_cjk_punctuation_spacing(h, par)
   h = call_callback("luatexko_prelinebreak_second", h, par)
-  return process_linebreak(h, par)
+  h = process_linebreak(h, par)
+  h = call_callback("luatexko_prelinebreak_third", h, par)
+  return h
 end, "luatexko.pre_shaping_filter")
 
 local otfregister = fonts.constructors.features.otf.register
@@ -2523,7 +2508,7 @@ local auxiliary_procs = {
     luatexko_prelinebreak_first = process_josa,
   },
   reorderTM = {
-    luatexko_prelinebreak_first = process_reorder_tonemarks,
+    luatexko_prelinebreak_third = process_reorder_tonemarks,
   },
 }
 
