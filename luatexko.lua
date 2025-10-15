@@ -503,33 +503,87 @@ local intercharclass = { [0] =
 }
 
 local charclass = setmetatable({
-  [0x2018] = 1, [0x201C] = 1, [0x2329] = 1, [0x3008] = 1,
-  [0x300A] = 1, [0x300C] = 1, [0x300E] = 1, [0x3010] = 1,
-  [0x3014] = 1, [0x3016] = 1, [0x3018] = 1, [0x301A] = 1,
-  [0x301D] = 1, [0xFE17] = 1, [0xFE35] = 1, [0xFE37] = 1,
-  [0xFE39] = 1, [0xFE3B] = 1, [0xFE3D] = 1, [0xFE3F] = 1,
-  [0xFE41] = 1, [0xFE43] = 1, [0xFE47] = 1, [0xFF08] = 1,
-  [0xFF3B] = 1, [0xFF5B] = 1, [0xFF5F] = 1, [0xFF62] = 1,
+  [0x2018] = 1, -- ‘
+  [0x201C] = 1, -- “
+  [0x2329] = 1, -- 〈
+  [0x3008] = 1, -- 〈
+  [0x300A] = 1, -- 《
+  [0x300C] = 1, -- 「
+  [0x300E] = 1, -- 『
+  [0x3010] = 1, -- 【
+  [0x3014] = 1, -- 〔
+  [0x3016] = 1, -- 〖
+  [0x3018] = 1, -- 〘
+  [0x301A] = 1, -- 〚
+  [0x301D] = 1, -- 〝 REVERSED DOUBLE PRIME QUOTATION MARK
+  [0xFE17] = 1, -- ︗
+  [0xFE35] = 1, -- ︵
+  [0xFE37] = 1, -- ︷
+  [0xFE39] = 1, -- ︹
+  [0xFE3B] = 1, -- ︻
+  [0xFE3D] = 1, -- ︽
+  [0xFE3F] = 1, -- ︿
+  [0xFE41] = 1, -- ﹁
+  [0xFE43] = 1, -- ﹃
+  [0xFE47] = 1, -- ﹇
+  [0xFF08] = 1, -- （
+  [0xFF3B] = 1, -- ［
+  [0xFF5B] = 1, -- ｛
+  [0xFF5F] = 1, -- ｟
   --
-  [0x2019] = 2, [0x201D] = 2, [0x232A] = 2, [0x3001] = 2,
-  [0x3009] = 2, [0x300B] = 2, [0x300D] = 2, [0x300F] = 2,
-  [0x3011] = 2, [0x3015] = 2, [0x3017] = 2, [0x3019] = 2,
-  [0x301B] = 2, [0x301E] = 2, [0x301F] = 2, [0xFE10] = 2,
-  [0xFE11] = 2, [0xFE18] = 2, [0xFE36] = 2, [0xFE38] = 2,
-  [0xFE3A] = 2, [0xFE3C] = 2, [0xFE3E] = 2, [0xFE40] = 2,
-  [0xFE42] = 2, [0xFE44] = 2, [0xFE48] = 2, [0xFF09] = 2,
-  [0xFF0C] = 2, [0xFF3D] = 2, [0xFF5D] = 2, [0xFF60] = 2,
-  [0xFF63] = 2, [0xFF64] = 2,
+  [0x2019] = 2, -- ’
+  [0x201D] = 2, -- ”
+  [0x232A] = 2, -- 〉
+  [0x3001] = 2, -- 、
+  [0x3009] = 2, -- 〉
+  [0x300B] = 2, -- 》
+  [0x300D] = 2, -- 」
+  [0x300F] = 2, -- 』
+  [0x3011] = 2, -- 】
+  [0x3015] = 2, -- 〕
+  [0x3017] = 2, -- 〗
+  [0x3019] = 2, -- 〙
+  [0x301B] = 2, -- 〛
+  [0x301E] = 2, -- 〞 DOUBLE PRIME QUOTATION MARK
+  [0x301F] = 2, -- 〟 LOW DOUBLE PRIME QUOTATION MARK
+  [0xFE10] = 2, -- ︐
+  [0xFE11] = 2, -- ︑
+  [0xFE18] = 2, -- ︘
+  [0xFE36] = 2, -- ︶
+  [0xFE38] = 2, -- ︸
+  [0xFE3A] = 2, -- ︺
+  [0xFE3C] = 2, -- ︼
+  [0xFE3E] = 2, -- ︾
+  [0xFE40] = 2, -- ﹀
+  [0xFE42] = 2, -- ﹂
+  [0xFE44] = 2, -- ﹄
+  [0xFE48] = 2, -- ﹈
+  [0xFF09] = 2, -- ）
+  [0xFF0C] = 2, -- ，
+  [0xFF3D] = 2, -- ］
+  [0xFF5D] = 2, -- ｝
+  [0xFF60] = 2, -- ｠
   --
-  [0x00B7] = 3, [0x30FB] = 3, [0xFF1A] = 3, [0xFF1B] = 3,
-  [0xFF65] = 3,
+  [0x00B7] = 3, -- ·
+  [0x30FB] = 3, -- ・
+  [0xFF1A] = 3, -- ：
+  [0xFF1B] = 3, -- ；
   --
-  [0x3002] = 4, [0xFE12] = 4, [0xFF0E] = 4, [0xFF61] = 4,
+  [0x3002] = 4, -- 。
+  [0xFE12] = 4, -- ︒
+  [0xFF0E] = 4, -- ．
   --
-  [0x2015] = 5, [0x2025] = 5, [0x2026] = 5, [0xFE19] = 5,
-  [0xFE30] = 5, [0xFE31] = 5,
+  [0x2015] = 5, -- ―
+  [0x2025] = 5, -- ‥
+  [0x2026] = 5, -- …
+  [0xFE19] = 5, -- ︙
+  [0xFE30] = 5, -- ︰
+  [0xFE31] = 5, -- ︱
   --
-  [0xFE15] = 6, [0xFE16] = 6, [0xFF01] = 6, [0xFF1F] = 6,
+  [0xFE15] = 6, -- ︕
+  [0xFE16] = 6, -- ︖
+  [0xFF01] = 6, -- ！
+  [0xFF1F] = 6, -- ？
 }, { __index = function() return 0 end })
 
 local special_classes = {
@@ -557,24 +611,80 @@ local function get_char_class (c, classic)
 end
 
 local breakable_after = setmetatable({
-  [0x21] = true,   [0x22] = true,   [0x25] = true,   [0x27] = true,
-  [0x29] = true,   [0x2C] = true,   [0x2D] = true,   [0x2E] = true,
-  [0x3A] = true,   [0x3B] = true,   [0x3E] = true,   [0x3F] = true,
-  [0x5D] = true,   [0x7D] = true,   [0x7E] = true,   [0xBB] = true,
-  [0x2013] = 50,   [0x2014] = 50,   [0x2015] = 50,   [0x2025] = 50, -- 50: dashes
-  [0x2026] = 50,   [0xFE19] = 50,   [0xFE30] = 50,   [0xFE31] = 50,
-  [0x25A1] = true, [0x25CB] = true, [0x2E80] = true, [0x3003] = true,
-  [0x3005] = true, [0x3007] = true, [0x301C] = true, [0x3035] = true,
-  [0x303B] = true, [0x303C] = true, [0x309B] = true, [0x309C] = true,
-  [0x309D] = true, [0x309E] = true, [0x30A0] = true, [0x30FC] = true,
-  [0x30FD] = true, [0x30FE] = true, [0xFE13] = true, [0xFE14] = true,
-  [0xFE32] = true, [0xFE50] = true, [0xFE51] = true, [0xFE52] = true,
-  [0xFE54] = true, [0xFE55] = true, [0xFE57] = true, [0xFE57] = true,
-  [0xFE58] = true, [0xFE5A] = true, [0xFE5C] = true, [0xFE5E] = true,
-  [0xFF1E] = true, [0xFF5E] = 50,   [0xFF70] = true, [0x226B] = true, -- ≫
-  [0xFF9E] = true, [0xFF9F] = true,
-  [0x3000] = true, [0x3030] = true, [0x3031] = true, [0x3032] = true,
-  [0x3033] = true, [0x3034] = true, -- as 0x3035 is combining
+  [0x21] = true, -- !
+  [0x22] = true, -- "
+  [0x25] = true, -- %
+  [0x27] = true, -- '
+  [0x29] = true, -- )
+  [0x2C] = true, -- ,
+  [0x2D] = true, -- -
+  [0x2E] = true, -- .
+  [0x3A] = true, -- :
+  [0x3B] = true, -- ;
+  [0x3E] = true, -- >
+  [0x3F] = true, -- ?
+  [0x5D] = true, -- ]
+  [0x7D] = true, -- }
+  [0x7E] = true, -- ~
+  [0xBB] = true, -- »
+  [0x226B] = true, -- ≫MUCH GREATER-THAN
+  [0x25A1] = true, -- □
+  [0x25CB] = true, -- ○
+  [0x2E80] = true, -- ⺀ CJK RADICAL REPEAT
+  [0x3000] = true,
+  [0x3003] = true, -- 〃 DITTO MARK
+  [0x3004] = true, -- 〄
+  [0x3005] = true, -- 々
+  [0x3007] = true, -- 〇
+  [0x3012] = true, -- 〒
+  [0x3013] = true, -- 〓
+  [0x3020] = true, -- 〠
+  [0x3036] = true, -- 〶
+  [0x303B] = true, -- 〻
+  [0x303C] = true, -- 〼
+  [0x303D] = true, -- 〽
+  [0x309B] = true, -- ゛ KATAKANA-HIRAGANA VOICED SOUND MARK
+  [0x309C] = true, -- ゜ KATAKANA-HIRAGANA SEMI-VOICED SOUND MARK
+  [0x309D] = true, -- ゝ HIRAGANA ITERATION MARK
+  [0x309E] = true, -- ゞ HIRAGANA VOICED ITERATION MARK
+  [0x30A0] = true, -- ゠ KATAKANA-HIRAGANA DOUBLE HYPHEN
+  [0x30FC] = true, -- ー KATAKANA-HIRAGANA PROLONGED SOUND MARK
+  [0x30FD] = true, -- ヽ KATAKANA ITERATION MARK
+  [0x30FE] = true, -- ヾ KATAKANA VOICED ITERATION MARK
+  [0xFE13] = true, -- ︓
+  [0xFE14] = true, -- ︔
+  [0xFE50] = true, -- ﹐ SMALL COMMA
+  [0xFE51] = true, -- ﹑ SMALL IDEOGRAPHIC COMMA
+  [0xFE52] = true, -- ﹒ SMALL FULL STOP
+  [0xFE54] = true, -- ﹔
+  [0xFE55] = true, -- ﹕
+  [0xFE56] = true, -- ﹖
+  [0xFE57] = true, -- ﹗
+  [0xFE5A] = true, -- ﹚
+  [0xFE5C] = true, -- ﹜
+  [0xFE5E] = true, -- ﹞
+  [0xFF1E] = true, -- ＞
+  [0xFF70] = true, -- ｰ HALFWIDTH KATAKANA-HIRAGANA PROLONGED SOUND MARK
+  [0xFF9E] = true, -- ﾞ HALFWIDTH KATAKANA VOICED SOUND MARK
+  [0xFF9F] = true, -- ﾟ HALFWIDTH KATAKANA SEMI-VOICED SOUND MARK
+  [0x3031] = true, -- 〱 VERTICAL KANA REPEAT MARK
+  [0x3032] = true, -- 〲 VERTICAL KANA REPEAT WITH VOICED SOUND MARK
+  [0x3033] = true, -- 〳 VERTICAL KANA REPEAT MARK UPPER HALF (as U+3035 is combining)
+  [0x3034] = true, -- 〴 VERTICAL KANA REPEAT WITH VOICED SOUND MARK UPPER HALF (〃)
+  -- dashes : suppress visible spacing after
+  [0x2013] = 50, -- – (50: dashes)
+  [0x2014] = 50, -- —
+  [0x2015] = 50, -- ―
+  [0x2025] = 50, -- ‥
+  [0x2026] = 50, -- …
+  [0xFE19] = 50, -- ︙ PRESENTATION FORM FOR VERTICAL HORIZONTAL ELLIPSIS
+  [0xFE30] = 50, -- ︰ PRESENTATION FORM FOR VERTICAL TWO DOT LEADER
+  [0xFE31] = 50, -- ︱ PRESENTATION FORM FOR VERTICAL EM DASH
+  [0xFE32] = 50, -- ︲ PRESENTATION FORM FOR VERTICAL EN DASH
+  [0xFE58] = 50, -- ﹘ SMALL EM DASH
+  [0x301C] = 50, -- 〜 WAVE DASH
+  [0x3030] = 50, -- 〰 WAVY DASH
+  [0xFF5E] = 50, -- ～ FULLWIDTH TILDE
 },{ __index = function (_,c)
   return is_hangul_jamo(c) -- chosong also is breakable_after
   or     is_noncjk_char(c)
@@ -586,14 +696,40 @@ end })
 luatexko.breakableafter = breakable_after
 
 local breakable_before = setmetatable({
-  [0x28] = true,   [0x3C] = true,   [0x5B] = true,   [0x60] = true,
-  [0x7B] = true,   [0xAB] = true,   [0x25A1] = true, [0x25CB] = true,
-  [0x3007] = true, [0xFE59] = true, [0xFE5B] = true, [0xFE5D] = true,
-  [0xFF1C] = true, [0x226A] = true, -- ≪
-  [0x3000] = true, [0x303C] = true,
-  -- dashes : nobreak but stretching
-  [0x2013] = 10000, [0x2014] = 10000, [0x2015] = 10000, [0x2025] = 10000,
-  [0x2026] = 10000, [0xFE19] = 10000, [0xFE30] = 10000, [0xFE31] = 10000,
+  [0x28] = true, -- (
+  [0x3C] = true, -- <
+  [0x5B] = true, -- [
+  [0x60] = true, -- `
+  [0x7B] = true, -- {
+  [0xAB] = true, -- «
+  [0x226A] = true, -- ≪
+  [0x25A1] = true, -- □
+  [0x25CB] = true, -- ○
+  [0x3000] = true,
+  [0x3004] = true, -- 〄
+  [0x3007] = true, -- 〇
+  [0x3012] = true, -- 〒
+  [0x3013] = true, -- 〓
+  [0x3020] = true, -- 〠
+  [0x3036] = true, -- 〶
+  [0x303C] = true, -- 〼
+  [0x303D] = true, -- 〽
+  [0xFE59] = true, -- ﹙
+  [0xFE5B] = true, -- ﹛
+  [0xFE5D] = true, -- ﹝
+  [0xFF1C] = true, -- ＜
+  -- dashes : nobreak but stretching before
+  [0x2013] = 10000, -- –
+  [0x2014] = 10000, -- —
+  [0x2015] = 10000, -- ―
+  [0x2025] = 10000, -- ‥
+  [0x2026] = 10000, -- …
+  [0x3030] = 10000, -- 〰 WAVY DASH
+  [0xFE19] = 10000, -- ︙
+  [0xFE30] = 10000, -- ︰
+  [0xFE31] = 10000, -- ︱
+  [0xFE32] = 10000, -- ︲ PRESENTATION FORM FOR VERTICAL EN DASH
+  [0xFE58] = 10000, -- ﹘ SMALL EM DASH
   -- small kana
   [0x3041] = 1000, [0x3043] = 1000, [0x3045] = 1000, [0x3047] = 1000,
   [0x3049] = 1000, [0x3063] = 1000, [0x3083] = 1000, [0x3085] = 1000,
