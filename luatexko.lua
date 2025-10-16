@@ -994,6 +994,26 @@ local function goto_end_actualtext (curr)
   return curr
 end
 
+local function char_orphan_penalty (curr, par)
+  if par then
+    local nn = getnext(curr)
+    local nc = nn.char
+    local ncl = nc and charclass[nc]
+    while nn.id == whatsitid
+       or nn.penalty == 10000
+       or nc and (ncl >= 2 and ncl ~= 5 -- cjk closings
+               or nc < 0xFF and rawget(breakable_after, nc) -- latin closings
+               or is_combining(nc)) do
+      nn = getnext(nn)
+      nc = nn.char
+      ncl = nc and charclass[nc]
+    end
+    if nn.id == glueid and nn.subtype == parfillskip then
+      return 1000 -- supress orphan
+    end
+  end
+end
+
 local function insert_glue_before (head, curr, par, br, brb, classic, ict, dim, fid)
   local prev = getprev(curr)
 
@@ -1001,23 +1021,10 @@ local function insert_glue_before (head, curr, par, br, brb, classic, ict, dim, 
     -- repect user's penalty
   else
     local pn = nodenew(penaltyid)
-    if not br then
-      pn.penalty = 10000
-    elseif type(brb) == "number" then
-      pn.penalty = brb
-    else
-      pn.penalty = 50
-      if par then
-        local nn = getnext(curr)
-        while nn.id == whatsitid or nn.penalty == 10000 or nn.char and
-          (rawget(breakable_after, nn.char) or charclass[nn.char] >= 2 or is_combining(nn.char)) do
-          nn = getnext(nn)
-        end
-        if nn.id == glueid and nn.subtype == parfillskip then
-          pn.penalty = 1000 -- supress orphan
-        end
-      end
-    end
+    pn.penalty = not br and 10000
+              or type(brb) == "number" and brb
+              or char_orphan_penalty(curr, par)
+              or 50
     head = insert_before(head, curr, pn)
   end
   if not fid then return head end -- penalty only for non-glyph box + cjk
@@ -1105,9 +1112,9 @@ local function process_linebreak (head, par)
       local old = has_attribute(curr, classicattr)
       local c, f = hbox_char_font(curr, true)
       if c then
-        head = maybe_linebreak(head, curr, pc, pcl, c, old, pf or f, par)
+        head = maybe_linebreak(head, curr, pc, pcl, c, old, pf or f, false) -- par is false
       elseif old and pc and is_cjk_char(pc) then -- penalty only
-        head = insert_glue_before(head, curr, par, true, false)
+        head = insert_glue_before(head, curr, false, true, false)
       end
       c, f = hbox_char_font(curr)
       pc, pf, pcl  = c or -1, pf or f, c and get_char_class(c, old) or 0
@@ -1159,7 +1166,7 @@ local function process_interhangul (head, par)
     elseif id == hlistid and is_blocking_node(curr) then
       local c, f = hbox_char_font(curr, true)
       if c then
-        head, pc, pf = do_interhangul_option(head, curr, pc, c, pf or f, par)
+        head, pc, pf = do_interhangul_option(head, curr, pc, c, pf or f, false)
       end
       c, f = hbox_char_font(curr)
       pc, pf = c and is_hangul_jamo(c) and 1 or 0, pf or f
@@ -1223,7 +1230,7 @@ local function process_interlatincjk (head, par)
     elseif id == hlistid and is_blocking_node(curr) then
       local c, f = hbox_char_font(curr, true)
       if c then
-        head = do_interlatincjk_option(head, curr, p, pc, pf, c, pf or f, par)
+        head = do_interlatincjk_option(head, curr, p, pc, pf, c, pf or f, false)
       end
       c, f = hbox_char_font(curr)
       pc = c and (is_cjk_char(c) and 1 or is_noncjk_char(c) and 2) or 0
