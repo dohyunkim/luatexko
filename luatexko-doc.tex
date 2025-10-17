@@ -17,7 +17,7 @@
 
 \documentclass[a4paper]{article}
 \usepackage[hmargin={3.4cm,4.2cm}]{geometry}
-\usepackage[svgnames]{xcolor}
+\usepackage[rgb]{xcolor}
 \usepackage{luacolor}
 \usepackage[hangul]{luatexko}
 \directlua{
@@ -112,8 +112,6 @@
   Language=Korean,
 ]
 \usepackage{hologo}
-\def\luatex{\hologo{LuaTeX}}
-\def\XeTeX{\hologo{XeTeX}}
 \usepackage[hidelinks]{hyperref}
 
 \AddToHook{cmd/item/before}{\itemsep 0pt plus 1pt minus 1pt}
@@ -131,10 +129,34 @@
 \def\luatexkopkgkwdX#1{\marginpar{%
   \hfuzz\maxdimen \texttt{\nohyphen \footnotesize \string#1}}}
 %\def\logoko{\textsf{k}\kern-.0625em\textit{o}} % too slow
-\def\logoko{\textsf{k}\kern-.04em $o$}
+\ExplSyntaxOn
+\cs_new_nopar:Npn \actualtag #1 #2
+{
+  \leavevmode
+  \tag_if_active:TF
+  {
+    \tag_mc_end_push:
+    \tag_struct_begin:n{tag=Span, actualtext=#1}
+    \tag_mc_begin:n{}
+    \SuspendTagging{actualtag/#1}
+    #2
+    \ResumeTagging{actualtag/#1}
+    \tag_mc_end:
+    \tag_struct_end:
+    \tag_mc_begin_pop:n{}
+  }
+  {
+    #2
+  }
+}
+\ExplSyntaxOff
+\def\logoko{\actualtag{ko, phoneme=[ˌkeɪˈəʊ]}{\textsf{k}\kern-.04em $o$}}
+\def\luatex{\actualtag{LuaTeX}{\hologo{LuaTeX}}}
+\def\XeTeX{\actualtag{XeTeX}{\hologo{XeTeX}}}
 \def\luatexko{\luatex-\logoko}
+\def\xetexko{\XeTeX-\logoko}
 \def\texlive{\TeX\ Live}
-\def\kotex{\logoko\kern-.1ex .\kern-.1667em \TeX}
+\def\kotex{\actualtag{ko.TeX, phoneme=[ˌkeɪˈəʊtɛx]}{\logoko\kern-.1ex .\kern-.1667em \TeX}}
 \def\hemph#1{\textsf{\bfseries #1}}
 \makeatletter
 \def\hparen#1{\begingroup\fontsize{.9\dimexpr\f@size pt\relax}\z@\selectfont
@@ -144,7 +166,7 @@
   \ifx\@let@token\footnote\nobreak\else\ifx\@let@token ,\nobreak\fi\fi
   \hskip.1em plus.01em\relax\fi\endgroup}
 \makeatother
-\def\ldots{$\dots$}
+\def\ldots{|...|}
 \newenvironment{plaintex}{%
   \begin{itemize}\linespread{1.2}\small
     \itemsep0pt plus1pt minus1pt
@@ -704,8 +726,32 @@ ulem 패키지가 \luatexko와 궁합이 맞지 않아\hparen{줄바꿈에 문�
    }}
 \end{verbatim}
 
-\def\ymarker{\markoverwith{%
-  \hbox{\color{yellow!50}\vrule width 1pt height 9pt depth 2pt}}}
+\ExplSyntaxOn
+\tag_if_active:T
+{
+  \tagpdfsetup
+  {
+    role/new-attribute = {TextDeco-HalfYellowBg}{/O~/Layout~/BackgroundColor~[0.5 0.5 0.0]},
+  }
+  \NewTaggingSocketPlug{luatexko/markoverwith/begin}{yellowmarker}
+  {
+    \leavevmode
+    \tag_mc_end_push:
+    \tag_struct_begin:n{tag=Em, attribute=TextDeco-HalfYellowBg}
+    \tag_mc_begin:n{}
+  }
+}
+\cs_new_nopar:Npn \ymarker
+{
+  \tag_if_active:T
+  {
+    \begingroup
+    \AssignTaggingSocketPlug{luatexko/markoverwith/begin}{yellowmarker}
+    \AddToHookNext{cmd/luatexkomarkoverwith/after}{\endgroup}
+  }
+  \markoverwith{\hbox{\color{yellow!50}\vrule width 1pt height 9pt depth 2pt}}
+}
+\ExplSyntaxOff
 
 \cs{ymarker{노란색을 칠해서 강조한다}}\textdblrightarrow
 \ymarker{노란색을 칠해서 강조한다}.
@@ -818,6 +864,8 @@ ulem 패키지가 \luatexko와 궁합이 맞지 않아\hparen{줄바꿈에 문�
 *\qquad *\qquad *
 \end{center}
 
+\newpage
+
 \section*{주요 변경 이력}
 
 \begin{itemize}\linespread{1.1}\small
@@ -825,7 +873,7 @@ ulem 패키지가 \luatexko와 궁합이 맞지 않아\hparen{줄바꿈에 문�
   \item \LaTeX 의 Tagged PDF 기능 지원
   \item[v3.2] ------
   \item 한자 뒤에서도 자동조사 기능이 대체로 동작하게끔 하였다.
-    \XeTeX-\logoko{} 패키지가 설치돼 있을 것을 요구한다.
+    \xetexko{} 패키지가 설치돼 있을 것을 요구한다.
   \item \hyperref[sec:verttype]{|vertical| 및 |horizontal| 환경의 인자를 비워둘 수 있다}.
   \item \hyperref[sec:verttype]{|verticaltypesetting|을 환경으로도 쓸 수 있다.
     플레인텍에서는 \cs{beginverticaltypesetting} \cs{endverticaltypesetting}}.
