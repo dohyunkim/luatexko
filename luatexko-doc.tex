@@ -130,7 +130,8 @@
 \def\luatexkopkgkwd#1{\texttt{\nohyphen \string#1}\luatexkopkgkwdX{#1}}
 \def\luatexkopkgkwdX#1{\marginpar{%
   \hfuzz\maxdimen \texttt{\nohyphen \footnotesize \string#1}}}
-\def\logoko{\textsf{k}\kern-.0625em\textit{o}}
+%\def\logoko{\textsf{k}\kern-.0625em\textit{o}} % too slow
+\def\logoko{\textsf{k}\kern-.04em $o$}
 \def\luatexko{\luatex-\logoko}
 \def\texlive{\TeX\ Live}
 \def\kotex{\logoko\kern-.1ex .\kern-.1667em \TeX}
@@ -859,7 +860,5 @@ ulem 패키지가 \luatexko와 궁합이 맞지 않아\hparen{줄바꿈에 문�
   \item \hyperref[sec:break]{\cs{registerbreakableafter},
     \cs{registerbreakablebefore} 명령 추가}
 \end{itemize}
-
-%\hfill \fboxsep=-\fboxrule \fbox{\vbox to 1em{\hbox to 1em{\hss}\vss}}
 
 \end{document}

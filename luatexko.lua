@@ -633,16 +633,10 @@ local breakable_after = setmetatable({
   [0x2E80] = true, -- ⺀ CJK RADICAL REPEAT
   [0x3000] = true,
   [0x3003] = true, -- 〃 DITTO MARK
-  [0x3004] = true, -- 〄
   [0x3005] = true, -- 々
   [0x3007] = true, -- 〇
-  [0x3012] = true, -- 〒
-  [0x3013] = true, -- 〓
-  [0x3020] = true, -- 〠
-  [0x3036] = true, -- 〶
-  [0x303B] = true, -- 〻
-  [0x303C] = true, -- 〼
-  [0x303D] = true, -- 〽
+  [0x3013] = true, -- 〓 GETA MARK
+  [0x303B] = true, -- 〻 VERTICAL IDEOGRAPHIC ITERATION MARK
   [0x309B] = true, -- ゛ KATAKANA-HIRAGANA VOICED SOUND MARK
   [0x309C] = true, -- ゜ KATAKANA-HIRAGANA SEMI-VOICED SOUND MARK
   [0x309D] = true, -- ゝ HIRAGANA ITERATION MARK
@@ -706,14 +700,8 @@ local breakable_before = setmetatable({
   [0x25A1] = true, -- □
   [0x25CB] = true, -- ○
   [0x3000] = true,
-  [0x3004] = true, -- 〄
   [0x3007] = true, -- 〇
-  [0x3012] = true, -- 〒
   [0x3013] = true, -- 〓
-  [0x3020] = true, -- 〠
-  [0x3036] = true, -- 〶
-  [0x303C] = true, -- 〼
-  [0x303D] = true, -- 〽
   [0xFE59] = true, -- ﹙
   [0xFE5B] = true, -- ﹛
   [0xFE5D] = true, -- ﹝
@@ -743,8 +731,9 @@ local breakable_before = setmetatable({
   [0x31FC] = 1000, [0x31FD] = 1000, [0x31FE] = 1000, [0x31FF] = 1000,
   [0xFF67] = 1000, [0xFF68] = 1000, [0xFF69] = 1000, [0xFF6A] = 1000,
   [0xFF6B] = 1000, [0xFF6C] = 1000, [0xFF6D] = 1000, [0xFF6E] = 1000,
-  [0xFF6F] = 1000,  [0x1B150] = 1000, [0x1B151] = 1000, [0x1B152] = 1000,
-  [0x1B164] = 1000, [0x1B165] = 1000, [0x1B166] = 1000, [0x1B167] = 1000,
+  [0xFF6F] = 1000,  [0x1B132] = 1000, [0x1B150] = 1000, [0x1B151] = 1000,
+  [0x1B152] = 1000, [0x1B155] = 1000, [0x1B164] = 1000, [0x1B165] = 1000,
+  [0x1B166] = 1000, [0x1B167] = 1000,
   -- nonstarter
   [0xA015] = false, -- YI SYLLABLE WU
 },{ __index = function(_,c)
