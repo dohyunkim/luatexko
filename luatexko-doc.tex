@@ -51,11 +51,11 @@
 \defaultfontfeatures+{Renderer=HarfBuzz}
 \setmainhangulfont{Noto Serif CJK KR}[
   Scale=0.98,
-  AutoFakeSlant,
   Script=Hangul,
   Language=Korean,
   UprightFont=* Light,
   BoldFont=* Bold,
+%  ItalicFont=Noto Sans CJK KR DemiLight,
   InterLatinCJK=.125em,
   CompressPunctuations,
   Expansion, Protrusion=latin,
@@ -66,6 +66,7 @@
   Language=Korean,
   UprightFont=* DemiLight,
   BoldFont=* Bold,
+%  ItalicFont=Noto Serif CJK KR Light,
   InterLatinCJK=.125em,
   CompressPunctuations,
   Expansion, Protrusion=latin,
@@ -731,7 +732,7 @@ ulem 패키지가 \luatexko와 궁합이 맞지 않아\hparen{줄바꿈에 문�
 {
   \tagpdfsetup
   {
-    role/new-attribute = {TextDeco-HalfYellowBg}{/O~/Layout~/BackgroundColor~[0.5 0.5 0.0]},
+    role/new-attribute = {TextDeco-HalfYellowBg}{/O~/Layout~/BackgroundColor~[1.0 1.0 0.5]},
   }
   \NewTaggingSocketPlug{luatexko/markoverwith/begin}{yellowmarker}
   {
