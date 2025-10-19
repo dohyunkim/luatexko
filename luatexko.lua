@@ -2326,7 +2326,7 @@ local function process_fake_slant_font (fontdata, fsl)
 
       if wd > 0 then -- or, jong/jung italic could by very large value
         if hb then
-          ---[[ too slow
+          --[[ too slow
           local extents = hb.shared.font:get_glyph_extents(v.index)
           if extents then
             rbearing = wd - (extents.x_bearing + extents.width)*scale
