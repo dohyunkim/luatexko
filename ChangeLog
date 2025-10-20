@@ -1,3 +1,13 @@
+2025-10-20	Dohyun Kim <nomosnomos at gmail com>
+
+	Version 4.8
+
+	* luatexko.lua:
+	- add fullwidth numbers/letters to is_hanja()
+	- allow glue stretching before/after non-breakable cjk characters
+	- bypass hb.font.get_glyph_extents() for speed-up, so a little larger
+	italic correction value for harf-mode fakeslant fonts
+
 2025-09-26	Dohyun Kim <nomosnomos at gmail com>
 
 	Version 4.7
