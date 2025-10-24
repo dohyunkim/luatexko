@@ -94,7 +94,7 @@
   },
 ]
 \newhangulfontfamily\verticalhangulfont{Noto Sans CJK KR}[
-  Renderer=Node,
+  %Renderer=Node,
   Script=Hangul,
   Language=Korean,
   UprightFont=* DemiLight,
@@ -105,7 +105,7 @@
   CompressPunctuations,
   InterCharStretch=1pt,
   CharRaise=1pt,
-  CharacterWidth=Full,
+  %CharacterWidth=Full,
   Protrusion=cjk,
 ]
 \newhangulfontface\rubyfont{Noto Serif CJK KR Medium}[
@@ -522,9 +522,8 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
 \footnote{%
   폰트 옵션 |Renderer=HarfBuzz| 또는 |Renderer=OpenType| 등
   \hparen{플레인텍에서는 |mode=harf| 옵션}을 주고
-  컴파일하여 HarfBuzz 모듈을 이용하려는 경우 세로쓰기가
-  현재로서는 지원되지 않는다. 세로쓰기를 하려면 이 옵션을 빼고 디폴트 값인
-  |Renderer=Node| \hparen{플레인텍에서는 |mode=node|}를 사용하라.}\,%
+  컴파일하여 HarfBuzz 모듈을 이용하는 경우에도 세로쓰기가 \hemph{지원된다}.
+  그러나 |Renderer=Node|를 이용한 세로쓰기에 비해 속도가 느리고 아직은 실험 단계에 머물러 있다.}\,%
 \footnote{%
   세로쓰기에서는 \cs{typesetclassic}의 아종인 \cs{typesetvertical}이
   기본으로 셋팅되어 있다. 일종의 고문헌 조판으로 보는 것이다.
@@ -549,7 +548,7 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
     \end{vertical}
   }
   \caption{세로쓰기의 예. 박스 높이 |20em|을 지시했다.
-    아직 HarfBuzz 모드를 쓸 수 없으므로 폰트에 |Renderer=Node| 옵션을 명시했다.
+    권장하지 않는다지만 |Renderer=HarfBuzz|를 세로쓰기 폰트 옵션에 넣어봤다.
     }\label{fig:vertical}
 \end{figure}
 
@@ -579,7 +578,7 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
       \linespread{1.5}\sffamily \verticalhangulfont
       \parindent0pt \everypar{\hangindent1em \hangafter1 }
       \spaceskip=.5em plus.25em minus.125em
-      \quad 님의 침묵(The Silent Beloved)
+      \quad 님의 침묵^^^^ff08The Silent Beloved^^^^ff09 %(The Silent Beloved)
       \smallbreak
       \hfil\hfil 한 용 운\hfil
       \bigbreak
@@ -870,6 +869,8 @@ ulem 패키지가 \luatexko와 궁합이 맞지 않아\hparen{줄바꿈에 문�
 \section*{주요 변경 이력}
 
 \begin{itemize}\linespread{1.1}\small
+  \item[v4.9] ------
+  \item \hyperref[sec:verttype]{HarfBuzz 폰트의 세로쓰기 지원} (권장하지는 않음)
   \item[v4.0] ------
   \item \LaTeX 의 Tagged PDF 기능 지원
   \item[v3.2] ------

@@ -94,6 +94,9 @@ local ruleid    = node.id"rule"
 local vlistid   = node.id"vlist"
 local whatsitid = node.id"whatsit"
 local literal_whatsit = node.subtype"pdf_literal"
+local save_whatsit = node.subtype"pdf_save"
+local restore_whatsit = node.subtype"pdf_restore"
+local matrix_whatsit = node.subtype"pdf_setmatrix"
 local directmode = 2
 local fontkern   = 0
 local userkern   = 1
@@ -183,6 +186,29 @@ end
 
 local harfbuzz = luaotfload.harfbuzz
 local os2tag = harfbuzz and harfbuzz.Tag.new"OS/2"
+local function get_asc_desc (hb) -- fontdata.hb
+  if hb and os2tag then
+    local hbface = hb.shared.face
+    local tags = hbface:get_table_tags()
+    local hasos2 = false
+    for _,v in ipairs(tags) do
+      if v == os2tag then
+        hasos2 = true
+        break
+      end
+    end
+    if hasos2 then
+      local os2 = hbface:get_table(os2tag)
+      local length = os2:get_length()
+      if length > 69 then -- sTypoAscender (int16)
+        local data = os2:get_data()
+        local typoascender  = stringunpack(">h", data, 69)
+        local typodescender = stringunpack(">h", data, 71)
+        return typoascender * hb.scale, -typodescender * hb.scale
+      end
+    end
+  end
+end
 
 local fontoptions = {
   is_not_harf = setmetatable( {}, { __index = function (t, fid)
@@ -347,27 +373,8 @@ local fontoptions = {
       -- Node mode's parameters.ascender is gotten from OS/2 table.
       -- TypoAscender in OS/2 table seems to be more suitable for our purpose.
       local hb = has_harf_data(fid)
-      if hb and os2tag then
-        local hbface = hb.shared.face
-        local tags = hbface:get_table_tags()
-        local hasos2 = false
-        for _,v in ipairs(tags) do
-          if v == os2tag then
-            hasos2 = true
-            break
-          end
-        end
-        if hasos2 then
-          local os2 = hbface:get_table(os2tag)
-          local length = os2:get_length()
-          if length > 69 then -- sTypoAscender (int16)
-            local data = os2:get_data()
-            local typoascender  = stringunpack(">h", data, 69)
-            local typodescender = stringunpack(">h", data, 71)
-            asc  =  typoascender  * hb.scale
-            desc = -typodescender * hb.scale
-          end
-        end
+      if hb then
+        asc, desc = get_asc_desc(hb)
       end
       asc  = asc  or get_font_param(fid, "ascender")  or false
       desc = desc or get_font_param(fid, "descender") or false
@@ -922,7 +929,7 @@ end
 
 -- linebreak
 
-local allowbreak_false_nodes = {
+local blocking_nodes = {
   [hlistid]   = true,
   [vlistid]   = true,
   [ruleid]    = true,
@@ -932,14 +939,21 @@ local allowbreak_false_nodes = {
   [dirid]     = true,
   [glyphid]   = true,
 }
+local blocking_whatsits = {
+  [save_whatsit] = true,
+  [restore_whatsit] = true,
+  [matrix_whatsit] = true,
+}
 
 local function is_blocking_node (curr)
   local id, subtype = curr.id, curr.subtype
   if id == hlistid then
     if subtype == indentbox then return false end
     if curr.next and curr.next.id == ins_id then return false end -- footnote
+  elseif id == whatsitid and blocking_whatsits[subtype] then
+    return true
   end
-  return allowbreak_false_nodes[id] or id == kernid and subtype == userkern
+  return blocking_nodes[id] or id == kernid and subtype == userkern
 end
 
 local function hbox_char_font (box, init, deep)
@@ -2081,6 +2095,13 @@ do
   end
 end
 
+local function activate_process (cbnam, cbfun, name, first)
+  if not active_processes[name] then
+    add_to_callback(cbnam, cbfun, "luatexko."..cbnam.."."..name, first)
+    active_processes[name] = true
+  end
+end
+
 local function fontdata_warning(activename, ...)
   if not active_processes[activename] then
     warning(...)
@@ -2099,8 +2120,8 @@ local function process_vertical_font (fontdata)
     return
   end
 
-  local subfont = fontdata.specification and fontdata.specification.sub
-  local tsb_tab = get_tsb_table(fontdata.filename, subfont)
+  local specification = fontdata.specification or { }
+  local tsb_tab = get_tsb_table(specification.filename or fontdata.filename, fontdata.subfont)
 
   if not tsb_tab then
     fontdata_warning("vertical."..fullname,
@@ -2111,10 +2132,20 @@ local function process_vertical_font (fontdata)
   local shared       = fontdata.shared or {}
   local descriptions = shared.rawdata and shared.rawdata.descriptions or {}
   local parameters   = fontdata.parameters or {}
-  local scale    = parameters.factor or 655.36
+  local scale
+    if fontdata.hb then
+      scale = fontdata.hb.scale or 655.36
+    else
+      scale = parameters.factor or 655.36
+    end
   local quad     = parameters.quad or 655360
   local xheight  = parameters.x_height or quad/2
-  local ascender = parameters.ascender or quad*0.8
+  local ascender
+  if fontdata.hb then
+    ascender = get_asc_desc(fontdata.hb) or quad*0.8
+  else
+    ascender = parameters.ascender or quad*0.8
+  end
 
   local goffset = xheight/2 * (dfltfntsize / quad) -- TODO?
 
@@ -2124,19 +2155,35 @@ local function process_vertical_font (fontdata)
 
   for i,v in pairs(fontdata.characters) do
     local voff = goffset - (v.width or 0)/2
-    local bbox = descriptions[i] and descriptions[i].boundingbox or {0,0,0,0}
+    local bbox
+    if fontdata.hb then
+      local exts = fontdata.hb.shared.font:get_glyph_extents(v.index) -- quite slow for CFF
+      bbox = exts and { exts.x_bearing,
+                        exts.y_bearing + exts.height,
+                        exts.x_bearing + exts.width,
+                        exts.y_bearing, } or {0,0,0,0}
+    else
+      bbox = descriptions[i] and descriptions[i].boundingbox or {0,0,0,0}
+    end
     local gid  = v.index
     local tsb  = tsb_tab[gid] and tsb_tab[gid].tsb
     local hoff = tsb and (bbox[4] + tsb) * scale or ascender
-    v.commands = {
-      { "down", -voff },
-      { "right", hoff },
-      { "pdf", "q 0 1 -1 0 0 0 cm" },
-      { "push" },
-      { "char", i },
-      { "pop" },
-      { "pdf", "Q" },
-    }
+
+    if fontdata.hb then
+      v.luatexko_voff = voff
+      v.luatexko_hoff = hoff
+    else
+      v.commands = {
+        { "down", -voff },
+        { "right", hoff },
+        { "pdf", "q 0 1 -1 0 0 0 cm" },
+        { "push" },
+        { "char", i },
+        { "pop" },
+        { "pdf", "Q" },
+      }
+    end
+
     local vw = tsb_tab[gid] and tsb_tab[gid].ht
     vw = vw and vw * scale or quad
 
@@ -2166,6 +2213,23 @@ local function process_vertical_font (fontdata)
   local fea = shared.features or {}
   fea.kern = nil  -- only for horizontal writing
   fea.vert = true -- should be activated by default
+
+  if fontdata.hb then
+    local hb_features, t = specification.hb_features or { }, { }
+    for i,v in ipairs(hb_features) do
+      t[tostring(v)] = i
+    end
+    if t.vhal then -- harf-mode vhal feature not working properly with luatexko, so an alternative
+      table.remove(hb_features, t.vhal)
+      fea.vhal = nil
+      fea.compresspunctuations = true
+      activate_process("post_shaping_filter", process_glyph_width, "compresspunctuations")
+    end
+    if t.kern then table.remove(hb_features, t.kern) end
+    if not t.vert then table.insert(hb_features, harfbuzz.Feature.new"vert") end
+    return
+  end
+
   local seq = res.sequences or {}
   for _,v in ipairs(seq) do
     local fea = v.features or {}
@@ -2197,15 +2261,39 @@ local function process_vertical_font (fontdata)
   end
 end
 
+local verticalattr = new_attribute"luatexko_vertical_attr"
+
 local function process_vertical_diff (head)
   local curr = head
   while curr do
     if curr.id == glyphid then
       local attr = has_attribute(curr, classicattr)
-      if attr == 1 or attr == 4 or attr == 5 then
+      if (attr == 1 or attr == 4 or attr == 5) and not has_attribute(curr, verticalattr) then
+        set_attribute(curr, verticalattr, 1)
         local chardata = char_in_font(curr.font, curr.char)
-        local diff = chardata and chardata.luatexko_diff
-        if diff and diff ~= 0 then
+        local diff = chardata and chardata.luatexko_diff or 0
+
+        if not fontoptions.is_not_harf[curr.font] then -- harf-mode
+          local charraise = fontoptions.charraise[curr.font] or 0
+          local yofforig  = curr.yoffset - charraise
+          diff = diff + curr.width - yofforig
+          curr.yoffset = yofforig - (chardata.luatexko_hoff or 0)
+          curr.xoffset = curr.xoffset + (chardata.luatexko_voff or 0) + charraise
+          local save = nodenew(whatsitid, save_whatsit)
+          local matrix = nodenew(whatsitid, matrix_whatsit)
+          matrix.data = "0 1 -1 0"
+          local restore = nodenew(whatsitid, restore_whatsit)
+          head = insert_before(head, curr, save)
+          head = insert_before(head, curr, matrix)
+          if curr.width ~= 0 then
+            local kern = nodenew(kernid)
+            kern.kern = -curr.width
+            head, curr = insert_after(head, curr, kern)
+          end
+          head, curr = insert_after(head, curr, restore)
+        end
+
+        if diff ~= 0 then
           local k = nodenew(kernid)
           k.kern = diff
           head, curr = insert_after(head, curr, k)
@@ -2411,13 +2499,6 @@ end, "luatexko.pre_shaping_filter")
 
 local otfregister = fonts.constructors.features.otf.register
 
-local function activate_process (cbnam, cbfun, name, first)
-  if not active_processes[name] then
-    add_to_callback(cbnam, cbfun, "luatexko."..cbnam.."."..name, first)
-    active_processes[name] = true
-  end
-end
-
 otfregister {
   name = "removeclassicspaces",
   description = "remove spaces in classic typesetting",
@@ -2513,11 +2594,9 @@ otfregister {
       process_vertical_font(fontdata)
       activate_process("post_shaping_filter", process_vertical_diff, "verticalwriting", 1)
     end,
-    plug = function(fontdata)
-      local fullname = fontdata.fullname
-      fontdata_warning("vertical."..fullname,
-      "Currently, vertical writing is not supported\nby harf mode."..
-      "`Renderer=Node' option is needed for\n`%s'", fullname)
+    plug = function(fontdata) -- experimental
+      process_vertical_font(fontdata)
+      activate_process("post_shaping_filter", process_vertical_diff, "verticalwriting", 1)
     end,
   },
 }
