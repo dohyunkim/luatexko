@@ -2283,6 +2283,7 @@ local function process_vertical_diff (head)
           local matrix = nodenew(whatsitid, matrix_whatsit)
           matrix.data = "0 1 -1 0"
           local restore = nodenew(whatsitid, restore_whatsit)
+          save.attr, matrix.attr, restore.attr = curr.attr, curr.attr, curr.attr
           head = insert_before(head, curr, save)
           head = insert_before(head, curr, matrix)
           if curr.width ~= 0 then
