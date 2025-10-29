@@ -121,6 +121,7 @@ local hanjabyhanjaattr   = attributes.luatexkohanjabyhanjaattr
 local inhibitglueattr  = attributes.luatexkoinhibitglueattr
 
 local unicodeattr = new_attribute"luatexkounicodeattr"
+local charhead = new_attribute"luatexko_char_head"
 
 local stretch_f = 5/100 -- should be consistent for ruby
 
@@ -318,6 +319,14 @@ local fontoptions = {
     end
   end }),
 
+  is_vertical = setmetatable( {}, { __index = function(t, fid)
+    if fid then
+      local vertical = option_in_font(fid, "vertical") or false
+      t[fid] = vertical
+      return vertical
+    end
+  end }),
+
   en_size = setmetatable( {}, { __index = function(t, fid)
     if fid then
       local val = (get_font_param(fid, "quad") or 655360)/2
@@ -397,8 +406,15 @@ end
 local function harf_reordered_tonemark (curr)
   if not fontoptions.is_not_harf[curr.font] then
     local props = getproperty(curr) or {}
-    local actualtext = props.luaotfload_startactualtext or ""
-    return actualtext:find"302[EF]$"
+    local actualtext = props.luaotfload_startactualtext
+    return actualtext and actualtext:find"302[EF]$"
+  end
+end
+
+local function harf_actual_literal (curr)
+  if curr.id == whatsitid and curr.subtype == literal_whatsit then
+    local data = curr.data or ""
+    return data == "EMC" and 2 or data:find"BDC$" and 1 or false
   end
 end
 
@@ -939,19 +955,12 @@ local blocking_nodes = {
   [dirid]     = true,
   [glyphid]   = true,
 }
-local blocking_whatsits = {
-  [save_whatsit] = true,
-  [restore_whatsit] = true,
-  [matrix_whatsit] = true,
-}
 
 local function is_blocking_node (curr)
   local id, subtype = curr.id, curr.subtype
   if id == hlistid then
     if subtype == indentbox then return false end
     if curr.next and curr.next.id == ins_id then return false end -- footnote
-  elseif id == whatsitid and blocking_whatsits[subtype] then
-    return true
   end
   return blocking_nodes[id] or id == kernid and subtype == userkern
 end
@@ -961,7 +970,8 @@ local function hbox_char_font (box, init, deep)
   local curr   = init and box.list or nodeslide(box.list)
   while curr do
     local id = curr.id
-    if id == glyphid then
+    if has_attribute(curr, charhead) then -- various pass-over (especially unboxed) nodes
+    elseif id == glyphid then
       local c = has_attribute(curr, unicodeattr) or curr.char
       if c and not is_combining(c) then
         return c, curr.font
@@ -969,7 +979,7 @@ local function hbox_char_font (box, init, deep)
     elseif curr.list then
       return hbox_char_font(curr, init, deep)
     elseif deep then
-    elseif curr.id == glueid and curr.width == 0 and has_attribute(box, rubyattr) then -- ruby
+    elseif curr.id == glueid and has_attribute(box, rubyattr) then -- ruby
     elseif is_blocking_node(curr) then
       return
     end
@@ -977,12 +987,14 @@ local function hbox_char_font (box, init, deep)
   end
 end
 
+--[[
 local function get_actualtext (curr)
   local actual = my_node_props(curr).startactualtext
   if type(actual) == "table" then
      return actual.init, actual[1], actual[#actual]
   end
 end
+--]]
 
 local function goto_end_actualtext (curr)
   local n = getnext(curr)
@@ -1094,47 +1106,54 @@ local function process_cjk_punctuation_spacing (head, par)
 end
 
 local function process_linebreak (head, par)
-  local curr, pc, pcl, pf = head, false, 0, false
+  local curr, pc, pcl, pf, pcurr = head, false, 0, false, false
   while curr do
-    local id = curr.id
-    if id == glyphid then
-      local c = has_attribute(curr, unicodeattr) or curr.char
-      if c and not is_combining(c) then
+    if has_attribute(curr, charhead) or harf_actual_literal(curr) == 1 then
+      pcurr = pcurr or curr
+    else
+      local id = curr.id
+      if id == glyphid then
+        local c = has_attribute(curr, unicodeattr) or curr.char
+        if c and not is_combining(c) then
+          local old = has_attribute(curr, classicattr)
+          local cjk = is_cjk_char(c)
+          local f = cjk and curr.font or pf or curr.font
+          if old and cjk and pc == -1 then -- penalty only (f is nil below) for non-glyph box + cjk
+            head = insert_glue_before(head, pcurr or curr, par, true, false)
+            pc, pf, pcl = c, f, get_char_class(c, old)
+          else
+            head, pc, pcl, pf = maybe_linebreak(head, pcurr or curr, pc, pcl, c, old, f, par)
+          end
+        end
+
+      elseif (id == hlistid or id == vlistid) and is_blocking_node(curr) then
         local old = has_attribute(curr, classicattr)
-        local cjk = is_cjk_char(c)
-        local f = cjk and curr.font or pf or curr.font
-        if old and cjk and pc == -1 then -- penalty only (f is nil below) for non-glyph box + cjk
-          head = insert_glue_before(head, curr, par, true, false)
-          pc, pf, pcl = c, f, get_char_class(c, old)
-        else
-          head, pc, pcl, pf = maybe_linebreak(head, curr, pc, pcl, c, old, f, par)
+        local c, f = hbox_char_font(curr, true)
+        if c then
+          head = maybe_linebreak(head, pcurr or curr, pc, pcl, c, old, pf or f, false) -- par is false
+        elseif old and pc and is_cjk_char(pc) then -- penalty only
+          head = insert_glue_before(head, pcurr or curr, false, true, false)
         end
-      end
+        c, f = hbox_char_font(curr)
+        pc, pf, pcl  = c or -1, pf or f, c and get_char_class(c, old) or 0
 
-    elseif (id == hlistid or id == vlistid) and is_blocking_node(curr) then
-      local old = has_attribute(curr, classicattr)
-      local c, f = hbox_char_font(curr, true)
-      if c then
-        head = maybe_linebreak(head, curr, pc, pcl, c, old, pf or f, false) -- par is false
-      elseif old and pc and is_cjk_char(pc) then -- penalty only
-        head = insert_glue_before(head, curr, false, true, false)
-      end
-      c, f = hbox_char_font(curr)
-      pc, pf, pcl  = c or -1, pf or f, c and get_char_class(c, old) or 0
+      elseif id == mathid then
+        pc, pcl, curr = 0x30, 0, end_of_math(curr)
 
-    elseif id == mathid then
-      pc, pcl, curr = 0x30, 0, end_of_math(curr)
-    elseif id == dirid then
-      if curr.dir:sub(1,1) == "+" then -- push dir
-        local n = getnext(curr)
-        if n.id == glyphid then
-          local old = has_attribute(n, classicattr)
-          head = maybe_linebreak(head, curr, pc, pcl, n.char, old, n.font, par)
+      elseif id == dirid then
+        if curr.dir:sub(1,1) == "+" then -- push dir
+          local n = getnext(curr)
+          if n.id == glyphid then
+            local old = has_attribute(n, classicattr)
+            head = maybe_linebreak(head, pcurr or curr, pc, pcl, n.char, old, n.font, par)
+          end
+          pc, pcl = false, 0
         end
+
+      elseif is_blocking_node(curr) then
         pc, pcl = false, 0
       end
-    elseif is_blocking_node(curr) then
-      pc, pcl = false, 0
+      pcurr = false
     end
     curr = getnext(curr)
   end
@@ -1157,35 +1176,40 @@ local function do_interhangul_option (head, curr, pc, c, fontid, par)
 end
 
 local function process_interhangul (head, par)
-  local curr, pc, pf = head, 0, false
+  local curr, pc, pf, pcurr = head, 0, false, false
   while curr do
-    local id = curr.id
-    if id == glyphid then
-      local c = has_attribute(curr, unicodeattr) or curr.char
-      if c and not is_combining(c) then
-        head, pc, pf = do_interhangul_option(head, curr, pc, c, curr.font, par)
-      end
-
-    elseif id == hlistid and is_blocking_node(curr) then
-      local c, f = hbox_char_font(curr, true)
-      if c then
-        head, pc, pf = do_interhangul_option(head, curr, pc, c, pf or f, false)
-      end
-      c, f = hbox_char_font(curr)
-      pc, pf = c and is_hangul_jamo(c) and 1 or 0, pf or f
-
-    elseif id == mathid then
-      pc, curr = 0, end_of_math(curr)
-    elseif id == dirid then
-      if curr.dir:sub(1,1) == "+" then
-        local n = getnext(curr)
-        if n.id == glyphid then
-          head = do_interhangul_option(head, curr, pc, n.char, n.font, par)
+    if has_attribute(curr, charhead) or harf_actual_literal(curr) == 1 then
+      pcurr = pcurr or curr
+    else
+      local id = curr.id
+      if id == glyphid then
+        local c = has_attribute(curr, unicodeattr) or curr.char
+        if c and not is_combining(c) then
+          head, pc, pf = do_interhangul_option(head, pcurr or curr, pc, c, curr.font, par)
         end
+
+      elseif id == hlistid and is_blocking_node(curr) then
+        local c, f = hbox_char_font(curr, true)
+        if c then
+          head, pc, pf = do_interhangul_option(head, pcurr or curr, pc, c, pf or f, false)
+        end
+        c, f = hbox_char_font(curr)
+        pc, pf = c and is_hangul_jamo(c) and 1 or 0, pf or f
+
+      elseif id == mathid then
+        pc, curr = 0, end_of_math(curr)
+      elseif id == dirid then
+        if curr.dir:sub(1,1) == "+" then
+          local n = getnext(curr)
+          if n.id == glyphid then
+            head = do_interhangul_option(head, pcurr or curr, pc, n.char, n.font, par)
+          end
+          pc = 0
+        end
+      elseif is_blocking_node(curr) then
         pc = 0
       end
-    elseif is_blocking_node(curr) then
-      pc = 0
+      pcurr = false
     end
     curr = getnext(curr)
   end
@@ -1212,7 +1236,7 @@ local function do_interlatincjk_option (head, curr, p, pc, pf, c, cf, par)
 end
 
 local function process_interlatincjk (head, par)
-  local curr, pc, pf, p = head, 0, false, false
+  local curr, pc, pf, p, pcurr = head, 0, false, false, false
   while curr do
     if curr.id == glyphid and is_cjk_char(curr.char) then
       pf = curr.font
@@ -1223,39 +1247,44 @@ local function process_interlatincjk (head, par)
 
   curr = head
   while curr do
-    local id = curr.id
-    if id == glyphid then
-      local c = has_attribute(curr, unicodeattr) or curr.char
-      if c and not is_combining(c) then
-        head, pc, pf, p = do_interlatincjk_option(head, curr, p, pc, pf, c, curr.font, par)
-      end
-
-    elseif id == hlistid and is_blocking_node(curr) then
-      local c, f = hbox_char_font(curr, true)
-      if c then
-        head = do_interlatincjk_option(head, curr, p, pc, pf, c, pf or f, false)
-      end
-      c, f = hbox_char_font(curr)
-      pc = c and (is_cjk_char(c) and 1 or is_noncjk_char(c) and 2) or 0
-      pf, p  = pf or f, c
-
-    elseif id == mathid then
-      if pc == 1 then
-        head = do_interlatincjk_option(head, curr, p, pc, pf, 0x30, pf, par)
-      end
-      curr, pc, p = end_of_math(curr), 2, 0x30
-
-    elseif id == dirid then
-      if curr.dir:sub(1,1) == "+" then
-        local n = getnext(curr)
-        if n.id == glyphid then
-          head = do_interlatincjk_option(head, curr, p, pc, pf, n.char, n.font, par)
+    if has_attribute(curr, charhead) or harf_actual_literal(curr) == 1 then
+      pcurr = pcurr or curr
+    else
+      local id = curr.id
+      if id == glyphid then
+        local c = has_attribute(curr, unicodeattr) or curr.char
+        if c and not is_combining(c) then
+          head, pc, pf, p = do_interlatincjk_option(head, pcurr or curr, p, pc, pf, c, curr.font, par)
         end
+
+      elseif id == hlistid and is_blocking_node(curr) then
+        local c, f = hbox_char_font(curr, true)
+        if c then
+          head = do_interlatincjk_option(head, pcurr or curr, p, pc, pf, c, pf or f, false)
+        end
+        c, f = hbox_char_font(curr)
+        pc = c and (is_cjk_char(c) and 1 or is_noncjk_char(c) and 2) or 0
+        pf, p  = pf or f, c
+
+      elseif id == mathid then
+        if pc == 1 then
+          head = do_interlatincjk_option(head, pcurr or curr, p, pc, pf, 0x30, pf, par)
+        end
+        curr, pc, p = end_of_math(curr), 2, 0x30
+
+      elseif id == dirid then
+        if curr.dir:sub(1,1) == "+" then
+          local n = getnext(curr)
+          if n.id == glyphid then
+            head = do_interlatincjk_option(head, pcurr or curr, p, pc, pf, n.char, n.font, par)
+          end
+          pc, p = 0, false
+        end
+
+      elseif is_blocking_node(curr) then
         pc, p = 0, false
       end
-
-    elseif is_blocking_node(curr) then
-      pc, p = 0, false
+      pcurr = false
     end
 
     curr = getnext(curr)
@@ -1542,85 +1571,79 @@ function luatexko.dotemphboundary (i)
 end
 
 local function process_dotemph (head)
-  local curr = head
+  local curr, pcurr = head, false
   local to_free = { }
   while curr do
-    if curr.list then
-      curr.list = process_dotemph(curr.list)
+    if has_attribute(curr, charhead) or harf_actual_literal(curr) == 1 then
+      pcurr = pcurr or curr
+    else
+      if curr.list then
+        curr.list = process_dotemph(curr.list)
 
-    elseif curr.id == glyphid then
-      local dotattr = has_attribute(curr, dotemphattr)
-      if dotattr and dotemphbox[dotattr] then
-        unset_attribute(curr, dotemphattr) -- avoid multiple run
+      elseif curr.id == glyphid then
+        local dotattr = has_attribute(curr, dotemphattr)
+        if dotattr and dotemphbox[dotattr] then
+          unset_attribute(curr, dotemphattr) -- avoid multiple run
 
-        local c = has_attribute(curr, unicodeattr) or curr.char
-        if is_hangul(c) or is_compat_jamo(c) or is_chosong(c) or is_hanja(c) or is_kana(c) then
-          if hangul_tonemark[curr.char] and harf_reordered_tonemark(curr) then
-            curr = getnext(curr) -- harf mode reorders positive-width hangul tonemark.
-                                 -- Vertical is forbidden, so we can test curr.char
-          end
+          local c = has_attribute(curr, unicodeattr) or curr.char
+          if is_hangul(c) or is_compat_jamo(c) or is_chosong(c) or is_hanja(c) or is_kana(c) then
 
-          local box = nodecopy(dotemphbox[dotattr])
-          -- bypass unwanted nodes injected by some other packages
-          while box.id ~= hlistid do
-            warning[[\dotemph should be an hbox]]
-            box = getnext(box)
-          end
+            local box = nodecopy(dotemphbox[dotattr])
+            -- bypass unwanted nodes injected by some other packages
+            while box.id ~= hlistid do
+              warning[[\dotemph should be an hbox]]
+              box = getnext(box)
+            end
 
-          -- consider charraise
-          box.shift = shift_put_top(curr, box)
+            -- consider charraise
+            box.shift = shift_put_top(curr, box)
 
-          local basewd = curr.width
-          -- put the dot after base syllable
-          local n = getnext(curr)
-          while n do
-            if n.id == glyphid then
-              local c = has_attribute(n, unicodeattr) or n.char
-              if is_combining(c) then
+            local basewd = curr.width
+            if hangul_tonemark[curr.char] then -- horizontal hangul tonemark
+              basewd = 2 * basewd
+            end
+            -- put the dot before base syllable
+            local n = getnext(curr)
+            while n do
+              if n.id == glyphid then
+                if not is_combining(has_attribute(n, unicodeattr) or n.char) then break end
                 basewd = basewd + n.width
+              elseif n.id == kernid and n.subtype == fontkern then
+                basewd = basewd + n.kern
+              elseif n.id == whatsitid and (n.subtype == restore_whatsit
+                or has_attribute(n, charhead) or harf_actual_literal(n) == 2) then -- pass
               else
                 break
               end
-            elseif n.id == kernid and n.subtype == fontkern then
-              basewd = basewd + n.kern
-            elseif n.id == whatsitid
-              and  n.mode == directmode
-              and  my_node_props(n).endactualtext then
-              -- pass
-            else
-              break
+              n = getnext(n)
             end
-            curr = n
-            n = getnext(n)
+
+            local shift = (basewd - box.width)/2
+            if shift ~= 0 then
+              local list = box.list
+              local k = nodenew(kernid)
+              k.kern, k.subtype = shift, userkern
+              box.list = insert_before(list, list, k)
+            end
+
+            box.width = 0
+            set_attribute(box, charhead, 1)
+            head = insert_before(head, pcurr or curr, box)
           end
-
-          local shift = (basewd - box.width)/2 - basewd
-          if shift ~= 0 then
-            local list = box.list
-            local k = nodenew(kernid)
-            k.kern, k.subtype = shift, userkern
-            box.list = insert_before(list, list, k)
-          end
-
-          box.width = 0
-          head, curr = insert_after(head, curr, box)
-
-          local k = nodenew(kernid)
-          k.subtype, k.kern = userkern, 0
-          head = insert_before(head, curr, k)
         end
+
+      elseif curr.id == whatsitid  and
+        curr.user_id == dotemph_id and
+        curr.type    == lua_number then
+
+        local val = curr.value
+        nodefree(dotemphbox[val])
+        dotemphbox[val] = nil
+
+        tableinsert(to_free, curr)
+        head = noderemove(head, curr)
       end
-
-    elseif curr.id == whatsitid  and
-      curr.user_id == dotemph_id and
-      curr.type    == lua_number then
-
-      local val = curr.value
-      nodefree(dotemphbox[val])
-      dotemphbox[val] = nil
-
-      tableinsert(to_free, curr)
-      head = noderemove(head, curr)
+      pcurr = false
     end
     curr = getnext(curr)
   end
@@ -1675,7 +1698,6 @@ local white_nodes = {
   [glueid]    = true,
   [penaltyid] = true,
   [kernid]    = true,
-  [whatsitid] = true,
 }
 
 local function skip_white_nodes (n, ltr)
@@ -1704,9 +1726,11 @@ local function draw_uline (head, curr, parent, t, final)
       g.subtype = subtype
       g.leader  = final and list or nodecopy(list)
       g.attr = curr.attr
+      set_attribute(g, charhead, 1)
       local k = nodenew(kernid)
       k.kern = -len
       k.subtype = userkern
+      set_attribute(k, charhead, 2)
       head = insert_before(head, start, g)
       head = insert_before(head, start, k)
     end
@@ -1843,11 +1867,8 @@ local function process_ruby_post_linebreak (head)
           descender = fontoptions.asc_desc[f][2] or ruby.depth
 
           ruby.shift = shift - ascender - descender - ruby_t[2] -- rubysep
+          set_attribute(ruby, charhead, 1)
           head = insert_before(head, curr, ruby)
-
-          local k = nodenew(kernid)
-          k.subtype, k.kern = userkern, 0
-          head = insert_before(head, curr, k) -- prevent possible glue insertion (unhbox etc)
         end
         rubybox[rubyid] = nil
       end
@@ -1924,11 +1945,18 @@ local function process_reorder_tonemarks (head)
             local actual    = pdfliteral_direct_actual(syllable)
             local endactual = pdfliteral_direct_actual()
             actual.attr, endactual.attr = TM.attr, TM.attr -- for tagged pdf
+            set_attribute(actual, charhead, 1)
             head = insert_before(head, init, actual)
             head, curr = insert_after(head, curr, endactual)
 
             head = noderemove(head, TM)
-            head = insert_before(head, init, TM)
+            head, TM = insert_before(head, init, TM)
+
+            local n, i = TM, 1
+            while n.char do
+              set_attribute(n, unicodeattr, syllable[i]) -- reorder unicode attr
+              n, i = getnext(n), i+1
+            end
           end
 
           init = nil
@@ -1939,6 +1967,9 @@ local function process_reorder_tonemarks (head)
             local actual    = pdfliteral_direct_actual{ init = curr, uni }
             local endactual = pdfliteral_direct_actual()
             actual.attr, endactual.attr = dotcircle.attr, dotcircle.attr -- for tagged pdf
+            set_attribute(actual, charhead, 1)
+            set_attribute(curr, unicode_attr, 0x25CC)
+            set_attribute(dotcircle, unicode_attr, uni)
             head = insert_before(head, curr, actual)
             head, curr = insert_after(head, curr, dotcircle)
             head, curr = insert_after(head, curr, endactual)
@@ -2266,39 +2297,41 @@ local verticalattr = new_attribute"luatexko_vertical_attr"
 local function process_vertical_diff (head)
   local curr = head
   while curr do
-    if curr.id == glyphid then
-      local attr = has_attribute(curr, classicattr)
-      if (attr == 1 or attr == 4 or attr == 5) and not has_attribute(curr, verticalattr) then
-        set_attribute(curr, verticalattr, 1)
-        local chardata = char_in_font(curr.font, curr.char)
-        local diff = chardata and chardata.luatexko_diff or 0
+    if curr.id == glyphid
+      and fontoptions.is_vertical[curr.font]
+      and not has_attribute(curr, verticalattr) then
 
-        if not fontoptions.is_not_harf[curr.font] then -- harf-mode
-          local charraise = fontoptions.charraise[curr.font] or 0
-          local yofforig  = curr.yoffset - charraise
-          diff = diff + curr.width - yofforig
-          curr.yoffset = yofforig - (chardata.luatexko_hoff or 0)
-          curr.xoffset = curr.xoffset + (chardata.luatexko_voff or 0) + charraise
-          local save = nodenew(whatsitid, save_whatsit)
-          local matrix = nodenew(whatsitid, matrix_whatsit)
-          matrix.data = "0 1 -1 0"
-          local restore = nodenew(whatsitid, restore_whatsit)
-          save.attr, matrix.attr, restore.attr = curr.attr, curr.attr, curr.attr
-          head = insert_before(head, curr, save)
-          head = insert_before(head, curr, matrix)
-          if curr.width ~= 0 then
-            local kern = nodenew(kernid)
-            kern.kern = -curr.width
-            head, curr = insert_after(head, curr, kern)
-          end
-          head, curr = insert_after(head, curr, restore)
-        end
+      set_attribute(curr, verticalattr, 1)
+      local chardata = char_in_font(curr.font, curr.char)
+      local diff = chardata and chardata.luatexko_diff or 0
 
-        if diff ~= 0 then
-          local k = nodenew(kernid)
-          k.kern = diff
-          head, curr = insert_after(head, curr, k)
+      if not fontoptions.is_not_harf[curr.font] then -- harf-mode
+        local charraise = fontoptions.charraise[curr.font] or 0
+        local yofforig  = curr.yoffset - charraise
+        diff = diff + curr.width - yofforig
+        curr.yoffset = yofforig - (chardata.luatexko_hoff or 0)
+        curr.xoffset = curr.xoffset + (chardata.luatexko_voff or 0) + charraise
+        local save = nodenew(whatsitid, save_whatsit)
+        local matrix = nodenew(whatsitid, matrix_whatsit)
+        matrix.data = "0 1 -1 0"
+        local restore = nodenew(whatsitid, restore_whatsit)
+        save.attr, matrix.attr, restore.attr = curr.attr, curr.attr, curr.attr
+        set_attribute(save, charhead, 1)
+        set_attribute(matrix, charhead, 2)
+        head = insert_before(head, curr, save)
+        head = insert_before(head, curr, matrix)
+        if curr.width ~= 0 then
+          local kern = nodenew(kernid)
+          kern.kern = -curr.width
+          head, curr = insert_after(head, curr, kern)
         end
+        head, curr = insert_after(head, curr, restore)
+      end
+
+      if texsp(diff) ~= 0 then
+        local k = nodenew(kernid)
+        k.kern = diff
+        head, curr = insert_after(head, curr, k)
       end
     end
     curr = getnext(curr)
@@ -2358,7 +2391,7 @@ local function process_fake_slant_corr (head) -- for font fallback
       if curr.subtype == italcorr and curr.kern == 0 then
         local p, t = getprev(curr), {}
         while p do
-          if p.id == glyphid then
+          if p.id == glyphid and not fontoptions.is_vertical[p.font] then
             -- harf font: break before reordered tone mark
             if harf_reordered_tonemark(p) then
               break

@@ -522,7 +522,7 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
 \footnote{%
   폰트 옵션 |Renderer=HarfBuzz| 또는 |Renderer=OpenType| 등
   \hparen{플레인텍에서는 |mode=harf| 옵션}을 주고
-  컴파일하여 HarfBuzz 모듈을 이용하는 경우에도 세로쓰기가 \hemph{지원된다}.
+  컴파일하여 HarfBuzz 모듈을 이용하는 경우에도 세로쓰기가 \hemph{일단 지원된다}.
   그러나 |Renderer=Node|를 이용한 세로쓰기에 비해 속도가 느리고 아직은 실험 단계에 머물러 있다.}\,%
 \footnote{%
   세로쓰기에서는 \cs{typesetclassic}의 아종인 \cs{typesetvertical}이
@@ -576,9 +576,10 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
   \framebox[\linewidth]{
     \begin{vertical}{17em}
       \linespread{1.5}\sffamily \verticalhangulfont
+      \addhangulfontfeature{Renderer=Node, CharacterWidth=Full}
       \parindent0pt \everypar{\hangindent1em \hangafter1 }
       \spaceskip=.5em plus.25em minus.125em
-      \quad 님의 침묵^^^^ff08The Silent Beloved^^^^ff09 %(The Silent Beloved)
+      \quad 님의 침묵(The Silent Beloved)
       \smallbreak
       \hfil\hfil 한 용 운\hfil
       \bigbreak
@@ -596,7 +597,9 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
   \caption{세로쓰기의 또 다른 예.  박스 높이 |17em|을 지시했다.
     Noto Sans CJK 글꼴의 세로쓰기 공백은 원래 |1em|,
     즉 전각크기로 매우 크기 때문에, 여기서는 \cs{spaceskip} 명령을 이용하여
-    반각 크기로 강제했다.
+    반각 크기로 강제했다. 그런데 아스키 괄호를 전각으로 바꾸기 위해 지시한
+    |CharacterWidth=Full| 옵션이 HarfBuzz 모드에서는 공백까지 전각으로 바꿔버리기 때문에
+    |Renderer=Node| 옵션도 추가로 지시했다.
   }\label{fig:vertical2}
 \end{figure}
 
