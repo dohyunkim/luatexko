@@ -1698,11 +1698,13 @@ local white_nodes = {
   [glueid]    = true,
   [penaltyid] = true,
   [kernid]    = true,
+  [whatsitid]    = true,
 }
 
 local function skip_white_nodes (n, ltr)
   local nextnode = ltr and getnext or getprev
   while n do
+    if has_attribute(n, charhead) or harf_actual_literal(n) then break end
     if not white_nodes[n.id] then break end
     n = nextnode(n)
   end
