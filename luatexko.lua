@@ -120,7 +120,7 @@ local hangulbyhangulattr = attributes.luatexkohangulbyhangulattr
 local hanjabyhanjaattr   = attributes.luatexkohanjabyhanjaattr
 local inhibitglueattr  = attributes.luatexkoinhibitglueattr
 
-local unicodeattr = new_attribute"luatexkounicodeattr"
+local unicodeattr = new_attribute"luatexko_unicode_attr"
 local charhead = new_attribute"luatexko_char_head"
 
 local stretch_f = 5/100 -- should be consistent for ruby
@@ -1698,7 +1698,7 @@ local white_nodes = {
   [glueid]    = true,
   [penaltyid] = true,
   [kernid]    = true,
-  [whatsitid]    = true,
+  [whatsitid] = true,
 }
 
 local function skip_white_nodes (n, ltr)
@@ -2294,8 +2294,7 @@ local function process_vertical_font (fontdata)
   end
 end
 
-local verticalattr = new_attribute"luatexko_vertical_attr"
-
+local verticalattr
 local function process_vertical_diff (head)
   local curr = head
   while curr do
@@ -2359,8 +2358,7 @@ end
 
 -- charraise
 
-local raiseattr = new_attribute"luatexkoraiseattr"
-
+local raiseattr
 local function process_charraise (head)
   local curr = head
   while curr do
@@ -2583,9 +2581,15 @@ otfregister {
   default = false,
   manipulators = {
     node = function()
+      if not active_processes.charraise then
+        raiseattr = new_attribute"luatexko_raise_attr"
+      end
       activate_process("post_shaping_filter", process_charraise, "charraise")
     end,
     plug = function()
+      if not active_processes.charraise then
+        raiseattr = new_attribute"luatexko_raise_attr"
+      end
       activate_process("post_shaping_filter", process_charraise, "charraise")
     end,
   },
@@ -2627,10 +2631,16 @@ otfregister {
   default = false,
   manipulators = {
     node = function(fontdata)
+      if not active_processes.verticalwriting then
+        verticalattr = new_attribute"luatexko_vertical_attr"
+      end
       process_vertical_font(fontdata)
       activate_process("post_shaping_filter", process_vertical_diff, "verticalwriting", 1)
     end,
     plug = function(fontdata) -- experimental
+      if not active_processes.verticalwriting then
+        verticalattr = new_attribute"luatexko_vertical_attr"
+      end
       process_vertical_font(fontdata)
       activate_process("post_shaping_filter", process_vertical_diff, "verticalwriting", 1)
     end,
