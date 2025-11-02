@@ -1057,6 +1057,7 @@ local function insert_glue_before (head, curr, par, br, brb, classic, ict, dim, 
 
   gl.attr = prev and prev.attr or curr.attr -- for less tagging
 
+  set_attribute(gl, inhibitglueattr, 1) -- suppress multiple run of unboxed nodes
   return insert_before(head, curr, gl)
 end
 
@@ -1308,8 +1309,12 @@ local function process_glyph_width (head)
         if class >= 1 and class <= 4 and
           (old or cc < 0x2000 or cc > 0x202F) then -- exclude general puncts
 
-          -- harf-node always puts kern after the glyph
-          local gpos = class == 1 and fontoptions.is_not_harf[curr.font] and getprev(curr) or getnext(curr)
+          local gpos = class == 1 and getprev(curr) or getnext(curr)
+          if class == 1 then
+            while gpos and has_attribute(gpos, charhead) do -- skip harf-mode unboxed nodes
+              gpos = getprev(gpos)
+            end
+          end
           gpos = gpos and gpos.id == kernid and gpos.subtype == fontkern
 
           if not gpos then
