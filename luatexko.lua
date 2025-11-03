@@ -119,6 +119,7 @@ local rubyattr         = attributes.luatexkorubyattr
 local hangulbyhangulattr = attributes.luatexkohangulbyhangulattr
 local hanjabyhanjaattr   = attributes.luatexkohanjabyhanjaattr
 local inhibitglueattr  = attributes.luatexkoinhibitglueattr
+local verticalattr  -- set later at the end of post_shaping_filter
 
 local unicodeattr = new_attribute"luatexko_unicode_attr"
 local charhead = new_attribute"luatexko_char_head"
@@ -257,7 +258,10 @@ local fontoptions = {
 
   compresspunctuations = setmetatable( {}, { __index = function(t, fid)
     if fid then
-      local bool = option_in_font(fid, "compresspunctuations") or false
+      local bool = option_in_font(fid, "compresspunctuations")
+                and not option_in_font(fid, "halt")
+                and not option_in_font(fid, "vhal")
+                or false
       t[fid] = bool
       return bool
     end
@@ -413,8 +417,8 @@ end
 
 local function harf_actual_literal (curr)
   if curr.id == whatsitid and curr.subtype == literal_whatsit then
-    local data = curr.data or ""
-    return data == "EMC" and 2 or data:find"BDC$" and 1 or false
+    local data = curr.data
+    return data == "EMC" and 2 or data and data:find"BDC$" and 1 or false
   end
 end
 
@@ -1077,29 +1081,34 @@ local function maybe_linebreak (head, curr, pc, pcl, cc, old, fid, par)
 end
 
 local function process_cjk_punctuation_spacing (head, par)
-  local pcl, pc, pf, old = 0, false, false
+  local pcl, pc, pf, old, pcurr = 0, false, false, false
   local curr = head
   while curr do
-    local id = curr.id
-    if id == glyphid and curr.lang ~= nohyphen then
-      local cc = curr.char
-      old = has_attribute(curr, classicattr)
-      local ccl = get_char_class(cc, old)
-      if old and intercharclass[pcl][ccl] then
-        local cf = charclass[cc] == 0 and pf or curr.font
-        head = maybe_linebreak(head, curr, pc, pcl, cc, old, cf, par)
-      end
-      pcl, pc, pf = ccl, cc, curr.font
-    elseif is_blocking_node(curr) then
-      if id == glueid and (curr.subtype >= spaceskip and curr.subtype <= parfillskip
-        or has_attribute(curr, inhibitglueattr)) then
-        pcl, pc, pf = 0, false, false
-      else
-        if pf and old and intercharclass[pcl][0] then
-          head = maybe_linebreak(head, curr, pc, pcl, 0x4E00, old, pf, par)
+    if has_attribute(curr, charhead) or harf_actual_literal(curr) == 1 then
+      pcurr = pcurr or curr
+    else
+      local id = curr.id
+      if id == glyphid and curr.lang ~= nohyphen then
+        local cc = curr.char
+        old = has_attribute(curr, classicattr)
+        local ccl = get_char_class(cc, old)
+        if old and intercharclass[pcl][ccl] then
+          local cf = charclass[cc] == 0 and pf or curr.font
+          head = maybe_linebreak(head, pcurr or curr, pc, pcl, cc, old, cf, par)
         end
-        pcl, pc, pf = 0, 0x4E00, false
+        pcl, pc, pf = ccl, cc, curr.font
+      elseif is_blocking_node(curr) then
+        if id == glueid and (curr.subtype >= spaceskip and curr.subtype <= parfillskip
+          or has_attribute(curr, inhibitglueattr)) then
+          pcl, pc, pf = 0, false, false
+        else
+          if pf and old and intercharclass[pcl][0] then
+            head = maybe_linebreak(head, pcurr or curr, pc, pcl, 0x4E00, old, pf, par)
+          end
+          pcl, pc, pf = 0, 0x4E00, false
+        end
       end
+      pcurr = false
     end
     curr = getnext(curr)
   end
@@ -1301,6 +1310,7 @@ local function process_glyph_width (head)
     local id = curr.id
     if id == glyphid then
       if curr.lang ~= nohyphen
+        and not (verticalattr and has_attribute(curr, verticalattr)) -- avoid multiple run
         and fontoptions.compresspunctuations[curr.font] then
 
         local cc = has_attribute(curr, unicodeattr) or curr.char
@@ -1310,11 +1320,6 @@ local function process_glyph_width (head)
           (old or cc < 0x2000 or cc > 0x202F) then -- exclude general puncts
 
           local gpos = class == 1 and getprev(curr) or getnext(curr)
-          if class == 1 then
-            while gpos and has_attribute(gpos, charhead) do -- skip harf-mode unboxed nodes
-              gpos = getprev(gpos)
-            end
-          end
           gpos = gpos and gpos.id == kernid and gpos.subtype == fontkern
 
           if not gpos then
@@ -1324,6 +1329,7 @@ local function process_glyph_width (head)
               local k = nodenew(kernid) -- fontkern (subtype 0) is default
               k.kern = class == 3 and wd/2 or wd
               if class == 1 then
+                set_attribute(k, charhead, 1)
                 head = insert_before(head, curr, k)
               elseif class == 2 or class == 4 then
                 head, curr = insert_after(head, curr, k)
@@ -2299,7 +2305,6 @@ local function process_vertical_font (fontdata)
   end
 end
 
-local verticalattr
 local function process_vertical_diff (head)
   local curr = head
   while curr do
