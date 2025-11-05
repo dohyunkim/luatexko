@@ -169,12 +169,11 @@
 \makeatother
 \def\ldots{|...|}
 \newenvironment{plaintex}{%
-  \begin{itemize}\linespread{1.2}\small
-    \itemsep0pt plus1pt minus1pt
-    \topsep=\itemsep
-    \item[\color{gray}plain \TeX]
+  \par
+  \linespread{1.2}\small \parindent=0pt \leftskip=2em \rightskip=\leftskip
+  \paragraph{\llap{\color{gray}\normalfont plain \TeX\hskip1em}}\hskip-1em
 }{
-  \end{itemize}%
+  \par
 }
 \def\textdblrightarrow{\quad ⇒\quad}
 
@@ -435,8 +434,12 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
   버전 2.0부터는 사용자가 지시하지 않는 한 글자폭을 자동으로 줄여주지 않는다.
   이 옵션은 |CharacterWidth=AlternateHalf| 내지 \hparen{세로쓰기의 경우}
   |Vertical=HalfMetrics|와 사실상 같은 기능을 한다.%
-  \footnote{플레인텍에서는 각각 |+halt| 및 |+vhal|이다. }
-  그래서 이들 옵션이 지시되어 있다면 우선 이들이 적용되고
+  \footnote{%
+    플레인텍에서는 각각 |+halt| 및 |+vhal|이다.  이들과 완전 동일하진
+    않다. 가령 U+00B7\hparen{^^b7} 및 고문헌조판 모드에서
+    U+2018\hparen{^^^^2018} U+2019\hparen{^^^^2019} U+201C\hparen{^^^^201c} U+201D\hparen{^^^^201d}
+    처리의 경우 미세한 간격 차이가 있을 수 있다. }
+  그래서 이들 옵션 중 하나가 지시되어 있다면 그것이 우선 적용되고
   |CompressPunctuations|는 \hparen{설령 명시되었더라도} 아무 작용도 하지 않는다.
 
 \item[Protrusion] \pkgkwd*{Protrusion}%
@@ -618,10 +621,10 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
 \end{itemize}
 
 \begin{plaintex}
-  문서의 일부를 세로쓰기하려면 |\vertical{<dimen>}| \ldots\ |\endvertical|.
+  문서 일부 세로쓰기는 |\vertical{<dimen>}| \ldots\ |\endvertical|.
   인자는 비워둘 수 있다.
 
-  문서 전체를 세로쓰기하려면 문서 첫머리에 \cs{verticaltypesetting}.
+  문서 전체 세로쓰기는 문서 첫머리에 \cs{verticaltypesetting}.
 
   몇몇 페이지를 세로쓰기하려면 \cs{beginverticaltypesetting} \ldots\ \cs{endverticaltypesetting}.
 

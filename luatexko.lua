@@ -119,10 +119,9 @@ local rubyattr         = attributes.luatexkorubyattr
 local hangulbyhangulattr = attributes.luatexkohangulbyhangulattr
 local hanjabyhanjaattr   = attributes.luatexkohanjabyhanjaattr
 local inhibitglueattr  = attributes.luatexkoinhibitglueattr
-local verticalattr  -- set later at the end of post_shaping_filter
-
 local unicodeattr = new_attribute"luatexko_unicode_attr"
 local charhead = new_attribute"luatexko_char_head"
+local verticalattr  -- set later at the end of post_shaping_filter
 
 local stretch_f = 5/100 -- should be consistent for ruby
 
@@ -381,21 +380,22 @@ local fontoptions = {
 
   asc_desc = setmetatable( {}, { __index = function(t, fid)
     if fid then
-      local asc, desc
+      local asc, desc = get_font_param(fid, "ascender"), get_font_param(fid, "descender")
       -- luaharfbuzz's Font:get_h_extents() gets ascender value from hhea table;
       -- Node mode's parameters.ascender is gotten from OS/2 table.
       -- TypoAscender in OS/2 table seems to be more suitable for our purpose.
-      local hb = has_harf_data(fid)
-      if hb then
+      if has_harf_data(fid) and not (asc and desc) then
         asc, desc = get_asc_desc(hb)
       end
-      asc  = asc  or get_font_param(fid, "ascender")  or false
-      desc = desc or get_font_param(fid, "descender") or false
+      asc, desc  = asc  or false, desc or false
       t[fid] = { asc, desc }
       return { asc, desc }
     end
     return { }
   end } ),
+
+  hb_char_bbox = { },
+  tsb_data = { },
 }
 
 local function char_in_font(fontdata, char)
@@ -1322,7 +1322,7 @@ local function process_glyph_width (head)
           local gpos = class == 1 and getprev(curr) or getnext(curr)
           gpos = gpos and gpos.id == kernid and gpos.subtype == fontkern
 
-          if not gpos then
+          if not gpos then -- avoid multiple run
             local diff = char_in_font(curr.font, curr.char).luatexko_diff or 0
             local wd = fontoptions.en_size[curr.font] - (curr.width + diff)
             if wd ~= 0 then
@@ -1335,6 +1335,7 @@ local function process_glyph_width (head)
                 head, curr = insert_after(head, curr, k)
               else
                 local k2 = nodecopy(k)
+                set_attribute(k, charhead, 1)
                 head = insert_before(head, curr, k)
                 head, curr = insert_after(head, curr, k2)
               end
@@ -1549,13 +1550,26 @@ end
 
 -- dotemph
 
-local function shift_put_top (bot, top)
+local function shift_put_top (bot, top, dotem)
   local shift = top.shift or 0
 
+  local botht = bot.height
   if bot.id == hlistid then
     bot = has_glyph(bot.list) or {}
   end
-  local bot_off = bot.yoffset or 0
+  local bot_off
+  if verticalattr and has_attribute(bot, verticalattr) then
+    if dotem then
+      if fontoptions.is_not_harf[bot.font] then
+        bot_off = (bot.yoffset or 0) + (char_in_font(bot.font, bot.char).luatexko_voff or 0)
+      else
+        bot_off = bot.xoffset or 0
+      end
+    elseif not fontoptions.is_not_harf[bot.font] then -- ruby harf vertical: yoffset?
+      bot_off = (bot.yoffset or 0) - (char_in_font(bot.font, bot.char).luatexko_voff or 0)
+    end
+  end
+  bot_off = bot_off or bot.yoffset or 0
 
   if bot_off ~= 0 then
     if top.id == hlistid then
@@ -1607,7 +1621,7 @@ local function process_dotemph (head)
             end
 
             -- consider charraise
-            box.shift = shift_put_top(curr, box)
+            box.shift = shift_put_top(curr, box, true)
 
             local basewd = curr.width
             if hangul_tonemark[curr.char] then -- horizontal hangul tonemark
@@ -1621,8 +1635,8 @@ local function process_dotemph (head)
                 basewd = basewd + n.width
               elseif n.id == kernid and n.subtype == fontkern then
                 basewd = basewd + n.kern
-              elseif n.id == whatsitid and (n.subtype == restore_whatsit
-                or has_attribute(n, charhead) or harf_actual_literal(n) == 2) then -- pass
+              elseif has_attribute(n, charhead) or (n.id == whatsitid and
+                (n.subtype == restore_whatsit or harf_actual_literal(n) == 2)) then -- pass
               else
                 break
               end
@@ -2113,9 +2127,8 @@ do
     end
   end
 
-  local tsb_font_data = {}
-
   function get_tsb_table (filename, subfont)
+    local tsb_font_data = fontoptions.tsb_data or {}
     subfont = tonumber(subfont) or 1
     local key = stringformat("%s::%s", filename, subfont)
     if tsb_font_data[key] then
@@ -2154,6 +2167,24 @@ local function fontdata_warning(activename, ...)
 end
 
 local dfltfntsize = get_font_param(fontcurrent(), "quad") or 655360
+
+local function get_hb_char_bbox (hbfont, index)
+  local name = tostring(hbfont)
+  local bboxes = fontoptions.hb_char_bbox[name]
+  if not bboxes then
+    fontoptions.hb_char_bbox[name] = { }
+    bboxes = fontoptions.hb_char_bbox[name]
+  end
+  local bbox = bboxes[index]
+  if bbox then return bbox end
+  local t = hbfont:get_glyph_extents(index) -- quite slow for CFF
+  bbox = t and { t.x_bearing,
+                 t.y_bearing + t.height,
+                 t.x_bearing + t.width,
+                 t.y_bearing, } or {0,0,0,0}
+  bboxes[index] = bbox
+  return bbox
+end
 
 local function process_vertical_font (fontdata)
   local fullname = fontdata.fullname
@@ -2201,11 +2232,7 @@ local function process_vertical_font (fontdata)
     local voff = goffset - (v.width or 0)/2
     local bbox
     if fontdata.hb then
-      local exts = fontdata.hb.shared.font:get_glyph_extents(v.index) -- quite slow for CFF
-      bbox = exts and { exts.x_bearing,
-                        exts.y_bearing + exts.height,
-                        exts.x_bearing + exts.width,
-                        exts.y_bearing, } or {0,0,0,0}
+      bbox = get_hb_char_bbox(fontdata.hb.shared.font, v.index)
     else
       bbox = descriptions[i] and descriptions[i].boundingbox or {0,0,0,0}
     end
@@ -2213,8 +2240,8 @@ local function process_vertical_font (fontdata)
     local tsb  = tsb_tab[gid] and tsb_tab[gid].tsb
     local hoff = tsb and (bbox[4] + tsb) * scale or ascender
 
+    v.luatexko_voff = voff
     if fontdata.hb then
-      v.luatexko_voff = voff
       v.luatexko_hoff = hoff
     else
       v.commands = {
@@ -2239,8 +2266,12 @@ local function process_vertical_font (fontdata)
 
     local ht = bbox[3] * scale + voff
     local dp = bbox[1] * scale + voff
-    v.height = ht > 0 and  ht or nil
-    v.depth  = dp < 0 and -dp or nil
+    if fontdata.hb then
+      local charraise = font_opt_dim(fontdata, "charraise") or 0
+      ht, dp = ht + charraise, dp + charraise
+    end
+    v.height = ht > 0 and  ht or 0
+    v.depth  = dp < 0 and -dp or 0
   end
   local spacechar = char_in_font(fontdata, 32)
   if spacechar then
@@ -2331,6 +2362,13 @@ local function process_vertical_diff (head)
         set_attribute(matrix, charhead, 2)
         head = insert_before(head, curr, save)
         head = insert_before(head, curr, matrix)
+        if curr.height ~= 0 then
+          local rule = nodenew(ruleid)
+          rule.height, rule.depth, rule.width = curr.height, 0, 0
+          rule.subtype, rule.attr = 3, curr.attr
+          set_attribute(rule, charhead, 3)
+          head = insert_before(head, curr, rule)
+        end
         if curr.width ~= 0 then
           local kern = nodenew(kernid)
           kern.kern = -curr.width
@@ -2457,18 +2495,10 @@ local function process_fake_slant_font (fontdata, fsl)
       local rbearing = 0
 
       if wd > 0 then -- or, jong/jung italic could by very large value
-        if hb then
-          --[[ too slow
-          local extents = hb.shared.font:get_glyph_extents(v.index)
-          if extents then
-            rbearing = wd - (extents.x_bearing + extents.width)*scale
-          end
-          --]]
-        else
-          local bbox = descrs[i] and descrs[i].boundingbox
-          if bbox then
-            rbearing = wd - bbox[3]*scale
-          end
+        local bbox = hb and get_hb_char_bbox(hb.shared.font, v.index)
+                  or descrs[i] and descrs[i].boundingbox
+        if bbox then
+          rbearing = wd - bbox[3]*scale
         end
       end
 
