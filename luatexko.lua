@@ -1560,13 +1560,13 @@ end
 
 -- dotemph
 
-local function get_font_yshift (n, dotem)
+local function get_font_yshift (f, dotem)
   local off = 0
-  if n.font then
-    off = off + (fontoptions.charraise[n.font] or 0)
-    if fontoptions.is_vertical[n.font] then
-      off = off + (char_in_font(n.font, n.char).luatexko_voff or 0)
-      off = off + (fontoptions.en_size[n.font] or 0)/(dotem and 8 or 2) -- a little raise
+  if f then
+    off = off + (fontoptions.charraise[f] or 0)
+    if fontoptions.is_vertical[f] then
+      off = off + (fontoptions.vertcharraise[f]or 0)
+                - (fontoptions.en_size[f] or 0)*(dotem and 0.8 or 0.5) -- lower a little
     end
   end
   return off
@@ -1577,13 +1577,13 @@ local function shift_put_top (bot, top, dotem)
   if bot.id == hlistid then
     bot = has_glyph(bot.list) or {}
   end
-  local bot_off = get_font_yshift(bot, dotem)
+  local bot_off = get_font_yshift(bot.font, dotem)
 
   if bot_off ~= 0 then
     if top.id == hlistid then
       top = has_glyph(top.list) or {}
     end
-    local top_off = get_font_yshift(top, dotem)
+    local top_off = get_font_yshift(top.font, dotem)
 
     return shift + top_off - bot_off -- minus is raise, plus is lower
   end
@@ -2248,8 +2248,8 @@ local function process_vertical_font (fontdata)
     local tsb  = tsb_tab[gid] and tsb_tab[gid].tsb
     local hoff = tsb and (bbox[4] + tsb) * scale or ascender
 
-    v.luatexko_voff = voff
     if fontdata.hb then
+      v.luatexko_voff = voff
       v.luatexko_hoff = hoff
     else
       v.commands = {
