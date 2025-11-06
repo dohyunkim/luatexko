@@ -120,8 +120,9 @@ local hangulbyhangulattr = attributes.luatexkohangulbyhangulattr
 local hanjabyhanjaattr   = attributes.luatexkohanjabyhanjaattr
 local inhibitglueattr  = attributes.luatexkoinhibitglueattr
 local unicodeattr = new_attribute"luatexko_unicode_attr"
-local charhead = new_attribute"luatexko_char_head"
-local verticalattr  -- set later at the end of post_shaping_filter
+local charhead = new_attribute"luatexko_char_head_attr"
+local verticalattr  -- set later at otfregister
+local charraiseattr -- set later at otfregister
 
 local stretch_f = 5/100 -- should be consistent for ruby
 
@@ -392,6 +393,15 @@ local fontoptions = {
       return { asc, desc }
     end
     return { }
+  end } ),
+
+  vertcharraise = setmetatable( {}, { __index = function(t, fid)
+    if fid then
+      local fontdata = get_font_data(fid)
+      local vertraise = fontdata and fontdata.vertcharraise or false
+      t[fid] = vertraise
+      return vertraise
+    end
   end } ),
 
   hb_char_bbox = { },
@@ -1550,34 +1560,32 @@ end
 
 -- dotemph
 
+local function get_font_yshift (n, dotem)
+  local off = 0
+  if n.font then
+    off = off + (fontoptions.charraise[n.font] or 0)
+    if fontoptions.is_vertical[n.font] then
+      off = off + (char_in_font(n.font, n.char).luatexko_voff or 0)
+      off = off + (fontoptions.en_size[n.font] or 0)/(dotem and 8 or 2) -- a little raise
+    end
+  end
+  return off
+end
 local function shift_put_top (bot, top, dotem)
   local shift = top.shift or 0
 
-  local botht = bot.height
   if bot.id == hlistid then
     bot = has_glyph(bot.list) or {}
   end
-  local bot_off
-  if verticalattr and has_attribute(bot, verticalattr) then
-    if dotem then
-      if fontoptions.is_not_harf[bot.font] then
-        bot_off = (bot.yoffset or 0) + (char_in_font(bot.font, bot.char).luatexko_voff or 0)
-      else
-        bot_off = bot.xoffset or 0
-      end
-    elseif not fontoptions.is_not_harf[bot.font] then -- ruby harf vertical: yoffset?
-      bot_off = (bot.yoffset or 0) - (char_in_font(bot.font, bot.char).luatexko_voff or 0)
-    end
-  end
-  bot_off = bot_off or bot.yoffset or 0
+  local bot_off = get_font_yshift(bot, dotem)
 
   if bot_off ~= 0 then
     if top.id == hlistid then
       top = has_glyph(top.list) or {}
     end
-    local top_off = top.yoffset or 0
+    local top_off = get_font_yshift(top, dotem)
 
-    return shift + top_off - bot_off
+    return shift + top_off - bot_off -- minus is raise, plus is lower
   end
 
   return shift
@@ -1885,7 +1893,7 @@ local function process_ruby_post_linebreak (head)
           ruby.width = 0
 
           -- consider charraise
-          local shift = shift_put_top(curr, ruby)
+          local shift = shift_put_top(curr, ruby, false)
 
           local f, ascender, descender
           _, f = hbox_char_font(curr, true, true)
@@ -2394,7 +2402,7 @@ function luatexko.gethorizboxmoveright ()
                       texattribute.luatexkohanjafontattr,
                       texattribute.luatexkofallbackfontattr } do
     if v and v > 0 then
-      local amount = get_font_data(v).vertcharraise
+      local amount = fontoptions.vertcharraise[v]
       if amount then
         amount = amount + (fontoptions.charraise[v] or 0)
         set_macro("luatexkohorizboxmoveright", texsp(amount).."sp")
@@ -2406,18 +2414,17 @@ end
 
 -- charraise
 
-local raiseattr
 local function process_charraise (head)
   local curr = head
   while curr do
     local id = curr.id
     if id == glyphid then
-      if not has_attribute(curr,raiseattr) then
+      if not has_attribute(curr,charraiseattr) then
         local raise = fontoptions.charraise[curr.font]
         if raise then
           curr.yoffset = (curr.yoffset or 0) + raise
         end
-        set_attribute(curr, raiseattr, 1)
+        set_attribute(curr, charraiseattr, 1)
       end
     elseif id == discid then
       process_charraise(curr.pre)
@@ -2622,13 +2629,13 @@ otfregister {
   manipulators = {
     node = function()
       if not active_processes.charraise then
-        raiseattr = new_attribute"luatexko_raise_attr"
+        charraiseattr = new_attribute"luatexko_char_raise_attr"
       end
       activate_process("post_shaping_filter", process_charraise, "charraise")
     end,
     plug = function()
       if not active_processes.charraise then
-        raiseattr = new_attribute"luatexko_raise_attr"
+        charraiseattr = new_attribute"luatexko_char_raise_attr"
       end
       activate_process("post_shaping_filter", process_charraise, "charraise")
     end,
