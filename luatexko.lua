@@ -849,17 +849,15 @@ local function process_fonts (head)
               curr.font = p.font
             end
             curr.lang = p.lang
-
-            if hangul_tonemark[c] then
-              if not active_processes.reorderTM and
-                 fontoptions.is_not_harf[curr.font] and
-                 fontoptions.is_hangulscript[curr.font] then
-                luatexko.activate("reorderTM") -- activate reorderTM here
-              end
-            end
-            set_attribute(curr, unicodeattr, c)
             done = true
           end
+          if hangul_tonemark[c]
+            and not active_processes.reorderTM
+            and fontoptions.is_not_harf[curr.font] then
+            luatexko.activate("reorderTM") -- activate reorderTM here
+            done = false
+          end
+          set_attribute(curr, unicodeattr, c)
         end
 
         if not done then
@@ -2003,8 +2001,8 @@ local function process_reorder_tonemarks (head)
             local endactual = pdfliteral_direct_actual()
             actual.attr, endactual.attr = dotcircle.attr, dotcircle.attr -- for tagged pdf
             set_attribute(actual, charhead, 1)
-            set_attribute(curr, unicode_attr, 0x25CC)
-            set_attribute(dotcircle, unicode_attr, uni)
+            set_attribute(curr, unicodeattr, 0x25CC)
+            set_attribute(dotcircle, unicodeattr, uni)
             head = insert_before(head, curr, actual)
             head, curr = insert_after(head, curr, dotcircle)
             head, curr = insert_after(head, curr, endactual)
