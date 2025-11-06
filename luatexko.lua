@@ -840,6 +840,7 @@ local function process_fonts (head)
         and not has_attribute(curr, unicodeattr) then
 
         local c = curr.char
+        set_attribute(curr, unicodeattr, c)
 
         local done
         if is_combining(c) then
@@ -851,13 +852,14 @@ local function process_fonts (head)
             curr.lang = p.lang
             done = true
           end
-          if hangul_tonemark[c]
-            and not active_processes.reorderTM
-            and fontoptions.is_not_harf[curr.font] then
-            luatexko.activate("reorderTM") -- activate reorderTM here
+          if is_jungsong(c) or is_jongsong(c) or hangul_tonemark[c] then
             done = false
+            if hangul_tonemark[c]
+              and not active_processes.reorderTM
+              and fontoptions.is_not_harf[curr.font] then
+              luatexko.activate("reorderTM") -- activate reorderTM here
+            end
           end
-          set_attribute(curr, unicodeattr, c)
         end
 
         if not done then
@@ -887,7 +889,6 @@ local function process_fonts (head)
               end
             end
           end
-          set_attribute(curr, unicodeattr, c)
         end
       end
       newfont = curr.font
