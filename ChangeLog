@@ -1,3 +1,13 @@
+2025-11-07	Dohyun Kim <nomosnomos at gmail com>
+
+	Version 4.9
+
+	* luatexko.lua:
+	- support vertical writing with harfbuzz-mode font
+	- deactivate compresspunctuations when halt/vhal font feature is given
+	- restore calling of hb.font.get_glyph_extents() using memory cache
+	- avoid loss of illegal sequence of hangul jamo
+
 2025-10-20	Dohyun Kim <nomosnomos at gmail com>
 
 	Version 4.8

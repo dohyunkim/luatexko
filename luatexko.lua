@@ -13,8 +13,8 @@
 
 luatexbase.provides_module {
   name        = 'luatexko',
-  date        = '2025/10/20',
-  version     = '4.8',
+  date        = '2025/11/07',
+  version     = '4.9',
   description = 'typesetting Korean with LuaTeX',
   author      = 'Dohyun Kim, Soojin Nam',
   license     = 'LPPL v1.3+',
@@ -1883,6 +1883,10 @@ local function process_ruby_post_linebreak (head)
         local ruby = ruby_t and ruby_t[1]
         if ruby then
           local side = (curr.width - ruby.width)/2
+          local basefirst = has_glyph(curr.list)
+          if basefirst and hangul_tonemark[basefirst.char] then -- horizontal hangul tonemark
+            side = side + (basefirst.width or 0)/2
+          end
           if side ~= 0 then
             local list = ruby.list
             local k = nodenew(kernid)
@@ -2196,7 +2200,7 @@ end
 local function process_vertical_font (fontdata)
   local fullname = fontdata.fullname
 
-  if fontdata.type == "virtual" then
+  if not fontdata.hb and fontdata.type == "virtual" then
     fontdata_warning("vitrual."..fullname,
     "Virtual font `%s' cannot be\nused for vertical writing.", fullname)
     return
@@ -2214,20 +2218,10 @@ local function process_vertical_font (fontdata)
   local shared       = fontdata.shared or {}
   local descriptions = shared.rawdata and shared.rawdata.descriptions or {}
   local parameters   = fontdata.parameters or {}
-  local scale
-    if fontdata.hb then
-      scale = fontdata.hb.scale or 655.36
-    else
-      scale = parameters.factor or 655.36
-    end
+  local scale    = fontdata.hb and fontdata.hb.scale or parameters.factor or 655.36
   local quad     = parameters.quad or 655360
   local xheight  = parameters.x_height or quad/2
-  local ascender
-  if fontdata.hb then
-    ascender = get_asc_desc(fontdata.hb) or quad*0.8
-  else
-    ascender = parameters.ascender or quad*0.8
-  end
+  local ascender = fontdata.hb and get_asc_desc(fontdata.hb) or parameters.ascender or quad*0.8
 
   local goffset = xheight/2 * (dfltfntsize / quad) -- TODO?
 
@@ -2237,12 +2231,8 @@ local function process_vertical_font (fontdata)
 
   for i,v in pairs(fontdata.characters) do
     local voff = goffset - (v.width or 0)/2
-    local bbox
-    if fontdata.hb then
-      bbox = get_hb_char_bbox(fontdata.hb.shared.font, v.index)
-    else
-      bbox = descriptions[i] and descriptions[i].boundingbox or {0,0,0,0}
-    end
+    local bbox = fontdata.hb and get_hb_char_bbox(fontdata.hb.shared.font, v.index)
+              or descriptions[i] and descriptions[i].boundingbox or {0,0,0,0}
     local gid  = v.index
     local tsb  = tsb_tab[gid] and tsb_tab[gid].tsb
     local hoff = tsb and (bbox[4] + tsb) * scale or ascender

@@ -162,15 +162,17 @@
 \def\hparenstop{\ifx\@let@token\@sptoken\else
   \ifx\@let@token\footnote\nobreak\else\ifx\@let@token ,\nobreak\fi\fi
   \hskip.1em plus.01em\relax\fi\endgroup}
-\makeatother
-\def\ldots{|...|}
 \newenvironment{plaintex}{%
   \par
-  \linespread{1.2}\small \parindent=0pt \leftskip=2em \rightskip=\leftskip
+  \linespread{1.1}\small \parindent=0pt \parskip=2pt plus 1pt
+  \leftskip=2em \rightskip=\leftskip
+  \topsep=\smallskipamount \@totalleftmargin=\leftskip
   \paragraph{\llap{\color{gray}\normalfont plain \TeX\hskip1em}}\hskip-1em
 }{
   \par
 }
+\makeatother
+\def\ldots{|...|}
 \def\textdblrightarrow{\quad ⇒\quad}
 
 \widowpenalty5000
@@ -181,7 +183,7 @@
 \author{\normalsize Dohyun Kim \small |<nomosnomos at gmail com>| \and
         \normalsize Soojin Nam \small |<jsunam at gmail com>| \and
         \normalsize <\url{http://github.com/dohyunkim/luatexko}>}
-\date{Version 4.8\quad 2025/10/20}
+\date{Version 4.9\quad 2025/11/07}
 \maketitle
 
 \begin{quote}
@@ -517,7 +519,7 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
   |vmtx| 정보를 가지고 있지 않은 글꼴은 세로쓰기에 적합치 않은 글꼴이다.
   |otfinfo -t <파일>| 명령으로 글꼴에 들어있는 테이블 정보를 알 수 있다. }\,%
 \footnote{%
-  폰트 옵션 |Renderer=HarfBuzz| 또는 |Renderer=OpenType| 등
+  폰트 옵션 |Renderer=HarfBuzz| 또는 |Renderer=OpenType| 등%
   \hparen{플레인텍에서는 |mode=harf| 옵션}을 주고
   컴파일하여 HarfBuzz 모듈을 이용하는 경우에도 세로쓰기가 \hemph{일단 지원된다}.
   그러나 |Renderer=Node|를 이용한 세로쓰기에 비해 속도가 느리고 아직은 실험 단계에 머물러 있다.}\,%
