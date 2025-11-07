@@ -1883,8 +1883,9 @@ local function process_ruby_post_linebreak (head)
         local ruby = ruby_t and ruby_t[1]
         if ruby then
           local side = (curr.width - ruby.width)/2
-          local basefirst = has_glyph(curr.list)
-          if basefirst and hangul_tonemark[basefirst.char] then -- horizontal hangul tonemark
+          local basefirst, rubyfirst = has_glyph(curr.list), has_glyph(ruby.list)
+          if basefirst and hangul_tonemark[basefirst.char] -- horizontal hangul tonemark
+            and not (rubyfirst and hangul_tonemark[rubyfirst.char]) then -- no horiz. hangul tm.
             side = side + (basefirst.width or 0)/2
           end
           if side ~= 0 then
@@ -2851,4 +2852,40 @@ function luatexko.reactivateall ()
   end
   luatexko.deactivated = nil
 end
+
+-- xxruby
+
+local function get_unicode_graphemes (s)
+  local t = { }
+  local graphemes = require'lua-uni-graphemes'
+  for _, _, c in graphemes.graphemes(s) do
+    table.insert(t, c)
+  end
+  return t
+end
+local xxruby_index = luatexbase.new_luafunction"luatexko_xxruby_func"
+lua.get_functions_table()[xxruby_index] = function ()
+  local base = token.scan_argument()
+  local ruby = token.scan_argument()
+  local base_t = get_unicode_graphemes(base)
+  local ruby_t = get_unicode_graphemes(ruby)
+  local t = { }
+  local function ruby_args_to_t (arg1, arg2)
+    for _,v in ipairs{ token.create"ruby",
+                       token.new(0,1), arg1, token.new(0,2),
+                       token.new(0,1), arg2, token.new(0,2), } do
+      t[#t+1] = v
+    end
+  end
+  if #base_t == #ruby_t then
+    for i=1, #base_t do
+      ruby_args_to_t(base_t[i], ruby_t[i])
+    end
+  else
+    warning"lengths of base/ruby characters should be identical.\nrevert to \\ruby."
+    ruby_args_to_t(base, ruby)
+  end
+  tex.sprint(-2, t)
+end
+token.set_lua("xxruby", xxruby_index, "global", "protected")
 

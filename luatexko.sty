@@ -344,17 +344,17 @@
       \ifruby@overlap true\else false\fi, }}%
   \box\z@
   \endgroup }
-\protected\def\xxruby#1#2{%
-  \begingroup\def\basestr{#1}\def\rubystr{#2}\luatexkoxxruby\endgroup }
-\def\luatexkoxxruby{%
-  \ifx\empty\basestr\else
-    \expandafter\luatexkogetrubybasechar\basestr\end
-    \expandafter\luatexkogetrubyrubychar\rubystr\end
-    \ruby\basechar\rubychar
-    \expandafter\luatexkoxxruby
-  \fi }
-\def\luatexkogetrubybasechar#1#2\end{\def\basechar{#1}\def\basestr{#2}}
-\def\luatexkogetrubyrubychar#1#2\end{\def\rubychar{#1}\def\rubystr{#2}}
+%\protected\def\xxruby#1#2{%
+%  \begingroup\def\basestr{#1}\def\rubystr{#2}\luatexkoxxruby\endgroup }
+%\def\luatexkoxxruby{%
+%  \ifx\empty\basestr\else
+%    \expandafter\luatexkogetrubybasechar\basestr\end
+%    \expandafter\luatexkogetrubyrubychar\rubystr\end
+%    \ruby\basechar\rubychar
+%    \expandafter\luatexkoxxruby
+%  \fi }
+%\def\luatexkogetrubybasechar#1#2\end{\def\basechar{#1}\def\basestr{#2}}
+%\def\luatexkogetrubyrubychar#1#2\end{\def\rubychar{#1}\def\rubystr{#2}}
 % vertical writing
 \protected\def\vertical#1{%
   \leavevmode
