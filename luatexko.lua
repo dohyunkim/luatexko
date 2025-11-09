@@ -1839,6 +1839,7 @@ local function process_ruby_pre_linebreak (head)
     if id == hlistid then
       local rubyid = has_attribute(curr, rubyattr)
       if rubyid then
+        local k2, r2
         local ruby_t = rubybox[rubyid]
         if ruby_t and ruby_t[3] then -- rubyoverlap
           local side = (ruby_t[1].width - curr.width)/2
@@ -1846,48 +1847,36 @@ local function process_ruby_pre_linebreak (head)
             local k, r = nodenew(kernid), nodenew(ruleid)
             k.subtype, k.kern = userkern, -side
             r.width, r.height, r.depth = side, 0, 0
-            local k2, r2 = nodecopy(k), nodecopy(r)
+            k2, r2 = nodecopy(k), nodecopy(r)
 
             local prev = curr.prev -- 문단 첫머리에 루비 돌출 방지
-            if prev then
-              if  prev.id == localparid or
-                  prev.id == hlistid and prev.subtype == indentbox and prev.width == 0
-                  then
+            if prev and
+              ( prev.id == localparid or
+                prev.id == hlistid and prev.subtype == indentbox and prev.width == 0 ) then
                 k.kern = 0
-              end
-            end
+            end -- TODO: \rubyoverlap \setbox0\hbox{\ruby{short}{loooooong}} \noindent\copy0\copy0
 
+            set_attribute(k, charhead, 1)
+            set_attribute(r, charhead, 2)
             head = insert_before(head, curr, k)
             head = insert_before(head, curr, r)
-            head, curr = insert_after(head, curr, r2)
-            head, curr = insert_after(head, curr, k2)
           end
           ruby_t[3] = false
         end
-      end
-    elseif id == mathid then
-      curr = end_of_math(curr)
-    end
-    curr = getnext(curr)
-  end
-  return head
-end
 
-local function process_ruby_post_linebreak (head)
-  local curr = head
-  while curr do
-    if curr.id == hlistid then
-      local rubyid = has_attribute(curr, rubyattr)
-      if rubyid then
-        local ruby_t = rubybox[rubyid]
+        -- integrated from process_ruby_post_linebreak()
         local ruby = ruby_t and ruby_t[1]
         if ruby then
           local side = (curr.width - ruby.width)/2
-          local basefirst, rubyfirst = has_glyph(curr.list), has_glyph(ruby.list)
-          if basefirst and hangul_tonemark[basefirst.char] -- horizontal hangul tonemark
-            and not (rubyfirst and hangul_tonemark[rubyfirst.char]) then -- no horiz. hangul tm.
-            side = side + (basefirst.width or 0)/2
+
+          if not k2 then -- ruby is not wider than base
+            local basefirst, rubyfirst = has_glyph(curr.list), has_glyph(ruby.list)
+            if basefirst and hangul_tonemark[basefirst.char] -- horizontal hangul tonemark
+              and not (rubyfirst and hangul_tonemark[rubyfirst.char]) then -- no horiz. hangul tm.
+              side = side + (basefirst.width or 0)/2
+            end
           end
+
           if side ~= 0 then
             local list = ruby.list
             local k = nodenew(kernid)
@@ -1909,6 +1898,12 @@ local function process_ruby_post_linebreak (head)
           set_attribute(ruby, charhead, 1)
           head = insert_before(head, curr, ruby)
         end
+
+        if k2 then
+          head, curr = insert_after(head, curr, r2)
+          head, curr = insert_after(head, curr, k2)
+        end
+
         rubybox[rubyid] = nil
       end
     elseif id == mathid then
@@ -2793,12 +2788,8 @@ local auxiliary_procs = {
     hpack_filter          = function(h) return process_uline(h) end,
   },
   ruby    = {
-    pre_linebreak_filter = function(h)
-      h = process_ruby_pre_linebreak(h)
-      h = process_ruby_post_linebreak(h)
-      return h
-    end,
-    hpack_filter         = process_ruby_post_linebreak,
+    pre_linebreak_filter = process_ruby_pre_linebreak,
+    hpack_filter         = process_ruby_pre_linebreak,
   },
   autojosa = {
     luatexko_prelinebreak_first = process_josa,
