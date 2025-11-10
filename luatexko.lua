@@ -13,8 +13,8 @@
 
 luatexbase.provides_module {
   name        = 'luatexko',
-  date        = '2025/11/07',
-  version     = '4.9',
+  date        = '2025/11/10',
+  version     = '5.0',
   description = 'typesetting Korean with LuaTeX',
   author      = 'Dohyun Kim, Soojin Nam',
   license     = 'LPPL v1.3+',
@@ -1752,6 +1752,14 @@ local function draw_uline (head, curr, parent, t, final)
   curr  = skip_white_nodes(curr)
   if start and curr then
     curr = getnext(curr) or curr
+
+    if curr.id == glueid and curr.subtype == 9 then -- rightskip
+      local p = getprev(curr)
+      if p and p.id == glyphid and p.char == 32 then -- tagpdf's space char
+        curr = p
+      end
+    end
+
     local len = parent and rangedimensions(parent, start, curr)
                        or  dimensions(start, curr)
     if len and len ~= 0 then
@@ -1901,6 +1909,10 @@ local function process_ruby_pre_linebreak (head)
 
         if k2 then
           head, curr = insert_after(head, curr, r2)
+          local n = getnext(curr)
+          while n and n.id == penaltyid do -- skip penalty node for justification
+            n, curr = curr, getnext(n)
+          end
           head, curr = insert_after(head, curr, k2)
         end
 
@@ -2783,7 +2795,10 @@ local auxiliary_procs = {
     post_linebreak_filter = process_dotemph,
     hpack_filter          = process_dotemph,
   },
-  uline   = {
+  uline   = luatexbase.callbacktypes.pre_shipout_filter and {
+    pre_shipout_filter    = function(h) return process_uline(h) end, -- for tagpdf
+    hpack_filter          = function(h) return process_uline(h) end,
+  } or {
     post_linebreak_filter = function(h) return process_uline(h) end,
     hpack_filter          = function(h) return process_uline(h) end,
   },
@@ -2804,11 +2819,14 @@ local auxiliary_procs = {
 
 function luatexko.activate (name)
   for cbnam, cbfun in pairs( auxiliary_procs[name] ) do
-    local prior
+    local myname = "luatexko." .. cbnam .. "." .. name
     if cbnam == "hpack_filter" then
-      prior = luatexbase.priority_in_callback(cbnam, "luaotfload.color_handler") or nil
+      luatexbase.declare_callback_rule(cbnam, myname, "before", "luaotfload.color_handler")
+    elseif cbnam == "pre_shipout_filter" then
+      luatexbase.declare_callback_rule(cbnam, myname, "after", "tagpdf")
+      luatexbase.declare_callback_rule(cbnam, myname, "before", "luacolor.process")
     end
-    add_to_callback(cbnam, cbfun, "luatexko."..cbnam.."."..name, prior)
+    add_to_callback(cbnam, cbfun, myname)
   end
   active_processes[name] = true
 end
@@ -2850,7 +2868,7 @@ local function get_unicode_graphemes (s)
   local t = { }
   local graphemes = require'lua-uni-graphemes'
   for _, _, c in graphemes.graphemes(s) do
-    table.insert(t, c)
+    t[#t+1] = c
   end
   return t
 end

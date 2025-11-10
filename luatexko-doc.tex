@@ -19,6 +19,7 @@
 \usepackage[hmargin={3.4cm,4.2cm}]{geometry}
 \usepackage[rgb]{xcolor}
 \usepackage{luacolor}
+\usepackage{unicode-math}
 \usepackage[hangul]{luatexko}
 \directlua{
   fonts.protrusions.setups.latin = {
@@ -183,7 +184,7 @@
 \author{\normalsize Dohyun Kim \small |<nomosnomos at gmail com>| \and
         \normalsize Soojin Nam \small |<jsunam at gmail com>| \and
         \normalsize <\url{http://github.com/dohyunkim/luatexko}>}
-\date{Version 4.9\quad 2025/11/07}
+\date{Version 5.0\quad 2025/11/10}
 \maketitle
 
 \begin{quote}
@@ -675,7 +676,10 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
 \end{itemize}
 
 한편, 연속된 본문 글자들에 각각 한 글자씩 루비를 달고자 한다면
-\pkgkwd{\xxruby}|{...}{...}| 명령을 사용한다. 글자들 사이에 줄바꿈이 허용된다.
+\pkgkwd{\xxruby}|{...}{...}| 명령을 사용한다.\footnote{%
+  |lua-uni-algos| 패키지를 설치해두어야 한다.
+}
+글자들 사이에 줄바꿈이 \xxruby{허용}{許容}된다.
 두 인자의 글자 수가 동일해야 한다.
 
 \section{밑줄긋기}\label{sec:uline}
@@ -724,7 +728,7 @@ ulem 패키지가 \luatexko와 궁합이 맞지 않아\hparen{줄바꿈에 문�
 \begin{verbatim}
    \def\ymarker{%
      \markoverwith{%
-       \hbox{\color{yellow!50}\vrule width 1pt height 9pt depth 2pt}%
+       \hbox{{\color{yellow!50}\vrule width 1pt height 9pt depth 2pt}}%
    }}
 \end{verbatim}
 
@@ -751,7 +755,7 @@ ulem 패키지가 \luatexko와 궁합이 맞지 않아\hparen{줄바꿈에 문�
     \AssignTaggingSocketPlug{luatexko/markoverwith/begin}{yellowmarker}
     \AddToHookNext{cmd/luatexkomarkoverwith/after}{\endgroup}
   }
-  \markoverwith{\hbox{\color{yellow!50}\vrule width 1pt height 9pt depth 2pt}}
+  \markoverwith{\hbox{{\color{yellow!50}\vrule width 1pt height 9pt depth 2pt}}}
 }
 \ExplSyntaxOff
 
@@ -869,13 +873,15 @@ ulem 패키지가 \luatexko와 궁합이 맞지 않아\hparen{줄바꿈에 문�
 \section*{주요 변경 이력}
 
 \begin{itemize}\linespread{1.1}\small
+  \item[v5.0] ------
+  \item \hyperref[sec:ruby]{\cs{xxruby} 명령 개선} \hparen{|lua-uni-algos| 패키지 이용}
   \item[v4.9] ------
   \item \hyperref[sec:verttype]{HarfBuzz 폰트의 세로쓰기 지원} \hparen{권장하지는 않음}
   \item[v4.0] ------
   \item \LaTeX 의 Tagged PDF 기능 지원
   \item[v3.2] ------
   \item 한자 뒤에서도 자동조사 기능이 대체로 동작하게끔 하였다.
-    \xetexko{} 패키지가 설치돼 있을 것을 요구한다.
+    \hparen{\xetexko{} 패키지 설치 필요}
   \item \hyperref[sec:verttype]{|vertical| 및 |horizontal| 환경의 인자를 비워둘 수 있다}.
   \item \hyperref[sec:verttype]{|verticaltypesetting|을 환경으로도 쓸 수 있다.
     플레인텍에서는 \cs{beginverticaltypesetting} \cs{endverticaltypesetting}}.
