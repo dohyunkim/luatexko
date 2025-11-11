@@ -184,7 +184,7 @@
 \author{\normalsize Dohyun Kim \small |<nomosnomos at gmail com>| \and
         \normalsize Soojin Nam \small |<jsunam at gmail com>| \and
         \normalsize <\url{http://github.com/dohyunkim/luatexko}>}
-\date{Version 5.0\quad 2025/11/10}
+\date{Version 5.1\quad 2025/11/12}
 \maketitle
 
 \begin{quote}
@@ -737,7 +737,7 @@ ulem 패키지가 \luatexko와 궁합이 맞지 않아\hparen{줄바꿈에 문�
 {
   \tagpdfsetup
   {
-    role/new-attribute = {TextDeco-HalfYellowBg}{/O~/Layout~/BackgroundColor~[1.0 1.0 0.5]},
+    role/new-attribute = {TextDeco-HalfYellowBg}{/O~/Layout~/BackgroundColor~[1.0~1.0~0.5]},
   }
   \NewTaggingSocketPlug{luatexko/markoverwith/begin}{yellowmarker}
   {
@@ -755,7 +755,7 @@ ulem 패키지가 \luatexko와 궁합이 맞지 않아\hparen{줄바꿈에 문�
     \AssignTaggingSocketPlug{luatexko/markoverwith/begin}{yellowmarker}
     \AddToHookNext{cmd/luatexkomarkoverwith/after}{\endgroup}
   }
-  \markoverwith{\hbox{{\color{yellow!50}\vrule width 1pt height 9pt depth 2pt}}}
+  \markoverwith{\hbox{{\color{yellow!50}\vrule~width~1pt~height~9pt~depth~2pt}}}
 }
 \ExplSyntaxOff
 

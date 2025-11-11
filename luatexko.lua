@@ -13,8 +13,8 @@
 
 luatexbase.provides_module {
   name        = 'luatexko',
-  date        = '2025/11/10',
-  version     = '5.0',
+  date        = '2025/11/12',
+  version     = '5.1',
   description = 'typesetting Korean with LuaTeX',
   author      = 'Dohyun Kim, Soojin Nam',
   license     = 'LPPL v1.3+',
@@ -1042,6 +1042,8 @@ local function char_orphan_penalty (curr, par)
   end
 end
 
+local iwspaceOffattributeid = attributes.g__tag_interwordspaceOff_attr
+
 local function insert_glue_before (head, curr, par, br, brb, classic, ict, dim, fid)
   local prev = getprev(curr)
 
@@ -1068,7 +1070,10 @@ local function insert_glue_before (head, curr, par, br, brb, classic, ict, dim, 
     setglue(gl, dim, str, str*0.6)
   end
 
-  gl.attr = prev and prev.attr or curr.attr -- for less tagging
+  if iwspaceOffattributeid then
+    gl.attr = prev and prev.attr or curr.attr -- for less tagging
+    set_attribute(gl, iwspaceOffattributeid, 1)
+  end
 
   set_attribute(gl, inhibitglueattr, 1) -- suppress multiple run of unboxed nodes
   return insert_before(head, curr, gl)
@@ -1753,13 +1758,6 @@ local function draw_uline (head, curr, parent, t, final)
   if start and curr then
     curr = getnext(curr) or curr
 
-    if curr.id == glueid and curr.subtype == 9 then -- rightskip
-      local p = getprev(curr)
-      if p and p.id == glyphid and p.char == 32 then -- tagpdf's space char
-        curr = p
-      end
-    end
-
     local len = parent and rangedimensions(parent, start, curr)
                        or  dimensions(start, curr)
     if len and len ~= 0 then
@@ -1767,7 +1765,6 @@ local function draw_uline (head, curr, parent, t, final)
       setglue(g, len)
       g.subtype = subtype
       g.leader  = final and list or nodecopy(list)
-      g.attr = curr.attr
       set_attribute(g, charhead, 1)
       local k = nodenew(kernid)
       k.kern = -len
@@ -2795,10 +2792,7 @@ local auxiliary_procs = {
     post_linebreak_filter = process_dotemph,
     hpack_filter          = process_dotemph,
   },
-  uline   = luatexbase.callbacktypes.pre_shipout_filter and {
-    pre_shipout_filter    = function(h) return process_uline(h) end, -- for tagpdf
-    hpack_filter          = function(h) return process_uline(h) end,
-  } or {
+  uline   = {
     post_linebreak_filter = function(h) return process_uline(h) end,
     hpack_filter          = function(h) return process_uline(h) end,
   },
@@ -2822,9 +2816,6 @@ function luatexko.activate (name)
     local myname = "luatexko." .. cbnam .. "." .. name
     if cbnam == "hpack_filter" then
       luatexbase.declare_callback_rule(cbnam, myname, "before", "luaotfload.color_handler")
-    elseif cbnam == "pre_shipout_filter" then
-      luatexbase.declare_callback_rule(cbnam, myname, "after", "tagpdf")
-      luatexbase.declare_callback_rule(cbnam, myname, "before", "luacolor.process")
     end
     add_to_callback(cbnam, cbfun, myname)
   end

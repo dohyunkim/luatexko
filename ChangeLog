@@ -1,3 +1,9 @@
+2025-11-12	Dohyun Kim <nomosnomos at gmail com>
+
+	Version 5.1
+
+	* luatexko.{sty,lua}: fix a bug regarding uline tagging
+
 2025-11-10	Dohyun Kim <nomosnomos at gmail com>
 
 	Version 5.0
