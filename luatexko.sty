@@ -1043,9 +1043,11 @@
 \AddToHook{cmd/luatexkodotemphchar/before}
 {
   \tag_socket_use:n{luatexko/artifact/begin}
+  \tag_suspend:n\dotemph
 }
 \AddToHook{cmd/luatexkodotemphchar/after}
 {
+  \tag_resume:n\dotemph
   \tag_socket_use:n{luatexko/artifact/end}
 }
 % uline etc.
@@ -1086,7 +1088,9 @@
   \luatexko_markoverwith_original:nn
   {
     \tag_socket_use:n{luatexko/artifact/begin}
+    \tag_suspend:n\markoverwith
     #1
+    \tag_resume:n\markoverwith
     \tag_socket_use:n{luatexko/artifact/end}
   }
   {
