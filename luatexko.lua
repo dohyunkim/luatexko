@@ -1765,6 +1765,7 @@ local function draw_uline (head, curr, parent, t, final)
       setglue(g, len)
       g.subtype = subtype
       g.leader  = final and list or nodecopy(list)
+      g.attr    = list.attr
       set_attribute(g, charhead, 1)
       local k = nodenew(kernid)
       k.kern = -len
