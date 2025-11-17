@@ -1248,16 +1248,6 @@
   \box\z@
 }
 % verticaltypesetting
-\tl_put_right:Nn \verticaltypesetting
-{
-  \cs_if_eq:NNF \@nodocument \relax
-  { % in the preamble
-    \AddToHook{begindocument/end}
-    {
-      \tag_struct_gput:nnn{\tag_get:n{struct_num}}{attribute}{/O~/Layout~/WritingMode~(TbRl)}
-    }
-  }
-}
 \AddToHook{cmd/verticaltypesetting/after}
 {
   \tag_socket_use:nn{luatexko/writingmode/begin}{TbRl}
@@ -1265,6 +1255,13 @@
 \AddToHook{cmd/endverticaltypesetting/before}
 {
   \tag_socket_use:n{luatexko/writingmode/end}
+}
+\AddToHookNext{begindocument/end}
+{
+  \cs_if_eq:NNT \verticaltypesetting \relax % whole document is vertical
+  {
+    \tag_struct_gput:nnn{\tag_get:n{struct_num}}{attribute}{/O~/Layout~/WritingMode~(TbRl)}
+  }
 }
 \ExplSyntaxOff
 \endinput

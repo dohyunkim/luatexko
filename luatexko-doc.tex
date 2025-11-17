@@ -136,9 +136,9 @@
     \tag_mc_end_push:
     \tag_struct_begin:n{tag=Span, actualtext=#1}
     \tag_mc_begin:n{}
-    \SuspendTagging{actualtag/#1}
+    \SuspendTagging{actualtag}
     #2
-    \ResumeTagging{actualtag/#1}
+    \ResumeTagging{actualtag}
     \tag_mc_end:
     \tag_struct_end:
     \tag_mc_begin_pop:n{}
@@ -147,14 +147,29 @@
     #2
   }
 }
+\cs_new_nopar:Npn \artifacttag #1
+{
+  \leavevmode
+  \tag_if_active:TF
+  {
+    \tag_mc_begin:n{artifact}
+    \SuspendTagging{artifacttag}
+    #1
+    \ResumeTagging{artifacttag}
+    \tag_mc_begin:n{}
+  }
+  {
+    #1
+  }
+}
 \ExplSyntaxOff
 \def\logoko{\actualtag{ko, phoneme=[ˌkeɪˈəʊ]}{\textsf{k}\kern-.04em $o$}}
-\def\luatex{\actualtag{LuaTeX}{\hologo{LuaTeX}}}
-\def\XeTeX{\actualtag{XeTeX}{\hologo{XeTeX}}}
-\def\luatexko{\luatex-\logoko}
-\def\xetexko{\XeTeX-\logoko}
-\def\texlive{\TeX\ Live}
-\def\kotex{\actualtag{ko.TeX, phoneme=[ˌkeɪˈəʊtɛx]}{\logoko\kern-.1ex .\kern-.1667em \TeX}}
+\def\luatex{\hologo{LuaTeX}\unskip}
+\def\XeTeX{\hologo{XeTeX}\unskip}
+\def\luatexko{\luatex\artifacttag{-}\logoko}
+\def\xetexko{\XeTeX\artifacttag{-}\logoko}
+\def\texlive{\hologo{TeXLive}\unskip}
+\def\kotex{\actualtag{koTeX, phoneme=[ˌkeɪˈəʊtɛx]}{\logoko\kern-.1ex .\kern-.1667em \TeX}}
 \def\hemph#1{\textsf{\bfseries #1}}
 \makeatletter
 \def\hparen#1{\begingroup\fontsize{.9\dimexpr\f@size pt\relax}\z@\selectfont
@@ -168,7 +183,7 @@
   \linespread{1.1}\small \parindent=0pt \parskip=2pt plus 1pt
   \leftskip=2em \rightskip=\leftskip
   \topsep=\smallskipamount \@totalleftmargin=\leftskip
-  \paragraph{\llap{\color{gray}\normalfont plain \TeX\hskip1em}}\hskip-1em
+  \paragraph{\llap{\color{gray}\normalfont\hologo{plainTeX}\unskip\hskip1em}}\hskip-1em
 }{
   \par
 }
