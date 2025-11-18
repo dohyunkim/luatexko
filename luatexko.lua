@@ -46,38 +46,16 @@ local setglue         = node.setglue
 local setproperty     = node.setproperty
 local unset_attribute = node.unset_attribute
 
-local fontcurrent   = font.current
-local fontfonts     = font.fonts
 local fontgetfont   = font.getfont
 local getparameters = font.getparameters
 
-local texattribute = tex.attribute
-local texcount     = tex.count
-local texset       = tex.set
 local texsp        = tex.sp
 
-local set_macro = token.set_macro
-
-local mathmax = math.max
-
 local stringformat = string.format
-local stringunpack = string.unpack
-
-local tableconcat = table.concat
-local tableinsert = table.insert
 local tableunpack = table.unpack
 
-local add_to_callback       = luatexbase.add_to_callback
-local attributes            = luatexbase.attributes
-local call_callback         = luatexbase.call_callback
-local create_callback       = luatexbase.create_callback
-local module_warning        = luatexbase.module_warning
-local new_attribute         = luatexbase.new_attribute
-local new_user_whatsit      = luatexbase.new_user_whatsit
-local registernumber        = luatexbase.registernumber
-
 local function warning (...)
-  return module_warning("luatexko", stringformat(...))
+  return luatexbase.module_warning("luatexko", stringformat(...))
 end
 
 local dirid     = node.id"dir"
@@ -94,40 +72,31 @@ local ruleid    = node.id"rule"
 local vlistid   = node.id"vlist"
 local whatsitid = node.id"whatsit"
 local literal_whatsit = node.subtype"pdf_literal"
-local save_whatsit = node.subtype"pdf_save"
+local save_whatsit    = node.subtype"pdf_save"
 local restore_whatsit = node.subtype"pdf_restore"
-local matrix_whatsit = node.subtype"pdf_setmatrix"
-local directmode = 2
-local fontkern   = 0
-local userkern   = 1
-local italcorr   = 3
-local lua_number = 100
-local lua_value  = 108
-local spaceskip  = 13
-local parfillskip = 15
-local indentbox  = 3
-local nohyphen = registernumber"l@nohyphenation" or -1 -- verbatim
-local langkor  = registernumber"koreanlanguage"  or 16383
+local matrix_whatsit  = node.subtype"pdf_setmatrix"
+local nohyphen  = luatexbase.registernumber"l@nohyphenation" or -1 -- verbatim
+local langkor   = luatexbase.registernumber"koreanlanguage"  or 16383
 
-local hangulfontattr   = attributes.luatexkohangulfontattr
-local hanjafontattr    = attributes.luatexkohanjafontattr
-local fallbackfontattr = attributes.luatexkofallbackfontattr
-local autojosaattr     = attributes.luatexkoautojosaattr
-local classicattr      = attributes.luatexkoclassicattr
-local dotemphattr      = attributes.luatexkodotemphattr
-local rubyattr         = attributes.luatexkorubyattr
-local hangulbyhangulattr = attributes.luatexkohangulbyhangulattr
-local hanjabyhanjaattr   = attributes.luatexkohanjabyhanjaattr
-local inhibitglueattr  = attributes.luatexkoinhibitglueattr
-local unicodeattr = new_attribute"luatexko_unicode_attr"
-local charhead = new_attribute"luatexko_char_head_attr"
+local hangulfontattr   = luatexbase.attributes.luatexkohangulfontattr
+local hanjafontattr    = luatexbase.attributes.luatexkohanjafontattr
+local fallbackfontattr = luatexbase.attributes.luatexkofallbackfontattr
+local autojosaattr     = luatexbase.attributes.luatexkoautojosaattr
+local classicattr      = luatexbase.attributes.luatexkoclassicattr
+local dotemphattr      = luatexbase.attributes.luatexkodotemphattr
+local rubyattr         = luatexbase.attributes.luatexkorubyattr
+local hangulbyhangulattr = luatexbase.attributes.luatexkohangulbyhangulattr
+local hanjabyhanjaattr   = luatexbase.attributes.luatexkohanjabyhanjaattr
+local inhibitglueattr  = luatexbase.attributes.luatexkoinhibitglueattr
+local unicodeattr      = luatexbase.new_attribute"luatexko_unicode_attr"
+local charhead         = luatexbase.new_attribute"luatexko_char_head_attr"
 local verticalattr  -- set later at otfregister
 local charraiseattr -- set later at otfregister
 
 local stretch_f = 5/100 -- should be consistent for ruby
 
 local function get_font_data (fontid)
-  return fontgetfont(fontid) or fontfonts[fontid] or {}
+  return fontgetfont(fontid) or font.fonts[fontid] or {}
 end
 
 local function get_font_param (f, key)
@@ -204,8 +173,8 @@ local function get_asc_desc (hb) -- fontdata.hb
       local length = os2:get_length()
       if length > 69 then -- sTypoAscender (int16)
         local data = os2:get_data()
-        local typoascender  = stringunpack(">h", data, 69)
-        local typodescender = stringunpack(">h", data, 71)
+        local typoascender  = string.unpack(">h", data, 69)
+        local typodescender = string.unpack(">h", data, 71)
         return typoascender * hb.scale, -typodescender * hb.scale
       end
     end
@@ -385,8 +354,8 @@ local fontoptions = {
       -- luaharfbuzz's Font:get_h_extents() gets ascender value from hhea table;
       -- Node mode's parameters.ascender is gotten from OS/2 table.
       -- TypoAscender in OS/2 table seems to be more suitable for our purpose.
-      if has_harf_data(fid) and not (asc and desc) then
-        asc, desc = get_asc_desc(hb)
+      if not (asc and desc) then
+        asc, desc = get_asc_desc(has_harf_data(fid))
       end
       asc, desc  = asc  or false, desc or false
       t[fid] = { asc, desc }
@@ -820,11 +789,11 @@ local force_hangul = {
 }
 luatexko.forcehangulchars = force_hangul
 
-local forcehf_f, forcehf_id = new_user_whatsit("forcehf","luatexko")
+local forcehf_f, forcehf_id = luatexbase.new_user_whatsit("forcehf","luatexko")
 
 function luatexko.updateforcehangul (value)
   local what = forcehf_f()
-  what.type  = lua_value -- function
+  what.type  = 108 -- lua_value : function
   what.value = value
   nodewrite(what)
 end
@@ -896,7 +865,7 @@ local function process_fonts (head)
       and currfont ~= 0
       and currfont ~= newfont
       and currlang ~= nohyphen
-      and curr.subtype == spaceskip
+      and curr.subtype == 13 -- spaceskip
       -- fontloader's "node" mode sets space_stretch to zero
       -- when the font is a monospaced font (fontspec's \setmonofont
       -- command does the same thing), which we will bypass here
@@ -940,7 +909,7 @@ local function process_fonts (head)
       curr = end_of_math(curr)
     elseif id      == whatsitid  and
       curr.user_id == forcehf_id and
-      curr.type    == lua_value  then
+      curr.type    == 108 then -- lua_value
 
       local value = curr.value
       if type(value) == "function" then
@@ -948,7 +917,7 @@ local function process_fonts (head)
       end
 
       noderemove(head, curr)
-      tableinsert(to_free, curr)
+      to_free[#to_free+1] = curr
     end
     curr = getnext(curr)
   end
@@ -972,10 +941,10 @@ local blocking_nodes = {
 local function is_blocking_node (curr)
   local id, subtype = curr.id, curr.subtype
   if id == hlistid then
-    if subtype == indentbox then return false end
+    if subtype == 3 then return false end -- indentbox
     if curr.next and curr.next.id == ins_id then return false end -- footnote
   end
-  return blocking_nodes[id] or id == kernid and subtype == userkern
+  return blocking_nodes[id] or id == kernid and subtype == 1 -- userkern
 end
 
 local function hbox_char_font (box, init, deep)
@@ -1013,7 +982,7 @@ local function goto_end_actualtext (curr)
   local n = getnext(curr)
   while n do
     if n.id == whatsitid and
-       n.mode == directmode and
+       n.mode == 2 and -- directmode
        my_node_props(n).endactualtext then
       curr = n; break
     end
@@ -1036,13 +1005,13 @@ local function char_orphan_penalty (curr, par)
       nc = nn.char
       ncl = nc and charclass[nc]
     end
-    if nn.id == glueid and nn.subtype == parfillskip then
+    if nn.id == glueid and nn.subtype == 15 then -- parfillskip
       return 1000 -- supress orphan
     end
   end
 end
 
-local iwspaceOffattributeid = attributes.g__tag_interwordspaceOff_attr
+local iwspaceOffattributeid = luatexbase.attributes.g__tag_interwordspaceOff_attr
 
 local function insert_glue_before (head, curr, par, br, brb, classic, ict, dim, fid)
   local prev = getprev(curr)
@@ -1112,7 +1081,7 @@ local function process_cjk_punctuation_spacing (head, par)
         end
         pcl, pc, pf = ccl, cc, curr.font
       elseif is_blocking_node(curr) then
-        if id == glueid and (curr.subtype >= spaceskip and curr.subtype <= parfillskip
+        if id == glueid and (curr.subtype >= 13 and curr.subtype <= 15 -- spaceskip .. parfillskip
           or has_attribute(curr, inhibitglueattr)) then
           pcl, pc, pf = 0, false, false
         else
@@ -1249,7 +1218,7 @@ local function do_interlatincjk_option (head, curr, p, pc, pf, c, cf, par)
     if brb and brb ~= 10000 and breakable_after[p] == true then -- skip latin-dash and dash-latin
       local dimc = fontoptions.interlatincjk[cf] or 0
       local dimp = fontoptions.interlatincjk[pf] or 0
-      local dim  = mathmax(dimc, dimp)
+      local dim  = dimc > dimp and dimc or dimp
       if dim ~= 0 then
         head = insert_glue_before(head, curr, par, true, brb, false, false, dim, f)
       end
@@ -1334,7 +1303,7 @@ local function process_glyph_width (head)
           (old or cc < 0x2000 or cc > 0x202F) then -- exclude general puncts
 
           local gpos = class == 1 and getprev(curr) or getnext(curr)
-          gpos = gpos and gpos.id == kernid and gpos.subtype == fontkern
+          gpos = gpos and gpos.id == kernid and gpos.subtype == 0 -- fontkern
 
           if not gpos then -- avoid multiple run
             local diff = char_in_font(curr.font, curr.char).luatexko_diff or 0
@@ -1378,12 +1347,13 @@ local function process_remove_spaces (head)
         local cc = is_cjk_char(c) and 1 or 0
         if sp and cjk and (cjk + cc) == 2 then
           head = noderemove(head, sp)
-          tableinsert(to_free, sp)
+          to_free[#to_free+1] = sp
         end
         cjk, sp = cc, false
       end
     elseif cjk and id == glueid
-      and curr.subtype == spaceskip and has_attribute(curr, classicattr) then
+      and curr.subtype == 13 -- spaceskip
+      and has_attribute(curr, classicattr) then
       sp = curr
     elseif id == mathid then
       curr, cjk, sp = end_of_math(curr), false, false
@@ -1548,7 +1518,7 @@ local function process_josa (head)
             curr.char = cc
           else
             head = noderemove(head, curr)
-            tableinsert(tofree, curr)
+            tofree[#tofree+1] = curr
           end
         end
         unset_attribute(curr, autojosaattr)
@@ -1598,11 +1568,11 @@ end
 local dotemphbox = {}
 luatexko.dotemphbox = dotemphbox
 
-local dotemph_f, dotemph_id = new_user_whatsit("dotemph","luatexko")
+local dotemph_f, dotemph_id = luatexbase.new_user_whatsit("dotemph","luatexko")
 
 function luatexko.dotemphboundary (i)
   local what = dotemph_f()
-  what.type  = lua_number
+  what.type  = 100 -- lua_number
   what.value = i
   nodewrite(what)
 end
@@ -1645,7 +1615,7 @@ local function process_dotemph (head)
               if n.id == glyphid then
                 if not is_combining(has_attribute(n, unicodeattr) or n.char) then break end
                 basewd = basewd + n.width
-              elseif n.id == kernid and n.subtype == fontkern then
+              elseif n.id == kernid and n.subtype == 0 then -- fontkern
                 basewd = basewd + n.kern
               elseif has_attribute(n, charhead) or (n.id == whatsitid and
                 (n.subtype == restore_whatsit or harf_actual_literal(n) == 2)) then -- pass
@@ -1659,7 +1629,7 @@ local function process_dotemph (head)
             if shift ~= 0 then
               local list = box.list
               local k = nodenew(kernid)
-              k.kern, k.subtype = shift, userkern
+              k.kern, k.subtype = shift, 1 -- userkern
               box.list = insert_before(list, list, k)
             end
 
@@ -1671,13 +1641,13 @@ local function process_dotemph (head)
 
       elseif curr.id == whatsitid  and
         curr.user_id == dotemph_id and
-        curr.type    == lua_number then
+        curr.type    == 100 then -- lua_number
 
         local val = curr.value
         nodefree(dotemphbox[val])
         dotemphbox[val] = nil
 
-        tableinsert(to_free, curr)
+        to_free[#to_free+1] = curr
         head = noderemove(head, curr)
       end
       pcurr = false
@@ -1713,7 +1683,7 @@ function luatexko.get_strike_out_down (box)
   return -texsp"0.5ex"
 end
 
-local uline_f, uline_id = new_user_whatsit("uline","luatexko")
+local uline_f, uline_id = luatexbase.new_user_whatsit("uline","luatexko")
 
 function luatexko.ulboundary (i, n, subtype)
   local what = uline_f()
@@ -1722,10 +1692,10 @@ function luatexko.ulboundary (i, n, subtype)
       warning[[\markoverwith should be a rule or a box]]
       n = getnext(n)
     end
-    what.type  = lua_value -- table
+    what.type  = 108 -- lua_value : table
     what.value = { i, nodecopy(n), subtype }
   else
-    what.type  = lua_number
+    what.type  = 100 -- lua_number
     what.value = i
   end
   nodewrite(what)
@@ -1769,7 +1739,7 @@ local function draw_uline (head, curr, parent, t, final)
       set_attribute(g, charhead, 1)
       local k = nodenew(kernid)
       k.kern = -len
-      k.subtype = userkern
+      k.subtype = 1 -- userkern
       set_attribute(k, charhead, 2)
       head = insert_before(head, start, g)
       head = insert_before(head, start, k)
@@ -1790,7 +1760,7 @@ local function process_uline (head, parent, level)
     elseif curr.id == whatsitid and curr.user_id == uline_id then
 
       local value = curr.value
-      if curr.type == lua_value then
+      if curr.type == 108 then -- lua_value
         local count, list, subtype = tableunpack(value)
         ulitems[count] = {
           list    = list,
@@ -1806,7 +1776,7 @@ local function process_uline (head, parent, level)
         end
       end
 
-      tableinsert(to_free, curr)
+      to_free[#to_free+1] = curr
       head = noderemove(head, curr)
 
     end
@@ -1834,7 +1804,7 @@ function luatexko.getrubystretchfactor (box)
   local str = fontoptions.intercharstretch[fid]
   if str then
     local em = fontoptions.en_size[fid] * 2
-    set_macro("luatexkostretchfactor", stringformat("%.4f", str/em/2))
+    token.set_macro("luatexkostretchfactor", stringformat("%.4f", str/em/2))
   end
 end
 
@@ -1851,14 +1821,14 @@ local function process_ruby_pre_linebreak (head)
           local side = (ruby_t[1].width - curr.width)/2
           if side > 0 then -- ruby is wide
             local k, r = nodenew(kernid), nodenew(ruleid)
-            k.subtype, k.kern = userkern, -side
+            k.subtype, k.kern = 1, -side -- userkern
             r.width, r.height, r.depth = side, 0, 0
             k2, r2 = nodecopy(k), nodecopy(r)
 
             local prev = curr.prev -- 문단 첫머리에 루비 돌출 방지
             if prev and
               ( prev.id == localparid or
-                prev.id == hlistid and prev.subtype == indentbox and prev.width == 0 ) then
+                prev.id == hlistid and prev.subtype == 3 and prev.width == 0 ) then -- indentbox
                 k.kern = 0
             end -- TODO: \rubyoverlap \setbox0\hbox{\ruby{short}{loooooong}} \noindent\copy0\copy0
 
@@ -1886,7 +1856,7 @@ local function process_ruby_pre_linebreak (head)
           if side ~= 0 then
             local list = ruby.list
             local k = nodenew(kernid)
-            k.kern, k.subtype = side, userkern
+            k.kern, k.subtype = side, 1 -- userkern
             ruby.list = insert_before(list, list, k)
           end
           ruby.width = 0
@@ -1944,12 +1914,12 @@ local function pdfliteral_direct_actual (syllable)
     for _,v in ipairs(syllable) do
       t[#t + 1] = conv_tounicode(v)
     end
-    data = stringformat("/Span<</ActualText<FEFF%s>>>BDC", tableconcat(t))
+    data = stringformat("/Span<</ActualText<FEFF%s>>>BDC", table.concat(t))
   else
     data = "EMC"
   end
   local what = nodenew(whatsitid, literal_whatsit)
-  what.mode = directmode
+  what.mode = 2 -- directmode
   what.data = data
   if syllable then
     my_node_props(what).startactualtext = syllable
@@ -1977,7 +1947,7 @@ local function process_reorder_tonemarks (head)
           while n do
             if n.id == glyphid then
               local u = has_attribute(n, unicodeattr) or n.char
-              if u then tableinsert(syllable, u) end
+              if u then syllable[#syllable+1] = u end
             end
             if n == curr then break end
             n = getnext(n)
@@ -2025,9 +1995,10 @@ local function process_reorder_tonemarks (head)
       else
         init = nil
       end
-    elseif id == kernid and curr.subtype ~= userkern then -- skip
+    elseif id == kernid and curr.subtype ~= 1 then -- skip non-userkern
     elseif id == whatsitid then
-      if curr.mode == directmode and my_node_props(curr).startactualtext then
+      if curr.mode == 2 -- directmode
+        and my_node_props(curr).startactualtext then
         curr, init = goto_end_actualtext(curr), nil
       end
     else
@@ -2171,7 +2142,7 @@ end
 
 local function activate_process (cbnam, cbfun, name, first)
   if not active_processes[name] then
-    add_to_callback(cbnam, cbfun, "luatexko."..cbnam.."."..name, first)
+    luatexbase.add_to_callback(cbnam, cbfun, "luatexko."..cbnam.."."..name, first)
     active_processes[name] = true
   end
 end
@@ -2183,7 +2154,7 @@ local function fontdata_warning(activename, ...)
   end
 end
 
-local dfltfntsize = get_font_param(fontcurrent(), "quad") or 655360
+local dfltfntsize = get_font_param(font.current(), "quad") or 655360
 
 local function get_hb_char_bbox (hbfont, index)
   local name = tostring(hbfont)
@@ -2304,7 +2275,7 @@ local function process_vertical_font (fontdata)
       activate_process("post_shaping_filter", process_glyph_width, "compresspunctuations")
     end
     if t.kern then table.remove(hb_features, t.kern) end
-    if not t.vert then table.insert(hb_features, harfbuzz.Feature.new"vert") end
+    if not t.vert then hb_features[#hb_features+1] = harfbuzz.Feature.new"vert"  end
     return
   end
 
@@ -2392,15 +2363,15 @@ local function process_vertical_diff (head)
 end
 
 function luatexko.gethorizboxmoveright ()
-  for _, v in ipairs{ fontcurrent(),
-                      texattribute.luatexkohangulfontattr,
-                      texattribute.luatexkohanjafontattr,
-                      texattribute.luatexkofallbackfontattr } do
+  for _, v in ipairs{ font.current(),
+                      tex.attribute.luatexkohangulfontattr,
+                      tex.attribute.luatexkohanjafontattr,
+                      tex.attribute.luatexkofallbackfontattr } do
     if v and v > 0 then
       local amount = fontoptions.vertcharraise[v]
       if amount then
         amount = amount + (fontoptions.charraise[v] or 0)
-        set_macro("luatexkohorizboxmoveright", texsp(amount).."sp")
+        token.set_macro("luatexkohorizboxmoveright", texsp(amount).."sp")
         break
       end
     end
@@ -2438,7 +2409,7 @@ local function process_fake_slant_corr (head) -- for font fallback
   while curr do
     local id = curr.id
     if id == kernid then
-      if curr.subtype == italcorr and curr.kern == 0 then
+      if curr.subtype == 3 and curr.kern == 0 then -- italcorr
         local p, t = getprev(curr), {}
         while p do
           if p.id == glyphid and not fontoptions.is_vertical[p.font] then
@@ -2449,7 +2420,7 @@ local function process_fake_slant_corr (head) -- for font fallback
 
             local slant = fontoptions.slantvalue[p.font]
             if slant and slant > 0 then
-              tableinsert(t, char_in_font(p.font, p.char).italic or 0)
+              t[#t+1] = char_in_font(p.font, p.char).italic or 0
             end
 
             local c = has_attribute(p, unicodeattr) or p.char
@@ -2465,7 +2436,7 @@ local function process_fake_slant_corr (head) -- for font fallback
         end
 
         if p.id == glyphid and #t > 0 then
-          local italic = mathmax(tableunpack(t))
+          local italic = math.max(tableunpack(t))
           if italic > 0 then
             curr.kern = italic
           end
@@ -2551,7 +2522,7 @@ end
 
 -- wrap up
 
-add_to_callback ("hyphenate",
+luatexbase.add_to_callback ("hyphenate",
 function(head)
   normalize_syllable_TC(head)
   process_fonts(head)
@@ -2559,17 +2530,17 @@ function(head)
 end,
 "luatexko.hyphenate.fonts_and_languages")
 
-create_callback("luatexko_prelinebreak_first",  "data", function(...) return ... end)
-create_callback("luatexko_prelinebreak_second", "data", function(...) return ... end)
-create_callback("luatexko_prelinebreak_third",  "data", function(...) return ... end)
+luatexbase.create_callback("luatexko_prelinebreak_first",  "data", function(...) return ... end)
+luatexbase.create_callback("luatexko_prelinebreak_second", "data", function(...) return ... end)
+luatexbase.create_callback("luatexko_prelinebreak_third",  "data", function(...) return ... end)
 
-add_to_callback("pre_shaping_filter", function(h)
+luatexbase.add_to_callback("pre_shaping_filter", function(h)
   local par = h.id == localparid
-  h = call_callback("luatexko_prelinebreak_first", h, par)
+  h = luatexbase.call_callback("luatexko_prelinebreak_first", h, par)
   h = process_cjk_punctuation_spacing(h, par)
-  h = call_callback("luatexko_prelinebreak_second", h, par)
+  h = luatexbase.call_callback("luatexko_prelinebreak_second", h, par)
   h = process_linebreak(h, par)
-  h = call_callback("luatexko_prelinebreak_third", h, par)
+  h = luatexbase.call_callback("luatexko_prelinebreak_third", h, par)
   return h
 end, "luatexko.pre_shaping_filter")
 
@@ -2624,13 +2595,13 @@ otfregister {
   manipulators = {
     node = function()
       if not active_processes.charraise then
-        charraiseattr = new_attribute"luatexko_char_raise_attr"
+        charraiseattr = luatexbase.new_attribute"luatexko_char_raise_attr"
       end
       activate_process("post_shaping_filter", process_charraise, "charraise")
     end,
     plug = function()
       if not active_processes.charraise then
-        charraiseattr = new_attribute"luatexko_char_raise_attr"
+        charraiseattr = luatexbase.new_attribute"luatexko_char_raise_attr"
       end
       activate_process("post_shaping_filter", process_charraise, "charraise")
     end,
@@ -2674,14 +2645,14 @@ otfregister {
   manipulators = {
     node = function(fontdata)
       if not active_processes.verticalwriting then
-        verticalattr = new_attribute"luatexko_vertical_attr"
+        verticalattr = luatexbase.new_attribute"luatexko_vertical_attr"
       end
       process_vertical_font(fontdata)
       activate_process("post_shaping_filter", process_vertical_diff, "verticalwriting", 1)
     end,
     plug = function(fontdata) -- experimental
       if not active_processes.verticalwriting then
-        verticalattr = new_attribute"luatexko_vertical_attr"
+        verticalattr = luatexbase.new_attribute"luatexko_vertical_attr"
       end
       process_vertical_font(fontdata)
       activate_process("post_shaping_filter", process_vertical_diff, "verticalwriting", 1)
@@ -2696,7 +2667,7 @@ otfregister {
   manipulators = {
     node = function()
       if tex.adjustspacing == 0 then
-        texset("global", "adjustspacing", 2)
+        tex.set("global", "adjustspacing", 2)
       end
     end,
     plug = function(fontdata, _, value)
@@ -2707,7 +2678,7 @@ otfregister {
       fontdata.step    = fontdata.step    or (setup.step    or .5)*10
       --]]
       if tex.adjustspacing == 0 then
-        texset("global", "adjustspacing", 2)
+        tex.set("global", "adjustspacing", 2)
       end
     end,
   },
@@ -2760,7 +2731,7 @@ otfregister {
         end
       end
       if tex.protrudechars == 0 then
-        texset("global", "protrudechars", 2)
+        tex.set("global", "protrudechars", 2)
       end
     end,
     plug = function(fontdata, _, value)
@@ -2782,7 +2753,7 @@ otfregister {
         end
       end
       if tex.protrudechars == 0 then
-        texset("global", "protrudechars", 2)
+        tex.set("global", "protrudechars", 2)
       end
     end,
   },
@@ -2818,7 +2789,7 @@ function luatexko.activate (name)
     if cbnam == "hpack_filter" then
       luatexbase.declare_callback_rule(cbnam, myname, "before", "luaotfload.color_handler")
     end
-    add_to_callback(cbnam, cbfun, myname)
+    luatexbase.add_to_callback(cbnam, cbfun, myname)
   end
   active_processes[name] = true
 end
@@ -2838,7 +2809,7 @@ function luatexko.deactivateall (str)
     for i, v in ipairs( luatexbase.callback_descriptions(name) ) do
       if v:find(str or "^luatexko%.") then
         local ff, dd = luatexbase.remove_from_callback(name, v)
-        tableinsert(t, { ff, dd, i })
+        t[#t+1] = { ff, dd, i }
       end
     end
     luatexko.deactivated[name] = t
@@ -2848,7 +2819,7 @@ end
 function luatexko.reactivateall ()
   for name, v in pairs(luatexko.deactivated or {}) do
     for _, vv in ipairs(v) do
-      add_to_callback(name, tableunpack(vv))
+      luatexbase.add_to_callback(name, tableunpack(vv))
     end
   end
   luatexko.deactivated = nil
