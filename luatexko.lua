@@ -182,30 +182,6 @@ local function get_asc_desc (hb) -- fontdata.hb
 end
 
 local fontoptions = {
-  is_not_harf = setmetatable( {}, { __index = function (t, fid)
-    if fid then
-      local bool
-      if has_harf_data(fid) then
-        bool = false
-      else
-        bool = true
-      end
-      t[fid] = bool
-      return bool
-    end
-  end }),
-
-  mode = setmetatable( {}, { __index = function (t, fid)
-    if fid then
-      local m = option_in_font(fid, "mode") or false
-      if m == "harf" and not has_harf_data(fid) then
-        m = "node" -- default mode when 'mode=harf' in non-luahbtex
-      end
-      t[fid] = m
-      return m
-    end
-  end }),
-
   is_widefont = setmetatable( {}, { __index = function(t, fid)
     if fid then
       local fontdata = get_font_data(fid)
@@ -387,7 +363,7 @@ local function char_in_font(fontdata, char)
 end
 
 local function harf_reordered_tonemark (curr)
-  if not fontoptions.is_not_harf[curr.font] then
+  if has_harf_data(curr.font) then
     local props = getproperty(curr) or {}
     local actualtext = props.luaotfload_startactualtext
     return actualtext and actualtext:find"302[EF]$"
@@ -789,10 +765,13 @@ local force_hangul = {
 }
 luatexko.forcehangulchars = force_hangul
 
-local forcehf_f, forcehf_id = luatexbase.new_user_whatsit("forcehf","luatexko")
-
+local forcehf_id
 function luatexko.updateforcehangul (value)
-  local what = forcehf_f()
+  if not forcehf_id then
+    forcehf_id = luatexbase.new_whatsit("luatexko_forcehangulfont_whatsit")
+  end
+  local what = nodenew(whatsitid, "user_defined")
+  what.user_id = forcehf_id
   what.type  = 108 -- lua_value : function
   what.value = value
   nodewrite(what)
@@ -825,7 +804,7 @@ local function process_fonts (head)
             done = false
             if hangul_tonemark[c]
               and not active_processes.reorderTM
-              and fontoptions.is_not_harf[curr.font] then
+              and not has_harf_data(curr.font) then
               luatexko.activate("reorderTM") -- activate reorderTM here
             end
           end
@@ -1568,10 +1547,13 @@ end
 local dotemphbox = {}
 luatexko.dotemphbox = dotemphbox
 
-local dotemph_f, dotemph_id = luatexbase.new_user_whatsit("dotemph","luatexko")
-
+local dotemph_id
 function luatexko.dotemphboundary (i)
-  local what = dotemph_f()
+  if not dotemph_id then
+    dotemph_id = luatexbase.new_whatsit("luatexko_dotemph_whatsit")
+  end
+  local what = nodenew(whatsitid, "user_defined")
+  what.user_id = dotemph_id
   what.type  = 100 -- lua_number
   what.value = i
   nodewrite(what)
@@ -1683,10 +1665,13 @@ function luatexko.get_strike_out_down (box)
   return -texsp"0.5ex"
 end
 
-local uline_f, uline_id = luatexbase.new_user_whatsit("uline","luatexko")
-
+local uline_id
 function luatexko.ulboundary (i, n, subtype)
-  local what = uline_f()
+  if not uline_id then
+    uline_id = luatexbase.new_whatsit("luatexko_uline_whatsit")
+  end
+  local what = nodenew(whatsitid, "user_defined")
+  what.user_id = uline_id
   if n then
     while n.id ~= ruleid and n.id ~= hlistid and n.id ~= vlistid do
       warning[[\markoverwith should be a rule or a box]]
@@ -1934,7 +1919,7 @@ local function process_reorder_tonemarks (head)
   while curr do
     local id = curr.id
     if id == glyphid and
-       fontoptions.is_not_harf[curr.font] and
+       not has_harf_data(curr.font) and
        fontoptions.is_hangulscript[curr.font] then
 
       local uni = has_attribute(curr, unicodeattr) or curr.char
@@ -2142,8 +2127,17 @@ end
 
 local function activate_process (cbnam, cbfun, name, first)
   if not active_processes[name] then
-    luatexbase.add_to_callback(cbnam, cbfun, "luatexko."..cbnam.."."..name, first)
-    active_processes[name] = true
+    local fmt = "luatexko.%s.%s"
+    local desc = fmt:format(cbnam, name)
+    if first then
+      for k, v in pairs(active_processes) do
+        if v == cbnam then
+          luatexbase.declare_callback_rule(v, desc, "before", fmt:format(v, k))
+        end
+      end
+    end
+    luatexbase.add_to_callback(cbnam, cbfun, desc)
+    active_processes[name] = cbnam
   end
 end
 
@@ -2321,7 +2315,7 @@ local function process_vertical_diff (head)
       local chardata = char_in_font(curr.font, curr.char)
       local diff = chardata and chardata.luatexko_diff or 0
 
-      if not fontoptions.is_not_harf[curr.font] then -- harf-mode
+      if has_harf_data(curr.font) then -- harf-mode
         local charraise = fontoptions.charraise[curr.font] or 0
         local yofforig  = curr.yoffset - charraise
         diff = diff + curr.width - yofforig

@@ -15,11 +15,9 @@
 \ifdefined\ProvidesPackage
   \NeedsTeXFormat{LaTeX2e}[2025/06/01]
   \ProvidesPackage{luatexko}[2025/11/12 v5.1 typesetting Korean with LuaTeX]
-  \RequirePackage{luatexbase}
   \RequirePackage{fontspec}[2020/02/03]
   \let\luatexkoselectfont\selectfont
 \else
-  \input luatexbase.sty
   \input luaotfload.sty
   \input atbegshi.sty
   \chardef\luatexkoatcatcode=\catcode`\@
