@@ -1,3 +1,14 @@
+2025-11-20	Dohyun Kim <nomosnomos at gmail com>
+
+	Version 5.2
+
+	* luatexko.lua:
+	- copy attributes of leader box/rule to leader glue
+	- fix a bug in fontoptions.asc_desc[]
+
+	* luatexko.sty:
+	- new tagging plug for \uuline
+
 2025-11-12	Dohyun Kim <nomosnomos at gmail com>
 
 	Version 5.1
