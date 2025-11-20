@@ -1071,9 +1071,24 @@
   \tag_struct_begin:n{tag=StrikeOut, attribute=TextDeco-strikeout}
   \tag_mc_begin:n{}
 }
+\socket_new_plug:nnn{tagsupport/luatexko/markoverwith/begin}{doubleunderline}
+{
+  \leavevmode
+  \tag_mc_end_push:
+  \tag_struct_begin:n{tag=Em, attribute=TextDeco-underline}
+  \tag_struct_begin:n{tag=Em, attribute=TextDeco-underline}
+  \tag_mc_begin:n{}
+}
 \socket_new_plug:nnn{tagsupport/luatexko/markoverwith/end}{common}
 {
   \tag_mc_end:
+  \tag_struct_end:
+  \tag_mc_begin_pop:n{}
+}
+\socket_new_plug:nnn{tagsupport/luatexko/markoverwith/end}{doubleunderline}
+{
+  \tag_mc_end:
+  \tag_struct_end:
   \tag_struct_end:
   \tag_mc_begin_pop:n{}
 }
@@ -1095,6 +1110,13 @@
     #2
   }
   \tag_socket_use:n{luatexko/markoverwith/end}
+}
+\AddToHook{cmd/uuline/before}
+{
+  \begingroup
+  \socket_assign_plug:nn{tagsupport/luatexko/markoverwith/begin}{doubleunderline}
+  \socket_assign_plug:nn{tagsupport/luatexko/markoverwith/end}{doubleunderline}
+  \AddToHookNext{cmd/luatexkomarkoverwith/after}{\endgroup}
 }
 \AddToHook{cmd/sout/before}
 {

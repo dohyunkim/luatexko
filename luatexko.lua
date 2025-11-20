@@ -49,13 +49,8 @@ local unset_attribute = node.unset_attribute
 local fontgetfont   = font.getfont
 local getparameters = font.getparameters
 
-local texsp        = tex.sp
-
-local stringformat = string.format
-local tableunpack = table.unpack
-
-local function warning (...)
-  return luatexbase.module_warning("luatexko", stringformat(...))
+local function warning (fmt, ...)
+  return luatexbase.module_warning("luatexko", fmt:format(...))
 end
 
 local dirid     = node.id"dir"
@@ -142,7 +137,7 @@ local function font_opt_dim (fd, optname)
         dim = m * params.x_height
       end
     else
-      dim = texsp(dim)
+      dim = tex.sp(dim)
     end
     return dim
   end
@@ -299,7 +294,7 @@ local fontoptions = {
         newsp = nodes.simple_font_handler(newsp)
         newwd = newsp and newsp.width or false
         if newwd then
-          newwd = { texsp(newwd), texsp(newwd/2), texsp(newwd/3), texsp(newwd/3) }
+          newwd = { tex.sp(newwd), tex.sp(newwd/2), tex.sp(newwd/3), tex.sp(newwd/3) }
         end
         if newsp then nodefree(newsp) end
       end
@@ -868,15 +863,15 @@ local function process_fonts (head)
           if pf < 1000 then sf = 1000 end
         end
         if oldwd == (sf < 2000 and params.space or params.space+params.extra_space)
-          and oldst == texsp(params.space_stretch * (sf/1000))
-          and oldsh == texsp(params.space_shrink * (1000/sf)) then
+          and oldst == tex.sp(params.space_stretch * (sf/1000))
+          and oldsh == tex.sp(params.space_shrink * (1000/sf)) then
 
           local newwd = fontoptions.hangulspaceskip[newfont]
           if newwd then
             setglue(curr,
                     sf < 2000 and newwd[1] or newwd[1]+newwd[4],
-                    texsp(newwd[2] * (sf/1000)),
-                    texsp(newwd[3] * (1000/sf)))
+                    tex.sp(newwd[2] * (sf/1000)),
+                    tex.sp(newwd[3] * (1000/sf)))
           end
         end
       end
@@ -1647,9 +1642,9 @@ function luatexko.get_strike_out_down (box)
   local c, f = hbox_char_font(box, true, true) -- ignore blocking nodes
   if c and f then
     local down
-    local ex = get_font_param(f, "x_height") or texsp"1ex"
+    local ex = get_font_param(f, "x_height") or tex.sp"1ex"
     if is_cjk_char(c) then
-      local ascender, descender = tableunpack(fontoptions.asc_desc[f])
+      local ascender, descender = table.unpack(fontoptions.asc_desc[f])
       if ascender and descender then
         down = descender - (ascender + descender)/2
       else
@@ -1662,7 +1657,7 @@ function luatexko.get_strike_out_down (box)
     local raise = fontoptions.charraise[f] or 0
     return down - raise
   end
-  return -texsp"0.5ex"
+  return -tex.sp"0.5ex"
 end
 
 local uline_id
@@ -1746,7 +1741,7 @@ local function process_uline (head, parent, level)
 
       local value = curr.value
       if curr.type == 108 then -- lua_value
-        local count, list, subtype = tableunpack(value)
+        local count, list, subtype = table.unpack(value)
         ulitems[count] = {
           list    = list,
           subtype = subtype,
@@ -1789,7 +1784,7 @@ function luatexko.getrubystretchfactor (box)
   local str = fontoptions.intercharstretch[fid]
   if str then
     local em = fontoptions.en_size[fid] * 2
-    token.set_macro("luatexkostretchfactor", stringformat("%.4f", str/em/2))
+    token.set_macro("luatexkostretchfactor", ("%.4f"):format(str/em/2))
   end
 end
 
@@ -1883,12 +1878,12 @@ end
 
 local function conv_tounicode (uni)
   if uni < 0x10000 then
-    return stringformat("%04X", uni)
+    return ("%04X"):format(uni)
   else -- surrogate
     uni = uni - 0x10000
     local high = uni // 0x400 + 0xD800
     local low  = uni %  0x400 + 0xDC00
-    return stringformat("%04X%04X", high, low)
+    return ("%04X%04X"):format(high, low)
   end
 end
 
@@ -1899,7 +1894,7 @@ local function pdfliteral_direct_actual (syllable)
     for _,v in ipairs(syllable) do
       t[#t + 1] = conv_tounicode(v)
     end
-    data = stringformat("/Span<</ActualText<FEFF%s>>>BDC", table.concat(t))
+    data = ("/Span<</ActualText<FEFF%s>>>BDC"):format(table.concat(t))
   else
     data = "EMC"
   end
@@ -2103,7 +2098,7 @@ do
   function get_tsb_table (filename, subfont)
     local tsb_font_data = fontoptions.tsb_data or {}
     subfont = tonumber(subfont) or 1
-    local key = stringformat("%s::%s", filename, subfont)
+    local key = ("%s::%s"):format(filename, subfont)
     if tsb_font_data[key] then
       return tsb_font_data[key]
     end
@@ -2345,7 +2340,7 @@ local function process_vertical_diff (head)
         head, curr = insert_after(head, curr, restore)
       end
 
-      if texsp(diff) ~= 0 then
+      if tex.sp(diff) ~= 0 then
         local k = nodenew(kernid)
         k.kern = diff
         head, curr = insert_after(head, curr, k)
@@ -2365,7 +2360,7 @@ function luatexko.gethorizboxmoveright ()
       local amount = fontoptions.vertcharraise[v]
       if amount then
         amount = amount + (fontoptions.charraise[v] or 0)
-        token.set_macro("luatexkohorizboxmoveright", texsp(amount).."sp")
+        token.set_macro("luatexkohorizboxmoveright", tex.sp(amount).."sp")
         break
       end
     end
@@ -2430,7 +2425,7 @@ local function process_fake_slant_corr (head) -- for font fallback
         end
 
         if p.id == glyphid and #t > 0 then
-          local italic = math.max(tableunpack(t))
+          local italic = math.max(table.unpack(t))
           if italic > 0 then
             curr.kern = italic
           end
@@ -2813,7 +2808,7 @@ end
 function luatexko.reactivateall ()
   for name, v in pairs(luatexko.deactivated or {}) do
     for _, vv in ipairs(v) do
-      luatexbase.add_to_callback(name, tableunpack(vv))
+      luatexbase.add_to_callback(name, table.unpack(vv))
     end
   end
   luatexko.deactivated = nil
