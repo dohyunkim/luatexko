@@ -2163,6 +2163,25 @@ local function get_hb_char_bbox (hbfont, index)
   return bbox
 end
 
+local dir_ltr = harfbuzz and harfbuzz.Direction.new"ltr"
+local function get_HB_variant_char (fontdata, charcode)
+  local hbfont = fontdata.hb.shared.font
+  local spec   = fontdata.specification
+  local shaper = spec.features.raw.shaper
+  local buff   = harfbuzz.Buffer.new()
+  buff:set_direction(dir_ltr)
+  buff:set_script(spec.script)
+  buff:set_language(spec.language)
+  buff:add_codepoints{charcode}
+  harfbuzz.shape_full(hbfont, buff, spec.hb_features, shaper and {shaper} or {})
+  local glyphs = buff:get_glyphs()
+  if glyphs and glyphs[1] then
+    local glyph  = glyphs[1].codepoint
+    local offset = fontdata.hb.shared.gid_offset
+    return glyph + offset
+  end
+end
+
 local function process_vertical_font (fontdata)
   local fullname = fontdata.fullname
 
@@ -2265,6 +2284,12 @@ local function process_vertical_font (fontdata)
     end
     if t.kern then table.remove(hb_features, t.kern) end
     if not t.vert then hb_features[#hb_features+1] = harfbuzz.Feature.new"vert"  end
+    -- now reset hb.space
+    local spacechar = get_HB_variant_char(fontdata, 32)
+    local spacedata = spacechar and char_in_font(fontdata, spacechar)
+    if spacedata then
+      fontdata.hb.space = spacedata.width
+    end
     return
   end
 
@@ -2672,26 +2697,6 @@ otfregister {
     end,
   },
 }
-
-local dir_ltr = harfbuzz and harfbuzz.Direction.new"ltr"
-
-local function get_HB_variant_char (fontdata, charcode)
-  local hbfont = fontdata.hb.shared.font
-  local spec   = fontdata.specification
-  local shaper = spec.features.raw.shaper
-  local buff   = harfbuzz.Buffer.new()
-  buff:set_direction(dir_ltr)
-  buff:set_script(spec.script)
-  buff:set_language(spec.language)
-  buff:add_codepoints{charcode}
-  harfbuzz.shape_full(hbfont, buff, spec.hb_features, shaper and {shaper} or {})
-  local glyphs = buff:get_glyphs()
-  if glyphs and glyphs[1] then
-    local glyph  = glyphs[1].codepoint
-    local offset = fontdata.hb.shared.gid_offset
-    return glyph + offset
-  end
-end
 
 fonts.protrusions.setups.default[0xFF0C] = { 0, 1 }
 fonts.protrusions.setups.default[0xFF0E] = { 0, 1 }
