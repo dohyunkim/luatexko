@@ -1691,8 +1691,11 @@ local white_nodes = {
 local function skip_white_nodes (n, ltr)
   local nextnode = ltr and getnext or getprev
   while n do
-    if has_attribute(n, charhead) or harf_actual_literal(n) then break end
-    if not white_nodes[n.id] then break end
+    if has_attribute(n, charhead) or harf_actual_literal(n)
+      or n.id == kernid and n.subtype == 0 -- fontkern
+      or not white_nodes[n.id] then
+      break
+    end
     n = nextnode(n)
   end
   return n
@@ -2200,12 +2203,15 @@ local function process_vertical_font (fontdata)
     return
   end
 
+  local extend  = (fontdata.extend  or 1000)/1000
+  local squeeze = (fontdata.squeeze or 1000)/1000
+
   local shared       = fontdata.shared or {}
   local descriptions = shared.rawdata and shared.rawdata.descriptions or {}
   local parameters   = fontdata.parameters or {}
   local scale    = fontdata.hb and fontdata.hb.scale or parameters.factor or 655.36
   local quad     = parameters.quad or 655360
-  local xheight  = parameters.x_height or quad/2
+  local xheight  = parameters.x_height and parameters.x_height / squeeze * extend or quad/2
   local ascender = fontdata.hb and get_asc_desc(fontdata.hb) or parameters.ascender or quad*0.8
 
   local goffset = xheight/2 * (dfltfntsize / quad) -- TODO?
@@ -2216,11 +2222,11 @@ local function process_vertical_font (fontdata)
 
   for i,v in pairs(fontdata.characters) do
     local voff = goffset - (v.width or 0)/2
-    local bbox = fontdata.hb and get_hb_char_bbox(fontdata.hb.shared.font, v.index)
-              or descriptions[i] and descriptions[i].boundingbox or {0,0,0,0}
     local gid  = v.index
+    local bbox = fontdata.hb and get_hb_char_bbox(fontdata.hb.shared.font, gid)
+              or descriptions[i] and descriptions[i].boundingbox or {0,0,0,0}
     local tsb  = tsb_tab[gid] and tsb_tab[gid].tsb
-    local hoff = tsb and (bbox[4] + tsb) * scale or ascender
+    local hoff = tsb and (bbox[4] + tsb) * scale * squeeze or ascender
 
     if fontdata.hb then
       v.luatexko_voff = voff
@@ -2238,7 +2244,7 @@ local function process_vertical_font (fontdata)
     end
 
     local vw = tsb_tab[gid] and tsb_tab[gid].ht
-    vw = vw and vw * scale or quad
+    vw = vw and vw * scale * squeeze or quad
 
     -- character width shall be consistent with the width in the font program
     local diff = vw - v.width
@@ -2246,8 +2252,8 @@ local function process_vertical_font (fontdata)
       v.luatexko_diff = diff
     end
 
-    local ht = bbox[3] * scale + voff
-    local dp = bbox[1] * scale + voff
+    local ht = bbox[3] * scale * extend + voff
+    local dp = bbox[1] * scale * extend + voff
     if fontdata.hb then
       local charraise = font_opt_dim(fontdata, "charraise") or 0
       ht, dp = ht + charraise, dp + charraise
@@ -2266,7 +2272,6 @@ local function process_vertical_font (fontdata)
   parameters.ascender  = quad/2 + goffset
   parameters.descender = quad/2 - goffset
 
-  local res = fontdata.resources or {}
   local fea = shared.features or {}
   fea.kern = nil  -- only for horizontal writing
   fea.vert = true -- should be activated by default
@@ -2293,6 +2298,7 @@ local function process_vertical_font (fontdata)
     return
   end
 
+  local res = fontdata.resources or {}
   local seq = res.sequences or {}
   for _,v in ipairs(seq) do
     local fea = v.features or {}
