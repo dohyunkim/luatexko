@@ -14,7 +14,7 @@
 \ifdefined\luatexkohangulfontattr \endinput\fi
 \ifdefined\ProvidesPackage
   \NeedsTeXFormat{LaTeX2e}[2025/06/01]
-  \ProvidesPackage{luatexko}[2025/11/20 v5.2 typesetting Korean with LuaTeX]
+  \ProvidesPackage{luatexko}[2025/11/24 v5.3 typesetting Korean with LuaTeX]
   \RequirePackage{fontspec}[2020/02/03]
   \let\luatexkoselectfont\selectfont
 \else
@@ -69,7 +69,8 @@
   }
 \protected\def\typesetmodern{\unsetattribute\luatexkoclassicattr}
 \protected\def\inhibitglue{\begingroup\luatexkoinhibitglueattr\@ne
-  \penalty50\hskip\z@ plus.025em minus.015em\endgroup}
+  \ifnum\lastnodetype=13\else \penalty 50\fi
+  \hskip\z@ plus.025em minus.015em\endgroup}
 \protected\def\japanese{% 0, 5
   \chardef\luatexkolangCJK=\@ne
   \ifcase\luatexkoclassicattr

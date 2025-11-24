@@ -213,7 +213,7 @@
 \author{\normalsize Dohyun Kim \small |<nomosnomos at gmail com>| \and
         \normalsize Soojin Nam \small |<jsunam at gmail com>| \and
         \normalsize <\url{http://github.com/dohyunkim/luatexko}>}
-\date{Version 5.2\quad 2025/11/20}
+\date{Version 5.3\quad 2025/11/24}
 \maketitle
 
 \begin{quote}
@@ -468,7 +468,8 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
     U+2018\hparen{^^^^2018} U+2019\hparen{^^^^2019} U+201C\hparen{^^^^201c} U+201D\hparen{^^^^201d}
     처리의 경우 미세한 간격 차이가 있을 수 있다. }
   그래서 이들 옵션 중 하나가 지시되어 있다면 그것이 우선 적용되고
-  |CompressPunctuations|는 \hparen{설령 명시되었더라도} 아무 작용도 하지 않는다.
+  |CompressPunctuations|는 \hparen{설령 명시되었더라도} 아무 작용도 하지 않는다.%
+  \footnote{그러나 HarfBuzz 모드 세로쓰기에서는 |CompressPunctuations|가 우선권을 갖는다.}
 
 \item[Protrusion] \pkgkwd*{Protrusion}%
   특정 글자가 행 끝에 왔을 때 판면 바깥으로 끌어내는

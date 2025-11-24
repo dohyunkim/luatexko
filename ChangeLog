@@ -1,12 +1,12 @@
-2025-11-xx	Dohyun Kim <nomosnomos at gmail com>
+2025-11-24	Dohyun Kim <nomosnomos at gmail com>
 
 	Version 5.3
 
 	* luatexko.lua:
-	- reset fontdata.hb.space for harf-mode vertical font:
-	the width of inter-word space will be affected by this bug fix.
+	- reset hb.space and parameters.space for harf-mode fonts:
+	the width of inter-word space can be affected by this fix.
 	- consider extend/squeeze option in vertical font setting:
-	currently these options do not work properly in node mode.
+	currently these two options do not work properly in node mode.
 
 2025-11-20	Dohyun Kim <nomosnomos at gmail com>
 

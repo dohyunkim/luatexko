@@ -13,8 +13,8 @@
 
 luatexbase.provides_module {
   name        = 'luatexko',
-  date        = '2025/11/20',
-  version     = '5.2',
+  date        = '2025/11/24',
+  version     = '5.3',
   description = 'typesetting Korean with LuaTeX',
   author      = 'Dohyun Kim, Soojin Nam',
   license     = 'LPPL v1.3+',
@@ -291,7 +291,7 @@ local fontoptions = {
       else
         local newsp = nodenew(glyphid)
         newsp.char, newsp.font = 32, fid
-        newsp = nodes.simple_font_handler(newsp)
+        newsp = nodes.simple_font_handler(newsp) -- incorrect in vertical writing. backward compat.
         newwd = newsp and newsp.width or false
         if newwd then
           newwd = { tex.sp(newwd), tex.sp(newwd/2), tex.sp(newwd/3), tex.sp(newwd/3) }
@@ -2167,21 +2167,24 @@ local function get_hb_char_bbox (hbfont, index)
 end
 
 local dir_ltr = harfbuzz and harfbuzz.Direction.new"ltr"
-local function get_HB_variant_char (fontdata, charcode)
+local dir_ttb = harfbuzz and harfbuzz.Direction.new"ttb"
+local function get_HB_variant_char (fontdata, charcode, vertical)
   local hbfont = fontdata.hb.shared.font
   local spec   = fontdata.specification
   local shaper = spec.features.raw.shaper
   local buff   = harfbuzz.Buffer.new()
-  buff:set_direction(dir_ltr)
+  buff:set_direction(vertical and dir_ttb or dir_ltr)
   buff:set_script(spec.script)
   buff:set_language(spec.language)
   buff:add_codepoints{charcode}
+  hbfont:set_scale(fontdata.hb.hscale, fontdata.hb.vscale)
   harfbuzz.shape_full(hbfont, buff, spec.hb_features, shaper and {shaper} or {})
   local glyphs = buff:get_glyphs()
   if glyphs and glyphs[1] then
-    local glyph  = glyphs[1].codepoint
-    local offset = fontdata.hb.shared.gid_offset
-    return glyph + offset
+    if charcode == 32 then
+      return glyphs[1].x_advance, glyphs[1].y_advance
+    end
+    return glyphs[1].codepoint + fontdata.hb.shared.gid_offset
   end
 end
 
@@ -2281,19 +2284,21 @@ local function process_vertical_font (fontdata)
     for i,v in ipairs(hb_features) do
       t[tostring(v)] = i
     end
+    if t.kern then table.remove(hb_features, t.kern) end
+    if not t.vert then hb_features[#hb_features+1] = harfbuzz.Feature.new"vert"  end
+    -- now reset hb.space and parameters.space: see also the otfregister.features below
+    local spacewidth     = get_HB_variant_char(fontdata, 32)
+    local _, spaceheight = get_HB_variant_char(fontdata, 32, true) -- ttb
+    if spacewidth and spaceheight then
+      fontdata.hb.space = spacewidth * scale
+      fontdata.parameters.space = -spaceheight * scale
+    end
+    --
     if t.vhal then -- harf-mode vhal feature not working properly with luatexko, so an alternative
       table.remove(hb_features, t.vhal)
       fea.vhal = nil
       fea.compresspunctuations = true
       activate_process("post_shaping_filter", process_glyph_width, "compresspunctuations")
-    end
-    if t.kern then table.remove(hb_features, t.kern) end
-    if not t.vert then hb_features[#hb_features+1] = harfbuzz.Feature.new"vert"  end
-    -- now reset hb.space
-    local spacechar = get_HB_variant_char(fontdata, 32)
-    local spacedata = spacechar and char_in_font(fontdata, spacechar)
-    if spacedata then
-      fontdata.hb.space = spacedata.width
     end
     return
   end
@@ -2754,6 +2759,30 @@ otfregister {
       end
       if tex.protrudechars == 0 then
         tex.set("global", "protrudechars", 2)
+      end
+    end,
+  },
+}
+
+-- reset hb.space and parameters.space :
+-- with \spacekip and noto cjk fonts, harf mode yields different glue width from the node mode.
+-- as harf mode checks if space x_advance matches hb.space, and, if not, adjusts the space glue.
+-- the fix below is to avoid this ajdustment.
+otfregister {
+  name = "features",
+  description = "patch harf-mode hb.space",
+  default = false,
+  manipulators = {
+    plug = function(fontdata, _, value)
+      if value == "harf"
+        and option_in_font(fontdata, "script") == "hang"
+        and not option_in_font(fontdata, "vertical") -- already done
+        then
+        local spacewidth = get_HB_variant_char(fontdata, 32)
+        if spacewidth then
+          fontdata.hb.space = spacewidth * fontdata.hb.scale
+          fontdata.parameters.space = fontdata.hb.space
+        end
       end
     end,
   },
