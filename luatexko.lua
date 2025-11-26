@@ -2514,7 +2514,7 @@ end
 local function normalize_syllable_TC (head)
   local curr = head
   while curr do
-    if curr.id == glyphid then
+    if curr.id == glyphid and not has_harf_data(curr.font) then
       local c, f = curr.char, curr.font
       if is_hangul(c) and (c - 0xAC00) % 28 == 0 then
         local t = getnext(curr)
