@@ -1102,7 +1102,7 @@ local function process_linebreak (head, par)
           head = insert_glue_before(head, pcurr or curr, false, true, false)
         end
         c, f = hbox_char_font(curr)
-        pc, pf, pcl  = c or -1, pf or f, c and get_char_class(c, old) or 0
+        pc, pf, pcl  = c or old and -1, pf or f, c and get_char_class(c, old) or 0
 
       elseif id == mathid then
         pc, pcl, curr = 0x30, 0, end_of_math(curr)
