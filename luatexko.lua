@@ -344,8 +344,8 @@ local fontoptions = {
     end
   end } ),
 
-  hb_char_bbox = { },
-  tsb_data = { },
+  hb_char_bbox = { }, -- for vertical writing or fake slant
+  tsb_data = { }, -- for vertical writing
 }
 
 local function char_in_font(fontdata, char)
@@ -1039,6 +1039,13 @@ end
 
 local function process_cjk_punctuation_spacing (head, par)
   local pcl, pc, pf, old, pcurr = 0, false, false, false
+  --[[
+  -- pcl: 앞 글자 클래스(0..7)
+  -- pc : 앞 글자 코드
+  -- pf : 앞 글자 폰트
+  -- old: 현재 classic 모드임을 표시 (이 함수는 classic 모드에서만 동작한다)
+  -- pcurr: 글자 첫머리 노드
+  --]]
   local curr = head
   while curr do
     if has_attribute(curr, charhead) or harf_actual_literal(curr) == 1 then
@@ -1074,6 +1081,12 @@ end
 
 local function process_linebreak (head, par)
   local curr, pc, pcl, pf, pcurr = head, false, 0, false, false
+  --[[
+  -- pc : 앞 글자 코드
+  -- pcl: 앞 글자 클래스(0..7)
+  -- pf : 앞 글자 폰트
+  -- pcurr: 글자 첫머리 노드(unhbox되어 들어오는 노드리스트 처리시 필요)
+  --]]
   while curr do
     if has_attribute(curr, charhead) or harf_actual_literal(curr) == 1 then
       pcurr = pcurr or curr
@@ -1144,6 +1157,11 @@ end
 
 local function process_interhangul (head, par)
   local curr, pc, pf, pcurr = head, 0, false, false
+  --[[
+  -- pc: 앞 글자 한글 여부(1 or 0)
+  -- pf: 앞 글자 폰트
+  -- pcurr: 글자 첫머리 노드
+  --]]
   while curr do
     if has_attribute(curr, charhead) or harf_actual_literal(curr) == 1 then
       pcurr = pcurr or curr
@@ -1204,6 +1222,12 @@ end
 
 local function process_interlatincjk (head, par)
   local curr, pc, pf, p, pcurr = head, 0, false, false, false
+  --[[
+  -- pc: 앞 글자 cjk 여부(1 = cjk, 2 = non-cjk, 0 = other)
+  -- pf: 앞 글자 폰트
+  -- p : 앞 글자 코드
+  -- pcurr: 글자 첫머리 노드
+  --]]
   while curr do
     if curr.id == glyphid and is_cjk_char(curr.char) then
       pf = curr.font
@@ -2335,6 +2359,7 @@ local function process_vertical_font (fontdata)
   end
 end
 
+local iwspaceattributeid = luatexbase.attributes.g__tag_interwordspace_attr
 local function process_vertical_diff (head)
   local curr = head
   while curr do
@@ -2374,6 +2399,12 @@ local function process_vertical_diff (head)
           head, curr = insert_after(head, curr, kern)
         end
         head, curr = insert_after(head, curr, restore)
+        if iwspaceattributeid then -- for tagging fakespace
+          local n = getnext(curr)
+          if n and n.id == glueid and n.subtype == 13 then -- spaceskip
+            set_attribute(n, iwspaceattributeid, 1)
+          end
+        end
       end
 
       if tex.sp(diff) ~= 0 then
