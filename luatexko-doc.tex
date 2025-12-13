@@ -193,17 +193,28 @@
   \ifx\@let@token\footnote\nobreak\else\ifx\@let@token ,\nobreak\fi\fi
   \fakespaceoff{\hskip.1em plus.01em\relax}\fi\endgroup}
 \newenvironment{plaintex}{%
-  \par
-  \linespread{1.1}\small \parindent=0pt \parskip=2pt plus 1pt
-  \leftskip=2em \rightskip=\leftskip
+  \par\smallskip
+  \linespread{1.1}\small \narrower \parindent=0pt \parskip=2pt plus 1pt
   \topsep=\smallskipamount \@totalleftmargin=\leftskip
-  \paragraph{\llap{\color{gray}\normalfont\hologo{plainTeX}\unskip\hskip1em}}\hskip-1em
-}{
+  \leavevmode\llap{\color{gray}\normalfont\hologo{plainTeX}\unskip\hskip1em}\ignorespaces
+}{%
   \par
+}
+\newenvironment{sourceandresult}{%
+  \par
+  \if@nobreak \else \ifdim\lastskip>\z@ \else \medskip \fi \fi
+  \narrower \parindent0pt
+}{%
+  \par\medskip
+  \AddToHookNext{para/begin}{\OmitIndent}%
+}
+\def\srcres#1{\leavevmode \texttt{\srcres@#1\stop}\quad ⇒\quad #1\par }
+\def\srcres@#1#2#3\stop{%
+  \if\noexpand#1\relax \string#1\{#2\}\ifx\empty#3\empty\else\{#3\}\fi
+  \else \detokenize{#1#2#3}\fi
 }
 \makeatother
 \def\ldots{|...|}
-\def\textdblrightarrow{\quad ⇒\quad}
 
 \widowpenalty5000
 \clubpenalty5000
@@ -216,9 +227,7 @@
 \date{Version 5.3\quad 2025/11/24}
 \maketitle
 
-\begin{quote}
-  For a summary introduction in English, please see |README| file.
-\end{quote}
+For a summary introduction in English, please see |README| file.
 
 \smallskip
 
@@ -258,13 +267,13 @@ fontspec 문서 참조.
   \cs{adhochangulfont} \cs{adhochanjafont} \cs{addhocfallbackfont}는
   마지막 줄 명령들의 다른 이름들이다. }
 \begin{verbatim}
-  \setmainhangulfont     \setmainhanjafont    \setmainfallbackfont
-  \setsanshangulfont     \setsanshanjafont    \setsansfallbackfont
-  \setmonohangulfont     \setmonohanjafont    \setmonofallbackfont
-  \newhangulfontfamily   \newhanjafontfamily  \newfallbackfontfamily
-  \newhangulfontface     \newhanjafontface    \newfallbackfontface
-  \addhangulfontfeature  \addhanjafontfeature \addfallbackfontfeature
-  \hangulfontspec        \hanjafontspec       \fallbackfontspec
+    \setmainhangulfont     \setmainhanjafont    \setmainfallbackfont
+    \setsanshangulfont     \setsanshanjafont    \setsansfallbackfont
+    \setmonohangulfont     \setmonohanjafont    \setmonofallbackfont
+    \newhangulfontfamily   \newhanjafontfamily  \newfallbackfontfamily
+    \newhangulfontface     \newhanjafontface    \newfallbackfontface
+    \addhangulfontfeature  \addhanjafontfeature \addfallbackfontfeature
+    \hangulfontspec        \hanjafontspec       \fallbackfontspec
 \end{verbatim}
 
 \begin{plaintex}
@@ -327,19 +336,19 @@ verbatim 코드를 식자할 때는 이 기능이 작동하지 않으며,%
 문장부호가 고정폭 글꼴이거나 tfm 폰트일 때에도 작동하지 않는다.
 영향 받는 문장부호들의 기본값은 다음과 같다:
 \begin{verbatim}
-  [0x21]    !    [0x27]    '   [0x28]    (   [0x29]    )
-  [0x2C]    ,    [0x2E]    .   [0x3A]    :   [0x3B]    ;
-  [0x3F]    ?    [0x60]    `   [0xB7]    ·   [0x2014]  —
-  [0x2015]  ―   [0x2018]  ‘   [0x2019]  ’   [0x201C]  “
-  [0x201D]  ”    [0x2026]  …   [0x203B]  ※
+    [0x21]    !    [0x27]    '   [0x28]    (   [0x29]    )
+    [0x2C]    ,    [0x2E]    .   [0x3A]    :   [0x3B]    ;
+    [0x3F]    ?    [0x60]    `   [0xB7]    ·   [0x2014]  —
+    [0x2015]  ―   [0x2018]  ‘   [0x2019]  ’   [0x201C]  “
+    [0x201D]  ”    [0x2026]  …   [0x203B]  ※
 \end{verbatim}
 다음과 같은 명령으로 이 목록에 문자를 추가하거나 제거할 수 있다.%
 \pkgkwd*{\registerpunctuations}%
 \pkgkwd*{\unregisterpunctuations}
 인자는 콤마로 분리된 숫자 형식으로서 유니코드 코드포인트를 뜻한다.
 \begin{verbatim}
-  \registerpunctuations{45, "2D, `-}
-  \unregisterpunctuations{"2D, "2015}
+    \registerpunctuations{45, "2D, `-}
+    \unregisterpunctuations{"2D, "2015}
 \end{verbatim}
 이상 문장부호 관련 명령들은 문단 중간에서도 쓸 수 있지만, 전역적 효과를 가진다.
 다시 말해서 그룹 안에서 \cs{hangulpunctuations=0}을 선언했더라도
@@ -352,8 +361,8 @@ verbatim 코드를 식자할 때는 이 기능이 작동하지 않으며,%
 \pkgkwd*{\registerbreakablebefore}
 이들 명령을 문단 중간에서 사용하면 문단의 처음부터 전역적 효력을 가진다.
 \begin{verbatim}
-  \registerbreakableafter{"2460, "2461}
-  \registerbreakablebefore{"2460, "2461}
+    \registerbreakableafter{"2460, "2461}
+    \registerbreakablebefore{"2460, "2461}
 \end{verbatim}
 \luatexko는 다분히 보수적으로 줄바꿈을 허용하고 있다.
 예시한 유니코드는 `①'과 `②'인데 기본적으로
@@ -409,17 +418,17 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
     \footnote{%
       플레인텍에서는 |interhangul=<dimen>|. }
 \begin{verbatim}
-  [InterHangul=-0.04em]
+    [InterHangul=-0.04em]
 \end{verbatim}
 
 \item[InterLatinCJK] \pkgkwd*{InterLatinCJK}%
-  한글 또는 한자와 Latin문자 사이의 자간을 설정한다.%
+  한글^^b7한자와 Latin문자 사이의 자간을 설정한다.%
     \footnote{%
       플레인텍에서는 |interlatincjk=<dimen>|. }
-    한글^^b7한자 다음에 라틴 문자가 오는 경우 원래는 줄바꿈이 되지 않지만
+    한글^^b7한자 다음에 라틴 문자가 오는 경우 원래 줄바꿈이 되지 않지만
     이 옵션을 주면 줄바꿈이 가능해진다.
 \begin{verbatim}
-  [InterLatinCJK=0.25em]
+    [InterLatinCJK=0.25em]
 \end{verbatim}
 
 \item[InterCharacter] \pkgkwd*{InterCharacter}%
@@ -429,7 +438,7 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
   fontspec의 |LetterSpace| 옵션과 기능이 유사하지만, 옛한글을 깨뜨리는 등의
   오작동을 하지 않는다. 전술한 자간 옵션들보다 후순위로 동작한다.
 \begin{verbatim}
-  [InterCharacter=.125em]
+    [InterCharacter=.125em]
 \end{verbatim}
 
 \item[InterCharStretch] \pkgkwd*{InterCharStretch}%
@@ -437,7 +446,7 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
   \footnote{%
     플레인텍에서는 |intercharstretch=<dimen>|. }
 \begin{verbatim}
-  [InterCharStretch=0.5pt]
+    [InterCharStretch=0.5pt]
 \end{verbatim}
 
 \item[CharRaise] \pkgkwd*{CharRaise}%
@@ -447,7 +456,7 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
   \footnote{%
     플레인텍에서는 |charraise=<dimen>|. }
 \begin{verbatim}
-  [CharRaise=2pt]
+    [CharRaise=2pt]
 \end{verbatim}
   세로쓰기에서는 모든 글자들을 지정한 값만큼 오른쪽으로 이동시킨다.%
   \footnote{%
@@ -687,9 +696,9 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
 루비를 달 수 있다. ruby 패키지가 이미 존재하지만 \luatexko와 궁합이 잘
 맞지 않아 새로 매크로를 제공한다.%
 \pkgkwd*{\ruby}
-\begin{quote}
-  \cs{ruby}|{漢字}{한자}|\textdblrightarrow\ruby{漢字}{한자}
-\end{quote}
+\begin{sourceandresult}
+  \srcres{\ruby{漢字}{한자}}
+\end{sourceandresult}
 이처럼 글자별로 따로 루비를 달 필요가 없다.  관련 설정은 다음처럼
 한다.
 
@@ -732,17 +741,18 @@ ulem 패키지가 \luatexko와 궁합이 맞지 않아\hparen{줄바꿈에 문�
 \pkgkwd*{\dashuline}%
 \pkgkwd*{\dotuline}
 
-\begin{flushleft}
-\begin{tabular}{l@{\textdblrightarrow}l}
-  \cs{uline{밑줄을 그을 수 있다}}&\uline{밑줄을 그을 수 있다}\\
-  \cs{sout{취소선을 그을 수 있다}}&\sout{취소선을 그을 수 있다}\\
-  \cs{uuline{밑줄을 두 줄 긋는다}}&\uuline{밑줄을 두 줄 긋는다}\\
-  \cs{xout{빗금으로 취소할 수 있다}}&\xout{빗금으로 취소할 수 있다}\\
-  \cs{uwave{물결표로 밑줄을 삼는다}}&\uwave{물결표로 밑줄을 삼는다}\\
-  \cs{dashuline{대시로 밑줄을 삼는다}}&\dashuline{대시로 밑줄을 삼는다}\\
-  \cs{dotuline{밑줄을 점선으로 긋는다}}&\dotuline{밑줄을 점선으로 긋는다}
-\end{tabular}
-\end{flushleft}
+\begin{sourceandresult}
+  \setbox0\hbox{\ttfamily\string\dotuline\{밑줄을 점선으로 긋는다\}}\dimen0=\wd0
+  \def\srcres#1#2{\leavevmode \hbox to\dimen0
+    {\ttfamily\string#1\{#2\}\hss}\quad ⇒\quad #1{#2}\par}
+  \srcres \uline{밑줄을 그을 수 있다}
+  \srcres \uuline{밑줄을 두 줄 긋는다}
+  \srcres \uwave{물결표로 밑줄을 삼는다}
+  \srcres \sout{취소선을 그을 수 있다}
+  \srcres \xout{빗금으로 취소할 수 있다}
+  \srcres \dashuline{대시로 밑줄을 삼는다}
+  \srcres \dotuline{밑줄을 점선으로 긋는다}
+\end{sourceandresult}
 참고로, |\uline{\uline{...}}|으로도 \cs{uuline{...}}과 동일한 효과를 볼 수 있으며
 사실 이쪽이 \cs{uuline}보다 더 \uline{\uline{효율적}}이다.
 
@@ -764,10 +774,10 @@ ulem 패키지가 \luatexko와 궁합이 맞지 않아\hparen{줄바꿈에 문�
   별표 붙은 명령 \cs{markoverwith*}는 \cs{xleaders}를 실행하고,
   예시처럼 별표가 없으면 \cs{cleaders}를 실행한다. }
 \begin{verbatim}
-   \def\ymarker{%
-     \markoverwith{%
-       \hbox{{\color{yellow!50}\vrule width 1pt height 9pt depth 2pt}}%
-   }}
+    \def\ymarker{%
+      \markoverwith{%
+        \hbox{{\color{yellow!50}\vrule width 1pt height 9pt depth 2pt}}%
+    }}
 \end{verbatim}
 
 \ExplSyntaxOn
@@ -796,9 +806,9 @@ ulem 패키지가 \luatexko와 궁합이 맞지 않아\hparen{줄바꿈에 문�
   \markoverwith{\hbox{{\color{yellow!50}\vrule~width~1pt~height~9pt~depth~2pt}}}
 }
 \ExplSyntaxOff
-
-\cs{ymarker{노란색을 칠해서 강조한다}}\textdblrightarrow
-\ymarker{노란색을 칠해서 강조한다}.
+\begin{sourceandresult}
+  \srcres{\ymarker{노란색을 칠해서 강조한다}}
+\end{sourceandresult}
 
 \section{자동조사}\label{sec:autojosa}
 
@@ -807,14 +817,15 @@ ulem 패키지가 \luatexko와 궁합이 맞지 않아\hparen{줄바꿈에 문�
 버전 1.3부터는 \pkgkwd{\josaignoreparens}|=1|이 선언되어 있으면 자동조사는
 \hemph{괄호 부분을 건너뛰고} 그 앞 글자에 매칭한다.
 |0|이 선언되면 원래 방식으로 돌아간다.
-\begin{quote}
-  \cs{josaignoreparens=1} \josaignoreparens=1 \\
-  |홍길동(1992)\는|\textdblrightarrow 홍길동(1992)\는\\
-  |홍길동(2001)\로|\textdblrightarrow 홍길동(2001)\로\par
-  \cs{josaignoreparens=0} \josaignoreparens=0 \\
-  |홍길동(1992)\는|\textdblrightarrow 홍길동(1992)\는\\
-  |홍길동(2001)\로|\textdblrightarrow 홍길동(2001)\로
-\end{quote}
+\begin{sourceandresult}
+  \def\setjprn#1{\leavevmode\texttt{\string#1}#1\par}
+  \setjprn{\josaignoreparens=1}
+  \srcres{홍길동(1992)\는}
+  \srcres{홍길동(2001)\로}
+  \setjprn{\josaignoreparens=0}
+  \srcres{홍길동(1992)\는}
+  \srcres{홍길동(2001)\로}
+\end{sourceandresult}
 
 \section{루아 모듈의 제거 및 복원}\label{sec:luamodule}
 
@@ -828,9 +839,9 @@ ulem 패키지가 \luatexko와 궁합이 맞지 않아\hparen{줄바꿈에 문�
 
 \section{수식 한글}\label{sec:mathhangul}
 
-\begin{quote}
-  |$가^{나^다}$|\textdblrightarrow$가^{나^다}$
-\end{quote}
+\begin{sourceandresult}
+  \srcres{$가^{나^다}$}
+\end{sourceandresult}
 수식 한글 폰트를 설정하면 수식 모드에서도 한글을 \hparen{hbox로 감싸지 않고}
 직접 입력할 수 있다.%
 \footnote{%
@@ -844,21 +855,21 @@ ulem 패키지가 \luatexko와 궁합이 맞지 않아\hparen{줄바꿈에 문�
 버전 2.0부터는 자동으로 수식 한글을 잡아주지 않는다.%
 \pkgkwd*{\setmathhangulfont}
 \begin{verbatim}
-  \setmathhangulfont{Noto Sans CJK KR}
-  [
-    SizeFeatures={
-      {Size=-6,  Font=* Medium},
-      {Size=6-9, Font=* Regular},
-      {Size=9-,  Font=* DemiLight},
-    }
-  ]
+    \setmathhangulfont{Noto Sans CJK KR}
+    [
+      SizeFeatures={
+        {Size=-6,  Font=* Medium},
+        {Size=6-9, Font=* Regular},
+        {Size=9-,  Font=* DemiLight},
+      }
+    ]
 \end{verbatim}
 
 현재 한글만 쓸 수 있게 설정되어 있다. 한자도 수식에 직접 입력하려면 사용자는
 다음 명령으로 유니코드 블럭을 추가 지정해야 한다.%
 \pkgkwd*{\setmathhangulblock}
 \begin{verbatim}
-  \setmathhangulblock{4E00}{9FC3}
+    \setmathhangulblock{4E00}{9FC3}
 \end{verbatim}
 
 \begin{plaintex}
