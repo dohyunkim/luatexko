@@ -9,7 +9,7 @@
 %% public domain
 
 %\DocumentMetadata{
-%  lang=ko-KR,
+%  lang=ko,
 %  pdfstandard={UA-2,A-4f},
 %  tagging=on,
 %  tagging-setup={math/setup=mathml-SE, extra-modules=verbatim-alt}
@@ -19,7 +19,7 @@
 \usepackage[hmargin={3.4cm,4.2cm}]{geometry}
 \usepackage[rgb]{xcolor}
 \usepackage{luacolor}
-\usepackage{unicode-math}
+\IfDocumentMetadataTF{\usepackage{unicode-math}}{\usepackage{lum-lmodern}}
 \usepackage[hangul]{luatexko}
 \directlua{
   fonts.protrusions.setups.latin = {
@@ -56,7 +56,7 @@
   Language=Korean,
   UprightFont=* Light,
   BoldFont=* Bold,
-%  ItalicFont=Noto Sans CJK KR DemiLight,
+  ItalicFont=Noto Sans CJK KR DemiLight,
   InterLatinCJK=.125em,
   CompressPunctuations,
   Expansion, Protrusion=latin,
@@ -118,14 +118,13 @@
 \AssignSocketPlug{build/column/outputbox}{space-floats-footnotes}
 
 \catcode`|=13 \protected\def|{\verb|\let\\=\textbackslash} %|
-\def\nohyphen{\language\csname l@nohyphenation\endcsname}
-\protected\def\cs#1{\texttt{\nohyphen \textbackslash\detokenize{#1}}}
+\protected\def\cs#1{\texttt{\textbackslash\detokenize{#1}}}
 \protected\def\pkgkwd#1#{\leavevmode
   \ifx\relax#1\relax \expandafter\luatexkopkgkwd
   \else              \expandafter\luatexkopkgkwdX \fi}
-\def\luatexkopkgkwd#1{\texttt{\nohyphen \string#1}\luatexkopkgkwdX{#1}}
+\def\luatexkopkgkwd#1{\texttt{\string#1}\luatexkopkgkwdX{#1}}
 \def\luatexkopkgkwdX#1{\marginpar{%
-  \hfuzz\maxdimen \texttt{\nohyphen \footnotesize \string#1}}}
+  \hfuzz\maxdimen \texttt{\footnotesize \string#1}}}
 %\def\logoko{\textsf{k}\kern-.0625em\textit{o}} % too slow
 \ExplSyntaxOn
 \cs_new_nopar:Npn \actualtag #1 #2
@@ -164,34 +163,23 @@
     #1
   }
 }
-\cs_new_nopar:Npn \fakespaceoff #1
-{
-  \tag_if_active:TF
-  {
-    \tag_spacechar_off:
-    #1
-    \tag_spacechar_on:
-  }
-  {
-    #1
-  }
-}
 \ExplSyntaxOff
 \def\logoko{\actualtag{ko, phoneme=[ˌkeɪˈəʊ]}{\textsf{k}\kern-.04em $o$}}
 \def\luatex{\hologo{LuaTeX}\unskip}
 \def\XeTeX{\hologo{XeTeX}\unskip}
 \def\luatexko{\luatex\artifacttag{-}\logoko}
-\def\xetexko{\XeTeX\artifacttag{-}\logoko}
 \def\texlive{\hologo{TeXLive}\unskip}
 \def\kotex{\actualtag{koTeX, phoneme=[ˌkeɪˈəʊtɛx]}{\logoko\kern-.1ex .\kern-.1667em \TeX}}
 \def\hemph#1{\textsf{\bfseries #1}}
+\def\meta#1{\actualtag{<#1>}{$\langle$\textit{#1}$\rangle$\nobreak\inhibitglue}}
 \makeatletter
+\def\fakespaceoff#1{\csname tag_spacechar_off:\endcsname#1\csname tag_spacechar_on:\endcsname}
 \def\hparen#1{\begingroup\fontsize{.9\dimexpr\f@size pt\relax}\z@\selectfont
   \ifdim\lastskip>\z@\else \ifdim\lastkern>\z@\else
   \fakespaceoff{\hskip.1em plus.01em\relax}\fi\fi (#1)\futurelet\@let@token\hparenstop}
 \def\hparenstop{\ifx\@let@token\@sptoken\else
-  \ifx\@let@token\footnote\nobreak\else\ifx\@let@token ,\nobreak\fi\fi
-  \fakespaceoff{\hskip.1em plus.01em\relax}\fi\endgroup}
+  \ifx\@let@token\footnote\else\ifx\@let@token ,\else\ifx\@let@token '\else
+  \fakespaceoff{\hskip.1em plus.01em\relax}\fi\fi\fi\fi\endgroup}
 \newenvironment{plaintex}{%
   \par\smallskip
   \linespread{1.1}\small \narrower \parindent=0pt \parskip=2pt plus 1pt
@@ -325,7 +313,7 @@ fontspec 문서 참조.
 |0|을 지시해야 이 기능이 비로소 꺼진다.
 verbatim 코드를 식자할 때는 이 기능이 작동하지 않으며,%
 \footnote{%
-  정확히 말하자면 |\\language=\\l@nohyphenation| \hparen{플레인텍에서는 |\\language=-1|인 경우},
+  정확히 말하자면 |\\language=\\l@nohyphenation| \hparen{플레인텍에서는 \cs{language=-1}인 경우},
   즉 하이프네이션이 허용 안 되는  상황에서는 작동하지 않는다.
   부연하건대, |\\language=\\l@nohyphenation| 상황에서 작동하지 않는
   그밖의 기능은 다음과 같다: 줄바꿈 허용, InterCharacter, InterHangul,
@@ -416,7 +404,7 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
     {\addhangulfontfeature{InterHangul=.5ex}한글 글자
     사이의 자간}.  아래는 $-0.04$em 만큼 한글 자간을 지시한다.%
     \footnote{%
-      플레인텍에서는 |interhangul=<dimen>|. }
+      플레인텍에서는 |interhangul=|\meta{dimen}. }
 \begin{verbatim}
     [InterHangul=-0.04em]
 \end{verbatim}
@@ -424,7 +412,7 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
 \item[InterLatinCJK] \pkgkwd*{InterLatinCJK}%
   한글^^b7한자와 Latin문자 사이의 자간을 설정한다.%
     \footnote{%
-      플레인텍에서는 |interlatincjk=<dimen>|. }
+      플레인텍에서는 |interlatincjk=|\meta{dimen}. }
     한글^^b7한자 다음에 라틴 문자가 오는 경우 원래 줄바꿈이 되지 않지만
     이 옵션을 주면 줄바꿈이 가능해진다.
 \begin{verbatim}
@@ -434,7 +422,7 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
 \item[InterCharacter] \pkgkwd*{InterCharacter}%
   CJK 글자들 사이의 자간을 지시한다.%
   \footnote{%
-    플레인텍에서는 |intercharacter=<dimen>|. }
+    플레인텍에서는 |intercharacter=|\meta{dimen}. }
   fontspec의 |LetterSpace| 옵션과 기능이 유사하지만, 옛한글을 깨뜨리는 등의
   오작동을 하지 않는다. 전술한 자간 옵션들보다 후순위로 동작한다.
 \begin{verbatim}
@@ -444,7 +432,7 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
 \item[InterCharStretch] \pkgkwd*{InterCharStretch}%
   CJK 글자간 가변공백\hparen{글루}의 stretch 값을 지시한다.%
   \footnote{%
-    플레인텍에서는 |intercharstretch=<dimen>|. }
+    플레인텍에서는 |intercharstretch=|\meta{dimen}. }
 \begin{verbatim}
     [InterCharStretch=0.5pt]
 \end{verbatim}
@@ -454,7 +442,7 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
   {\addhangulfontfeature{CharRaise=.3em} 조절}할 수 있는 기능이다.
   이로써 주변에 식자되는 다른 글꼴과 조화를 이루게 한다.%
   \footnote{%
-    플레인텍에서는 |charraise=<dimen>|. }
+    플레인텍에서는 |charraise=|\meta{dimen}. }
 \begin{verbatim}
     [CharRaise=2pt]
 \end{verbatim}
@@ -484,7 +472,7 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
     처리의 경우 미세한 간격 차이가 있을 수 있다. }
   그래서 이들 옵션 중 하나가 지시되어 있다면 그것이 우선 적용되고
   |CompressPunctuations|는 \hparen{설령 명시되었더라도} 아무 작용도 하지 않는다.%
-  \footnote{그러나 HarfBuzz 모드 세로쓰기에서는 |CompressPunctuations|가 우선권을 갖는다.}
+  \footnote{그러나 HarfBuzz 모드 세로쓰기에서는 |vhal| 대신 |CompressPunctuations|가 사용된다.}
 
 \item[Protrusion] \pkgkwd*{Protrusion}%
   특정 글자가 행 끝에 왔을 때 판면 바깥으로 끌어내는
@@ -563,7 +551,7 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
   사실 |vertical|을 선언하면 |vert|는 자동으로 켜지도록 해 두었다. }\,%
 \footnote{%
   |vmtx| 정보를 가지고 있지 않은 글꼴은 세로쓰기에 적합치 않은 글꼴이다.
-  |otfinfo -t <파일>| 명령으로 글꼴에 들어있는 테이블 정보를 알 수 있다. }\,%
+  |otfinfo -t| \meta{파일} 명령으로 글꼴에 들어있는 테이블 정보를 알 수 있다. }\,%
 \footnote{%
   폰트 옵션 |Renderer=HarfBuzz| 또는 |Renderer=OpenType| 등%
   \hparen{플레인텍에서는 |mode=harf| 옵션}을 주고
@@ -580,8 +568,8 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
 
 \begin{itemize}
   \item 문서의 일부를 세로쓰기하려면
-|\begin{|\pkgkwd{vertical}|}{<dimen>}| \ldots\ |\end{vertical}|
-환경을 이용한다. 인자 |<dimen>|으로 세로쓰기 박스의 높이를 지시한다.
+|\begin{|\pkgkwd{vertical}|}{|\meta{dimen}|}| \ldots\ |\end{vertical}|
+환경을 이용한다. 인자 \meta{dimen}으로 세로쓰기 박스의 높이를 지시한다.
 그림~\ref{fig:vertical},~\ref{fig:vertical3} 및 \ref{fig:vertical2} 참조.
 만약 인자가 비어있거나 \cs{empty}이면 본문을 한 줄짜리 박스로 식자하며,
 이때 높이는 natural height가 된다.
@@ -660,21 +648,21 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
 이때도 면주는 가로로 식자되며, 환경의 시작과 끝에서 쪽나눔이 행해진다.
 
 \item 세로쓰기 도중에 문서의 일부를 가로쓰기하려면
-|\begin{|\pkgkwd{horizontal}|}{<dimen>}| \ldots\ |\end{horizontal}|
-환경을 이용한다. |<dimen>|은 가로쓰기 박스의 너비를 지시한다.
+|\begin{|\pkgkwd{horizontal}|}{|\meta{dimen}|}| \ldots\ |\end{horizontal}|
+환경을 이용한다. \meta{dimen}은 가로쓰기 박스의 너비를 지시한다.
 만약 인자가 비어있거나 \cs{empty}이면 본문을 한 줄짜리 박스로 식자하며,
 이때 너비는 당연히 natural width가 된다.
 \end{itemize}
 
 \begin{plaintex}
-  문서 일부 세로쓰기는 |\vertical{<dimen>}| \ldots\ |\endvertical|.
+  문서 일부 세로쓰기는 |\vertical{|\meta{dimen}|}| \ldots\ |\endvertical|.
   인자는 비워둘 수 있다.
 
   문서 전체 세로쓰기는 문서 첫머리에 \cs{verticaltypesetting}.
 
-  몇몇 페이지를 세로쓰기하려면 \cs{beginverticaltypesetting} \ldots\ \cs{endverticaltypesetting}.
+  몇몇 페이지의 세로쓰기는 \cs{beginverticaltypesetting} \ldots\ \cs{endverticaltypesetting}.
 
-  세로쓰기 도중에 가로쓰기를 넣으려면 |\horizontal{<dimen>}| \ldots\ |\endhorizontal|.
+  세로쓰기 중 가로쓰기는 |\horizontal{|\meta{dimen}|}| \ldots\ |\endhorizontal|.
   인자는 비워둘 수 있다.
 \end{plaintex}
 
@@ -845,7 +833,7 @@ ulem 패키지가 \luatexko와 궁합이 맞지 않아\hparen{줄바꿈에 문�
 수식 한글 폰트를 설정하면 수식 모드에서도 한글을 \hparen{hbox로 감싸지 않고}
 직접 입력할 수 있다.%
 \footnote{%
-  |\\hbox|를 쓰지 않고 직접 입력하는 수식 한글이
+  \cs{hbox}를 쓰지 않고 직접 입력하는 수식 한글이
   \uline{디스플레이 수식} 안에 사용된 경우,
   앞서 기술한 드러냄표 강조, 밑줄 강조, 한글 글꼴 옵션 등의 기능이 현재로는
   전혀 작동하지 않는다.  구현은 비교적 간단하지만, 과연 수식에서
@@ -923,14 +911,14 @@ ulem 패키지가 \luatexko와 궁합이 맞지 않아\hparen{줄바꿈에 문�
 
 \begin{itemize}\linespread{1.1}\small
   \item[v5.0] ------
-  \item \hyperref[sec:ruby]{\cs{xxruby} 명령 개선} \hparen{|lua-uni-algos| 패키지 이용}
+  \item \hyperref[sec:ruby]{\cs{xxruby} 명령 개선} \hparen{|lua-uni-algos| 패키지 설치 필요}
   \item[v4.9] ------
   \item \hyperref[sec:verttype]{HarfBuzz 폰트의 세로쓰기 지원} \hparen{권장하지는 않음}
   \item[v4.0] ------
   \item \LaTeX 의 Tagged PDF 기능 지원
   \item[v3.2] ------
-  \item 한자 뒤에서도 자동조사 기능이 대체로 동작하게끔 하였다.
-    \hparen{\xetexko{} 패키지 설치 필요}
+  \item 한자 뒤에서도 자동조사 기능이 대체로 동작한다.
+    \hparen{|xetexko| 패키지 설치 필요}
   \item \hyperref[sec:verttype]{|vertical| 및 |horizontal| 환경의 인자를 비워둘 수 있다}.
   \item \hyperref[sec:verttype]{|verticaltypesetting|을 환경으로도 쓸 수 있다.
     플레인텍에서는 \cs{beginverticaltypesetting} \cs{endverticaltypesetting}}.

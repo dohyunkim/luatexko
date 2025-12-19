@@ -2247,6 +2247,12 @@ local function process_vertical_font (fontdata)
   if fontdata.vertcharraise then return end -- avoid multiple running
   fontdata.vertcharraise = goffset
 
+  local charraise
+  if fontdata.hb then
+    charraise = font_opt_dim(fontdata, "charraise") or 0
+    fontdata.luatexko_charraise = charraise -- for luamplib
+  end
+
   for i,v in pairs(fontdata.characters) do
     local voff = goffset - (v.width or 0)/2
     local gid  = v.index
@@ -2282,7 +2288,6 @@ local function process_vertical_font (fontdata)
     local ht = bbox[3] * scale * extend + voff
     local dp = bbox[1] * scale * extend + voff
     if fontdata.hb then
-      local charraise = font_opt_dim(fontdata, "charraise") or 0
       ht, dp = ht + charraise, dp + charraise
     end
     v.height = ht > 0 and  ht or 0

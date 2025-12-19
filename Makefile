@@ -4,7 +4,7 @@ PDFFILE		= $(NAME)-doc.pdf
 RUNFILES	= $(wildcard $(NAME)*.sty) $(wildcard $(NAME)*.lua)
 DOCFILES	= $(TEXFILE) $(PDFFILE) README ChangeLog
 ZIPFILE		= $(NAME).zip
-DO_LATEX	= texfot --quiet --ignore "Marginpar on page \d+ moved" --tee=/dev/null lualatex-dev $(TEXFILE)
+DO_LATEX	= texfot --quiet --ignore "Font shape .* not available" --ignore "Marginpar on page \d+ moved" --tee=/dev/null lualatex-dev $(TEXFILE)
 FORMAT		= luatex
 RUNDIR		= $(TEXMFDIR)/tex/$(FORMAT)/$(NAME)
 DOCDIR		= $(TEXMFDIR)/doc/$(FORMAT)/$(NAME)
