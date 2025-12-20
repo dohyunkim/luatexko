@@ -357,14 +357,6 @@ local function char_in_font(fontdata, char)
   end
 end
 
-local function harf_reordered_tonemark (curr)
-  if has_harf_data(curr.font) then
-    local props = getproperty(curr) or {}
-    local actualtext = props.luaotfload_startactualtext
-    return actualtext and actualtext:find"302[EF]$"
-  end
-end
-
 local function harf_actual_literal (curr)
   if curr.id == whatsitid and curr.subtype == literal_whatsit then
     local data = curr.data
@@ -901,24 +893,26 @@ end
 
 -- linebreak
 
-local blocking_nodes = {
-  [hlistid]   = true,
-  [vlistid]   = true,
-  [ruleid]    = true,
-  [discid]    = true,
-  [glueid]    = true,
-  [mathid]    = true,
-  [dirid]     = true,
-  [glyphid]   = true,
-}
-
-local function is_blocking_node (curr)
-  local id, subtype = curr.id, curr.subtype
-  if id == hlistid then
-    if subtype == 3 then return false end -- indentbox
-    if curr.next and curr.next.id == ins_id then return false end -- footnote
+local is_blocking_node
+do
+  local blocking_nodes = {
+    [hlistid]   = true,
+    [vlistid]   = true,
+    [ruleid]    = true,
+    [discid]    = true,
+    [glueid]    = true,
+    [mathid]    = true,
+    [dirid]     = true,
+    [glyphid]   = true,
+  }
+  function is_blocking_node (curr)
+    local id, subtype = curr.id, curr.subtype
+    if id == hlistid then
+      if subtype == 3 then return false end -- indentbox
+      if curr.next and curr.next.id == ins_id then return false end -- footnote
+    end
+    return blocking_nodes[id] or id == kernid and subtype == 1 -- userkern
   end
-  return blocking_nodes[id] or id == kernid and subtype == 1 -- userkern
 end
 
 local function hbox_char_font (box, init, deep)
@@ -943,344 +937,328 @@ local function hbox_char_font (box, init, deep)
   end
 end
 
---[[
-local function get_actualtext (curr)
-  local actual = my_node_props(curr).startactualtext
-  if type(actual) == "table" then
-     return actual.init, actual[1], actual[#actual]
-  end
-end
---]]
-
-local function goto_end_actualtext (curr)
-  local n = getnext(curr)
-  while n do
-    if n.id == whatsitid and
-       n.mode == 2 and -- directmode
-       my_node_props(n).endactualtext then
-      curr = n; break
-    end
-    n = getnext(n)
-  end
-  return curr
-end
-
-local function char_orphan_penalty (curr, par)
-  if par then
-    local nn = getnext(curr)
-    local nc = nn.char
-    local ncl = nc and charclass[nc]
-    while nn.id == whatsitid
-       or nn.penalty == 10000
-       or nc and (ncl >= 2 and ncl ~= 5 -- cjk closings
-               or nc < 0xFF and rawget(breakable_after, nc) -- latin closings
-               or is_combining(nc)) do
-      nn = getnext(nn)
-      nc = nn.char
-      ncl = nc and charclass[nc]
-    end
-    if nn.id == glueid and nn.subtype == 15 then -- parfillskip
-      return 1000 -- supress orphan
-    end
-  end
-end
-
-local iwspaceOffattributeid = luatexbase.attributes.g__tag_interwordspaceOff_attr
-
-local function insert_glue_before (head, curr, par, br, brb, classic, ict, dim, fid)
-  local prev = getprev(curr)
-
-  if prev and prev.penalty then
-    -- repect user's penalty
-  else
-    local pn = nodenew(penaltyid)
-    pn.penalty = not br and 10000
-              or type(brb) == "number" and brb
-              or char_orphan_penalty(curr, par)
-              or 50
-    head = insert_before(head, curr, pn)
-  end
-  if not fid then return head end -- penalty only for non-glyph box + cjk
-
-  dim = dim or 0
-  local gl = nodenew(glueid)
-  local en = fontoptions.en_size[fid]
-  if ict then
-    en = classic and en or en/4
-    setglue(gl, en * ict[1] + dim, nil, en * ict[2])
-  else
-    local str = fontoptions.intercharstretch[fid] or stretch_f*en
-    setglue(gl, dim, str, str*0.6)
-  end
-
-  if iwspaceOffattributeid then
-    gl.attr = prev and prev.attr or curr.attr -- for less tagging
-    set_attribute(gl, iwspaceOffattributeid, 1)
-  end
-
-  set_attribute(gl, inhibitglueattr, 1) -- suppress multiple run of unboxed nodes
-  return insert_before(head, curr, gl)
-end
-
-local function maybe_linebreak (head, curr, pc, pcl, cc, old, fid, par)
-  local ccl = get_char_class(cc, old)
-  if pc and cc and curr.lang ~= nohyphen and (is_cjk_char(pc) or is_cjk_char(cc)) then
-    local brap, brbc = breakable_after[pc], breakable_before[cc]
-    if brap == 50 and brbc == 10000 then -- skip dash-dash
-    else
-      local ict = intercharclass[pcl][ccl]
-      local br  = brap and brbc or brap == 50 and is_noncjk_char(cc) -- allow dash-latin as well
-      local dim = fontoptions.intercharacter[fid]
-      head = insert_glue_before(head, curr, par, br, brbc, old, ict, dim, fid)
-    end
-  end
-  return head, cc, ccl, fid
-end
-
-local function process_cjk_punctuation_spacing (head, par)
-  local pcl, pc, pf, old, pcurr = 0, false, false, false
-  --[[
-  -- pcl: 앞 글자 클래스(0..7)
-  -- pc : 앞 글자 코드
-  -- pf : 앞 글자 폰트
-  -- old: 현재 classic 모드임을 표시 (이 함수는 classic 모드에서만 동작한다)
-  -- pcurr: 글자 첫머리 노드
-  --]]
-  local curr = head
-  while curr do
-    if has_attribute(curr, charhead) or harf_actual_literal(curr) == 1 then
-      pcurr = pcurr or curr
-    else
-      local id = curr.id
-      if id == glyphid and curr.lang ~= nohyphen then
-        local cc = curr.char
-        old = has_attribute(curr, classicattr)
-        local ccl = get_char_class(cc, old)
-        if old and intercharclass[pcl][ccl] then
-          local cf = charclass[cc] == 0 and pf or curr.font
-          head = maybe_linebreak(head, pcurr or curr, pc, pcl, cc, old, cf, par)
-        end
-        pcl, pc, pf = ccl, cc, curr.font
-      elseif is_blocking_node(curr) then
-        if id == glueid and (curr.subtype >= 13 and curr.subtype <= 15 -- spaceskip .. parfillskip
-          or has_attribute(curr, inhibitglueattr)) then
-          pcl, pc, pf = 0, false, false
-        else
-          if pf and old and intercharclass[pcl][0] then
-            head = maybe_linebreak(head, pcurr or curr, pc, pcl, 0x4E00, old, pf, par)
-          end
-          pcl, pc, pf = 0, 0x4E00, false
-        end
+local insert_glue_before
+do
+  local function char_orphan_penalty (curr, par)
+    if par then
+      local nn = getnext(curr)
+      local nc = nn.char
+      local ncl = nc and charclass[nc]
+      while nn.id == whatsitid
+        or nn.penalty == 10000
+        or nc and (ncl >= 2 and ncl ~= 5 -- cjk closings
+        or nc < 0xFF and rawget(breakable_after, nc) -- latin closings
+        or is_combining(nc)) do
+        nn = getnext(nn)
+        nc = nn.char
+        ncl = nc and charclass[nc]
       end
-      pcurr = false
+      if nn.id == glueid and nn.subtype == 15 then -- parfillskip
+        return 1000 -- supress orphan
+      end
     end
-    curr = getnext(curr)
   end
-  return head
+  local iwspaceOffattributeid = luatexbase.attributes.g__tag_interwordspaceOff_attr
+  function insert_glue_before (head, curr, par, br, brb, classic, ict, dim, fid)
+    local prev = getprev(curr)
+
+    if prev and prev.penalty then
+      -- repect user's penalty
+    else
+      local pn = nodenew(penaltyid)
+      pn.penalty = not br and 10000
+      or type(brb) == "number" and brb
+      or char_orphan_penalty(curr, par)
+      or 50
+      head = insert_before(head, curr, pn)
+    end
+    if not fid then return head end -- penalty only for non-glyph box + cjk
+
+    dim = dim or 0
+    local gl = nodenew(glueid)
+    local en = fontoptions.en_size[fid]
+    if ict then
+      en = classic and en or en/4
+      setglue(gl, en * ict[1] + dim, nil, en * ict[2])
+    else
+      local str = fontoptions.intercharstretch[fid] or stretch_f*en
+      setglue(gl, dim, str, str*0.6)
+    end
+
+    if iwspaceOffattributeid then
+      gl.attr = prev and prev.attr or curr.attr -- for less tagging
+      set_attribute(gl, iwspaceOffattributeid, 1)
+    end
+
+    set_attribute(gl, inhibitglueattr, 1) -- suppress multiple run of unboxed nodes
+    return insert_before(head, curr, gl)
+  end
 end
 
-local function process_linebreak (head, par)
-  local curr, pc, pcl, pf, pcurr = head, false, 0, false, false
-  --[[
-  -- pc : 앞 글자 코드
-  -- pcl: 앞 글자 클래스(0..7)
-  -- pf : 앞 글자 폰트
-  -- pcurr: 글자 첫머리 노드(unhbox되어 들어오는 노드리스트 처리시 필요)
-  --]]
-  while curr do
-    if has_attribute(curr, charhead) or harf_actual_literal(curr) == 1 then
-      pcurr = pcurr or curr
-    else
-      local id = curr.id
-      if id == glyphid then
-        local c = has_attribute(curr, unicodeattr) or curr.char
-        if c and not is_combining(c) then
-          local old = has_attribute(curr, classicattr)
-          local cjk = is_cjk_char(c)
-          local f = cjk and curr.font or pf or curr.font
-          if old and cjk and pc == -1 then -- penalty only (f is nil below) for non-glyph box + cjk
-            head = insert_glue_before(head, pcurr or curr, par, true, false)
-            pc, pf, pcl = c, f, get_char_class(c, old)
+local process_cjk_punctuation_spacing, process_linebreak
+do
+  local function maybe_linebreak (head, curr, pc, pcl, cc, old, fid, par)
+    local ccl = get_char_class(cc, old)
+    if pc and cc and curr.lang ~= nohyphen and (is_cjk_char(pc) or is_cjk_char(cc)) then
+      local brap, brbc = breakable_after[pc], breakable_before[cc]
+      if brap == 50 and brbc == 10000 then -- skip dash-dash
+      else
+        local ict = intercharclass[pcl][ccl]
+        local br  = brap and brbc or brap == 50 and is_noncjk_char(cc) -- allow dash-latin as well
+        local dim = fontoptions.intercharacter[fid]
+        head = insert_glue_before(head, curr, par, br, brbc, old, ict, dim, fid)
+      end
+    end
+    return head, cc, ccl, fid
+  end
+  function process_cjk_punctuation_spacing (head, par)
+    local pcl, pc, pf, old, pcurr = 0, false, false, false
+    --[[
+    -- pcl: 앞 글자 클래스(0..7)
+    -- pc : 앞 글자 코드
+    -- pf : 앞 글자 폰트
+    -- old: 현재 classic 모드임을 표시 (이 함수는 classic 모드에서만 동작한다)
+    -- pcurr: 글자 첫머리 노드
+    --]]
+    local curr = head
+    while curr do
+      if has_attribute(curr, charhead) or harf_actual_literal(curr) == 1 then
+        pcurr = pcurr or curr
+      else
+        local id = curr.id
+        if id == glyphid and curr.lang ~= nohyphen then
+          local cc = curr.char
+          old = has_attribute(curr, classicattr)
+          local ccl = get_char_class(cc, old)
+          if old and intercharclass[pcl][ccl] then
+            local cf = charclass[cc] == 0 and pf or curr.font
+            head = maybe_linebreak(head, pcurr or curr, pc, pcl, cc, old, cf, par)
+          end
+          pcl, pc, pf = ccl, cc, curr.font
+        elseif is_blocking_node(curr) then
+          if id == glueid and (curr.subtype >= 13 and curr.subtype <= 15 -- spaceskip .. parfillskip
+            or has_attribute(curr, inhibitglueattr)) then
+            pcl, pc, pf = 0, false, false
           else
-            head, pc, pcl, pf = maybe_linebreak(head, pcurr or curr, pc, pcl, c, old, f, par)
+            if pf and old and intercharclass[pcl][0] then
+              head = maybe_linebreak(head, pcurr or curr, pc, pcl, 0x4E00, old, pf, par)
+            end
+            pcl, pc, pf = 0, 0x4E00, false
           end
         end
-
-      elseif (id == hlistid or id == vlistid) and is_blocking_node(curr) then
-        local old = has_attribute(curr, classicattr)
-        local c, f = hbox_char_font(curr, true)
-        if c then
-          head = maybe_linebreak(head, pcurr or curr, pc, pcl, c, old, pf or f, false) -- par is false
-        elseif old and pc and is_cjk_char(pc) then -- penalty only
-          head = insert_glue_before(head, pcurr or curr, false, true, false)
-        end
-        c, f = hbox_char_font(curr)
-        pc, pf, pcl  = c or old and -1, pf or f, c and get_char_class(c, old) or 0
-
-      elseif id == mathid then
-        pc, pcl, curr = 0x30, 0, end_of_math(curr)
-
-      elseif id == dirid then
-        if curr.dir:sub(1,1) == "+" then -- push dir
-          local n = getnext(curr)
-          if n.id == glyphid then
-            local old = has_attribute(n, classicattr)
-            head = maybe_linebreak(head, pcurr or curr, pc, pcl, n.char, old, n.font, par)
+        pcurr = false
+      end
+      curr = getnext(curr)
+    end
+    return head
+  end
+  function process_linebreak (head, par)
+    local curr, pc, pcl, pf, pcurr = head, false, 0, false, false
+    --[[
+    -- pc : 앞 글자 코드
+    -- pcl: 앞 글자 클래스(0..7)
+    -- pf : 앞 글자 폰트
+    -- pcurr: 글자 첫머리 노드(unhbox되어 들어오는 노드리스트 처리시 필요)
+    --]]
+    while curr do
+      if has_attribute(curr, charhead) or harf_actual_literal(curr) == 1 then
+        pcurr = pcurr or curr
+      else
+        local id = curr.id
+        if id == glyphid then
+          local c = has_attribute(curr, unicodeattr) or curr.char
+          if c and not is_combining(c) then
+            local old = has_attribute(curr, classicattr)
+            local cjk = is_cjk_char(c)
+            local f = cjk and curr.font or pf or curr.font
+            if old and cjk and pc == -1 then -- penalty only (f is nil below) for non-glyph box + cjk
+              head = insert_glue_before(head, pcurr or curr, par, true, false)
+              pc, pf, pcl = c, f, get_char_class(c, old)
+            else
+              head, pc, pcl, pf = maybe_linebreak(head, pcurr or curr, pc, pcl, c, old, f, par)
+            end
           end
+
+        elseif (id == hlistid or id == vlistid) and is_blocking_node(curr) then
+          local old = has_attribute(curr, classicattr)
+          local c, f = hbox_char_font(curr, true)
+          if c then
+            head = maybe_linebreak(head, pcurr or curr, pc, pcl, c, old, pf or f, false) -- par is false
+          elseif old and pc and is_cjk_char(pc) then -- penalty only
+            head = insert_glue_before(head, pcurr or curr, false, true, false)
+          end
+          c, f = hbox_char_font(curr)
+          pc, pf, pcl  = c or old and -1, pf or f, c and get_char_class(c, old) or 0
+
+        elseif id == mathid then
+          pc, pcl, curr = 0x30, 0, end_of_math(curr)
+
+        elseif id == dirid then
+          if curr.dir:sub(1,1) == "+" then -- push dir
+            local n = getnext(curr)
+            if n.id == glyphid then
+              local old = has_attribute(n, classicattr)
+              head = maybe_linebreak(head, pcurr or curr, pc, pcl, n.char, old, n.font, par)
+            end
+            pc, pcl = false, 0
+          end
+
+        elseif is_blocking_node(curr) then
           pc, pcl = false, 0
         end
-
-      elseif is_blocking_node(curr) then
-        pc, pcl = false, 0
+        pcurr = false
       end
-      pcurr = false
+      curr = getnext(curr)
     end
-    curr = getnext(curr)
+    return head
   end
-  return head
 end
 
 -- interhangul & interlatincjk
 
-local function do_interhangul_option (head, curr, pc, c, fontid, par)
-  local cc = (is_hangul(c) or is_compat_jamo(c) or is_chosong(c)) and 1 or 0
+local process_interhangul
+do
+  local function do_interhangul_option (head, curr, pc, c, fontid, par)
+    local cc = (is_hangul(c) or is_compat_jamo(c) or is_chosong(c)) and 1 or 0
 
-  if cc*pc == 1 and curr.lang ~= nohyphen then
-    local dim = fontoptions.interhangul[fontid]
-    if dim then
-      head = insert_glue_before(head, curr, par, true, true, false, false, dim, fontid)
+    if cc*pc == 1 and curr.lang ~= nohyphen then
+      local dim = fontoptions.interhangul[fontid]
+      if dim then
+        head = insert_glue_before(head, curr, par, true, true, false, false, dim, fontid)
+      end
     end
+
+    return head, cc, fontid
   end
-
-  return head, cc, fontid
-end
-
-local function process_interhangul (head, par)
-  local curr, pc, pf, pcurr = head, 0, false, false
-  --[[
-  -- pc: 앞 글자 한글 여부(1 or 0)
-  -- pf: 앞 글자 폰트
-  -- pcurr: 글자 첫머리 노드
-  --]]
-  while curr do
-    if has_attribute(curr, charhead) or harf_actual_literal(curr) == 1 then
-      pcurr = pcurr or curr
-    else
-      local id = curr.id
-      if id == glyphid then
-        local c = has_attribute(curr, unicodeattr) or curr.char
-        if c and not is_combining(c) then
-          head, pc, pf = do_interhangul_option(head, pcurr or curr, pc, c, curr.font, par)
-        end
-
-      elseif id == hlistid and is_blocking_node(curr) then
-        local c, f = hbox_char_font(curr, true)
-        if c then
-          head, pc, pf = do_interhangul_option(head, pcurr or curr, pc, c, pf or f, false)
-        end
-        c, f = hbox_char_font(curr)
-        pc, pf = c and is_hangul_jamo(c) and 1 or 0, pf or f
-
-      elseif id == mathid then
-        pc, curr = 0, end_of_math(curr)
-      elseif id == dirid then
-        if curr.dir:sub(1,1) == "+" then
-          local n = getnext(curr)
-          if n.id == glyphid then
-            head = do_interhangul_option(head, pcurr or curr, pc, n.char, n.font, par)
+  function process_interhangul (head, par)
+    local curr, pc, pf, pcurr = head, 0, false, false
+    --[[
+    -- pc: 앞 글자 한글 여부(1 or 0)
+    -- pf: 앞 글자 폰트
+    -- pcurr: 글자 첫머리 노드
+    --]]
+    while curr do
+      if has_attribute(curr, charhead) or harf_actual_literal(curr) == 1 then
+        pcurr = pcurr or curr
+      else
+        local id = curr.id
+        if id == glyphid then
+          local c = has_attribute(curr, unicodeattr) or curr.char
+          if c and not is_combining(c) then
+            head, pc, pf = do_interhangul_option(head, pcurr or curr, pc, c, curr.font, par)
           end
+
+        elseif id == hlistid and is_blocking_node(curr) then
+          local c, f = hbox_char_font(curr, true)
+          if c then
+            head, pc, pf = do_interhangul_option(head, pcurr or curr, pc, c, pf or f, false)
+          end
+          c, f = hbox_char_font(curr)
+          pc, pf = c and is_hangul_jamo(c) and 1 or 0, pf or f
+
+        elseif id == mathid then
+          pc, curr = 0, end_of_math(curr)
+        elseif id == dirid then
+          if curr.dir:sub(1,1) == "+" then
+            local n = getnext(curr)
+            if n.id == glyphid then
+              head = do_interhangul_option(head, pcurr or curr, pc, n.char, n.font, par)
+            end
+            pc = 0
+          end
+        elseif is_blocking_node(curr) then
           pc = 0
         end
-      elseif is_blocking_node(curr) then
-        pc = 0
+        pcurr = false
       end
-      pcurr = false
+      curr = getnext(curr)
     end
-    curr = getnext(curr)
+    return head
   end
-  return head
 end
 
-local function do_interlatincjk_option (head, curr, p, pc, pf, c, cf, par)
-  local cc = is_cjk_char(c) and 1 or is_noncjk_char(c) and 2 or 0
-  local f = cc == 1 and cf or pf
+local process_interlatincjk
+do
+  local function do_interlatincjk_option (head, curr, p, pc, pf, c, cf, par)
+    local cc = is_cjk_char(c) and 1 or is_noncjk_char(c) and 2 or 0
+    local f = cc == 1 and cf or pf
 
-  if p and cc*pc == 2 and curr.lang ~= nohyphen then
-    local brb = cc == 2 or breakable_before[c] -- numletter != br_before
-    if brb and brb ~= 10000 and breakable_after[p] == true then -- skip latin-dash and dash-latin
-      local dimc = fontoptions.interlatincjk[cf] or 0
-      local dimp = fontoptions.interlatincjk[pf] or 0
-      local dim  = dimc > dimp and dimc or dimp
-      if dim ~= 0 then
-        head = insert_glue_before(head, curr, par, true, brb, false, false, dim, f)
+    if p and cc*pc == 2 and curr.lang ~= nohyphen then
+      local brb = cc == 2 or breakable_before[c] -- numletter != br_before
+      if brb and brb ~= 10000 and breakable_after[p] == true then -- skip latin-dash and dash-latin
+        local dimc = fontoptions.interlatincjk[cf] or 0
+        local dimp = fontoptions.interlatincjk[pf] or 0
+        local dim  = dimc > dimp and dimc or dimp
+        if dim ~= 0 then
+          head = insert_glue_before(head, curr, par, true, brb, false, false, dim, f)
+        end
       end
     end
+
+    return head, cc, f, c
   end
-
-  return head, cc, f, c
-end
-
-local function process_interlatincjk (head, par)
-  local curr, pc, pf, p, pcurr = head, 0, false, false, false
-  --[[
-  -- pc: 앞 글자 cjk 여부(1 = cjk, 2 = non-cjk, 0 = other)
-  -- pf: 앞 글자 폰트
-  -- p : 앞 글자 코드
-  -- pcurr: 글자 첫머리 노드
-  --]]
-  while curr do
-    if curr.id == glyphid and is_cjk_char(curr.char) then
-      pf = curr.font
-      break
+  function process_interlatincjk (head, par)
+    local curr, pc, pf, p, pcurr = head, 0, false, false, false
+    --[[
+    -- pc: 앞 글자 cjk 여부(1 = cjk, 2 = non-cjk, 0 = other)
+    -- pf: 앞 글자 폰트
+    -- p : 앞 글자 코드
+    -- pcurr: 글자 첫머리 노드
+    --]]
+    while curr do
+      if curr.id == glyphid and is_cjk_char(curr.char) then
+        pf = curr.font
+        break
+      end
+      curr = getnext(curr)
     end
-    curr = getnext(curr)
-  end
 
-  curr = head
-  while curr do
-    if has_attribute(curr, charhead) or harf_actual_literal(curr) == 1 then
-      pcurr = pcurr or curr
-    else
-      local id = curr.id
-      if id == glyphid then
-        local c = has_attribute(curr, unicodeattr) or curr.char
-        if c and not is_combining(c) then
-          head, pc, pf, p = do_interlatincjk_option(head, pcurr or curr, p, pc, pf, c, curr.font, par)
-        end
-
-      elseif id == hlistid and is_blocking_node(curr) then
-        local c, f = hbox_char_font(curr, true)
-        if c then
-          head = do_interlatincjk_option(head, pcurr or curr, p, pc, pf, c, pf or f, false)
-        end
-        c, f = hbox_char_font(curr)
-        pc = c and (is_cjk_char(c) and 1 or is_noncjk_char(c) and 2) or 0
-        pf, p  = pf or f, c
-
-      elseif id == mathid then
-        if pc == 1 then
-          head = do_interlatincjk_option(head, pcurr or curr, p, pc, pf, 0x30, pf, par)
-        end
-        curr, pc, p = end_of_math(curr), 2, 0x30
-
-      elseif id == dirid then
-        if curr.dir:sub(1,1) == "+" then
-          local n = getnext(curr)
-          if n.id == glyphid then
-            head = do_interlatincjk_option(head, pcurr or curr, p, pc, pf, n.char, n.font, par)
+    curr = head
+    while curr do
+      if has_attribute(curr, charhead) or harf_actual_literal(curr) == 1 then
+        pcurr = pcurr or curr
+      else
+        local id = curr.id
+        if id == glyphid then
+          local c = has_attribute(curr, unicodeattr) or curr.char
+          if c and not is_combining(c) then
+            head, pc, pf, p = do_interlatincjk_option(head, pcurr or curr, p, pc, pf, c, curr.font, par)
           end
+
+        elseif id == hlistid and is_blocking_node(curr) then
+          local c, f = hbox_char_font(curr, true)
+          if c then
+            head = do_interlatincjk_option(head, pcurr or curr, p, pc, pf, c, pf or f, false)
+          end
+          c, f = hbox_char_font(curr)
+          pc = c and (is_cjk_char(c) and 1 or is_noncjk_char(c) and 2) or 0
+          pf, p  = pf or f, c
+
+        elseif id == mathid then
+          if pc == 1 then
+            head = do_interlatincjk_option(head, pcurr or curr, p, pc, pf, 0x30, pf, par)
+          end
+          curr, pc, p = end_of_math(curr), 2, 0x30
+
+        elseif id == dirid then
+          if curr.dir:sub(1,1) == "+" then
+            local n = getnext(curr)
+            if n.id == glyphid then
+              head = do_interlatincjk_option(head, pcurr or curr, p, pc, pf, n.char, n.font, par)
+            end
+            pc, p = 0, false
+          end
+
+        elseif is_blocking_node(curr) then
           pc, p = 0, false
         end
-
-      elseif is_blocking_node(curr) then
-        pc, p = 0, false
+        pcurr = false
       end
-      pcurr = false
-    end
 
-    curr = getnext(curr)
+      curr = getnext(curr)
+    end
+    return head
   end
-  return head
 end
 
 -- compress punctuations
@@ -1366,7 +1344,9 @@ end
 
 -- josa
 
-local josa_table = {
+local process_josa
+do
+  local josa_table = {
     --          리을,   중성,   종성
     [0xAC00] = {0xC774, 0xAC00, 0xC774}, -- 가 = 이, 가, 이
     [0xC740] = {0xC740, 0xB294, 0xC740}, -- 은 = 은, 는, 은
@@ -1374,26 +1354,25 @@ local josa_table = {
     [0xC640] = {0xACFC, 0xC640, 0xACFC}, -- 와 = 과, 와, 과
     [0xC73C] = {nil,    nil,    0xC73C}, -- 으(로) =   ,  , 으
     [0xC774] = {0xC774, nil,    0xC774}, -- 이(라) = 이,  , 이
-}
+  }
 
-local hanja2hangul = { }
-
-local function add_to_hanja2hangul (filename, i, last)
-  local f = kpse.find_file(filename)
-  if f then
-    for c in io.lines(f) do
-      hanja2hangul[i] = tonumber(c)
-      i = i + 1
-    end
-  else
-    warning("cannot find %s", filename)
-    for c = i, last do
-      hanja2hangul[c] = c
+  local hanja2hangul = { }
+  local function add_to_hanja2hangul (filename, i, last)
+    local f = kpse.find_file(filename)
+    if f then
+      for c in io.lines(f) do
+        hanja2hangul[i] = tonumber(c)
+        i = i + 1
+      end
+    else
+      warning("cannot find %s", filename)
+      for c = i, last do
+        hanja2hangul[c] = c
+      end
     end
   end
-end
 
-local josa_code = setmetatable({
+  local josa_code = setmetatable({
     [0x30] = 3,   [0x31] = 1,   [0x33] = 3,   [0x36] = 3,
     [0x37] = 1,   [0x38] = 1,   [0x4C] = 1,   [0x4D] = 3,
     [0x4E] = 3,   [0x6C] = 1,   [0x6D] = 3,   [0x6E] = 3,
@@ -1418,149 +1397,153 @@ local josa_code = setmetatable({
     [0xFF13] = 3, [0xFF16] = 3, [0xFF17] = 1, [0xFF18] = 1,
     [0xFF2C] = 1, [0xFF2D] = 3, [0xFF2E] = 3, [0xFF4C] = 1,
     [0xFF4D] = 3, [0xFF4E] = 3,
-},{ __index = function(t, cc)
-  local c = cc
-  -- xetexko에 포함된 .tab 파일들을 이용해 한자를 한글로 변환
-  if c >= 0x4E00 and c <= 0x9FA5 then
-    if not hanja2hangul[c] then
-      add_to_hanja2hangul("hanja_hangul.tab", 0x4E00, 0x9FA5)
+  },{ __index = function(t, cc)
+    local c = cc
+    -- xetexko에 포함된 .tab 파일들을 이용해 한자를 한글로 변환
+    if c >= 0x4E00 and c <= 0x9FA5 then
+      if not hanja2hangul[c] then
+        add_to_hanja2hangul("hanja_hangul.tab", 0x4E00, 0x9FA5)
+      end
+      c = hanja2hangul[c]
+    elseif c >= 0xF900 and c <= 0xFA2D then
+      if not hanja2hangul[c] then
+        add_to_hanja2hangul("hanjacom_hangul.tab", 0xF900, 0xFA2D)
+      end
+      c = hanja2hangul[c]
+    elseif c >= 0x3400 and c <= 0x4DB5 then
+      if not hanja2hangul[c] then
+        add_to_hanja2hangul("hanjaexa_hangul.tab", 0x3400, 0x4DB5)
+      end
+      c = hanja2hangul[c]
     end
-    c = hanja2hangul[c]
-  elseif c >= 0xF900 and c <= 0xFA2D then
-    if not hanja2hangul[c] then
-      add_to_hanja2hangul("hanjacom_hangul.tab", 0xF900, 0xFA2D)
+    if is_hangul(c) then
+      c = (c - 0xAC00) % 28 + 0x11A7
     end
-    c = hanja2hangul[c]
-  elseif c >= 0x3400 and c <= 0x4DB5 then
-    if not hanja2hangul[c] then
-      add_to_hanja2hangul("hanjaexa_hangul.tab", 0x3400, 0x4DB5)
+    if is_chosong(c) then
+      c = c == 0x1105 and 1 or 3
+      t[cc] = c; return c
+    elseif is_jungsong(c) then
+      c = c ~= 0x1160 and 2
+      t[cc] = c; return c
+    elseif is_jongsong(c) then
+      c = c == 0x11AF and 1 or 3
+      t[cc] = c; return c
+    elseif is_noncjk_char(c) and c <= 0x7A
+      or c >= 0x2160 and c <= 0x217F -- roman
+      or c >= 0x2460 and c <= 0x24E9 -- ①
+      or c >= 0x314F and c <= 0x3163 or c >= 0x3187 and c <= 0x318E -- ㅏ
+      or c >= 0x320E and c <= 0x321E -- ㈎
+      or c >= 0x326E and c <= 0x327F -- ㉮
+      or c >= 0xFF10 and c <= 0xFF19 -- ０
+      or c >= 0xFF21 and c <= 0xFF3A -- Ａ
+      or c >= 0xFF41 and c <= 0xFF5A -- ａ
+      then
+        t[cc] = 2; return 2
+    elseif c >= 0x3131 and c <= 0x314E or c >= 0x3165 and c <= 0x3186 -- ㄱ
+      or c >= 0x3200 and c <= 0x320D -- ㈀
+      or c >= 0x3260 and c <= 0x326D -- ㉠
+      then
+        t[cc] = 3; return 3
     end
-    c = hanja2hangul[c]
-  end
-  if is_hangul(c) then
-    c = (c - 0xAC00) % 28 + 0x11A7
-  end
-  if is_chosong(c) then
-    c = c == 0x1105 and 1 or 3
-    t[cc] = c; return c
-  elseif is_jungsong(c) then
-    c = c ~= 0x1160 and 2
-    t[cc] = c; return c
-  elseif is_jongsong(c) then
-    c = c == 0x11AF and 1 or 3
-    t[cc] = c; return c
-  elseif is_noncjk_char(c) and c <= 0x7A
-    or c >= 0x2160 and c <= 0x217F -- roman
-    or c >= 0x2460 and c <= 0x24E9 -- ①
-    or c >= 0x314F and c <= 0x3163 or c >= 0x3187 and c <= 0x318E -- ㅏ
-    or c >= 0x320E and c <= 0x321E -- ㈎
-    or c >= 0x326E and c <= 0x327F -- ㉮
-    or c >= 0xFF10 and c <= 0xFF19 -- ０
-    or c >= 0xFF21 and c <= 0xFF3A -- Ａ
-    or c >= 0xFF41 and c <= 0xFF5A -- ａ
-    then
-      t[cc] = 2; return 2
-  elseif c >= 0x3131 and c <= 0x314E or c >= 0x3165 and c <= 0x3186 -- ㄱ
-    or c >= 0x3200 and c <= 0x320D -- ㈀
-    or c >= 0x3260 and c <= 0x326D -- ㉠
-    then
-      t[cc] = 3; return 3
-  end
-end })
+  end })
 
-local function prevjosacode (n, parenlevel, ignore_parens)
-  local josacode
-  while n do
-    local id = n.id
-    if id == glyphid then
-      local c = has_attribute(n, unicodeattr) or n.char -- beware hlist/vlist
-      if ignore_parens and c == 0x29 then -- )
-        parenlevel = parenlevel + 1
-      elseif ignore_parens and c == 0x28 then -- (
-        parenlevel = parenlevel - 1
-      elseif parenlevel <= 0 then
-        josacode = josa_code[c]
-        if josacode then break end
+  local function prevjosacode (n, parenlevel, ignore_parens)
+    local josacode
+    while n do
+      local id = n.id
+      if id == glyphid then
+        local c = has_attribute(n, unicodeattr) or n.char -- beware hlist/vlist
+        if ignore_parens and c == 0x29 then -- )
+          parenlevel = parenlevel + 1
+        elseif ignore_parens and c == 0x28 then -- (
+          parenlevel = parenlevel - 1
+        elseif parenlevel <= 0 then
+          josacode = josa_code[c]
+          if josacode then break end
+        end
+      elseif id == hlistid or id == vlistid then
+        local list = n.list
+        if list then
+          josacode, parenlevel = prevjosacode(nodeslide(list), parenlevel, ignore_parens)
+          if josacode then break end
+        end
       end
-    elseif id == hlistid or id == vlistid then
-      local list = n.list
-      if list then
-        josacode, parenlevel = prevjosacode(nodeslide(list), parenlevel, ignore_parens)
-        if josacode then break end
-      end
+      n = getprev(n)
     end
-    n = getprev(n)
+    return josacode, parenlevel
   end
-  return josacode, parenlevel
-end
 
-local function process_josa (head)
-  local curr, tofree = head, {}
-  while curr do
-    local id = curr.id
-    if id == glyphid then
-      local autojosaattr = has_attribute(curr, autojosaattr)
-      if autojosaattr then
-        local cc = curr.char
-        if cc == 0xC774 then
-          local n = getnext(curr)
-          if n and n.char and is_hangul(n.char) then
-          else
-            cc = 0xAC00
+  function process_josa (head)
+    local curr, tofree = head, {}
+    while curr do
+      local id = curr.id
+      if id == glyphid then
+        local autojosaattr = has_attribute(curr, autojosaattr)
+        if autojosaattr then
+          local cc = curr.char
+          if cc == 0xC774 then
+            local n = getnext(curr)
+            if n and n.char and is_hangul(n.char) then
+            else
+              cc = 0xAC00
+            end
           end
-        end
-        local t = josa_table[cc]
-        if t then
-          cc = t[prevjosacode(getprev(curr), 0, autojosaattr > 0) or 3]
-          if cc then
-            curr.char = cc
-          else
-            head = noderemove(head, curr)
-            tofree[#tofree+1] = curr
+          local t = josa_table[cc]
+          if t then
+            cc = t[prevjosacode(getprev(curr), 0, autojosaattr > 0) or 3]
+            if cc then
+              curr.char = cc
+            else
+              head = noderemove(head, curr)
+              tofree[#tofree+1] = curr
+            end
           end
+          unset_attribute(curr, autojosaattr)
         end
-        unset_attribute(curr, autojosaattr)
+      elseif id == mathid then
+        curr = end_of_math(curr)
       end
-    elseif id == mathid then
-      curr = end_of_math(curr)
+      curr = getnext(curr)
     end
-    curr = getnext(curr)
+    for _,v in ipairs(tofree) do nodefree(v) end
+    return head
   end
-  for _,v in ipairs(tofree) do nodefree(v) end
-  return head
 end
 
 -- dotemph
 
-local function get_font_yshift (f, dotem)
-  local off = 0
-  if f then
-    off = off + (fontoptions.charraise[f] or 0)
-    if fontoptions.is_vertical[f] then
-      off = off + (fontoptions.vertcharraise[f]or 0)
-                - (fontoptions.en_size[f] or 0)*(dotem and 0.8 or 0.5) -- lower a little
+local shift_put_top
+do
+  local function get_font_yshift (f, dotem)
+    local off = 0
+    if f then
+      off = off + (fontoptions.charraise[f] or 0)
+      if fontoptions.is_vertical[f] then
+        off = off + (fontoptions.vertcharraise[f]or 0)
+        - (fontoptions.en_size[f] or 0)*(dotem and 0.8 or 0.5) -- lower a little
+      end
     end
+    return off
   end
-  return off
-end
-local function shift_put_top (bot, top, dotem)
-  local shift = top.shift or 0
+  function shift_put_top (bot, top, dotem)
+    local shift = top.shift or 0
 
-  if bot.id == hlistid then
-    bot = has_glyph(bot.list) or {}
-  end
-  local bot_off = get_font_yshift(bot.font, dotem)
-
-  if bot_off ~= 0 then
-    if top.id == hlistid then
-      top = has_glyph(top.list) or {}
+    if bot.id == hlistid then
+      bot = has_glyph(bot.list) or {}
     end
-    local top_off = get_font_yshift(top.font, dotem)
+    local bot_off = get_font_yshift(bot.font, dotem)
 
-    return shift + top_off - bot_off -- minus is raise, plus is lower
+    if bot_off ~= 0 then
+      if top.id == hlistid then
+        top = has_glyph(top.list) or {}
+      end
+      local top_off = get_font_yshift(top.font, dotem)
+
+      return shift + top_off - bot_off -- minus is raise, plus is lower
+    end
+
+    return shift
   end
-
-  return shift
 end
 
 local dotemphbox = {}
@@ -1705,100 +1688,103 @@ function luatexko.ulboundary (i, n, subtype)
   nodewrite(what)
 end
 
-local white_nodes = {
-  [glueid]    = true,
-  [penaltyid] = true,
-  [kernid]    = true,
-  [whatsitid] = true,
-}
+local process_uline
+do
+  local white_nodes = {
+    [glueid]    = true,
+    [penaltyid] = true,
+    [kernid]    = true,
+    [whatsitid] = true,
+  }
 
-local function skip_white_nodes (n, ltr)
-  local nextnode = ltr and getnext or getprev
-  while n do
-    if has_attribute(n, charhead) or harf_actual_literal(n)
-      or n.id == kernid and n.subtype == 0 -- fontkern
-      or not white_nodes[n.id] then
-      break
-    end
-    n = nextnode(n)
-  end
-  return n
-end
-
-local function draw_uline (head, curr, parent, t, final)
-  local start, list, subtype = t.start or head, t.list, t.subtype
-  start = skip_white_nodes(start, true)
-  if final and start then
-    nodeslide(start) -- to get correct getprev.
-  end
-  curr  = skip_white_nodes(curr)
-  if start and curr then
-    curr = getnext(curr) or curr
-
-    local len = parent and rangedimensions(parent, start, curr)
-                       or  dimensions(start, curr)
-    if len and len ~= 0 then
-      local g = nodenew(glueid)
-      setglue(g, len)
-      g.subtype = subtype
-      g.leader  = final and list or nodecopy(list)
-      g.attr    = list.attr
-      set_attribute(g, charhead, 1)
-      local k = nodenew(kernid)
-      k.kern = -len
-      k.subtype = 1 -- userkern
-      set_attribute(k, charhead, 2)
-      head = insert_before(head, start, g)
-      head = insert_before(head, start, k)
-    end
-  end
-  return head
-end
-
-local ulitems = {}
-
-local function process_uline (head, parent, level)
-  local curr, level = head, level or 0
-  local to_free = { }
-  while curr do
-    if curr.list then
-      curr.list = process_uline(curr.list, curr, level+1)
-
-    elseif curr.id == whatsitid and curr.user_id == uline_id then
-
-      local value = curr.value
-      if curr.type == 108 then -- lua_value
-        local count, list, subtype = table.unpack(value)
-        ulitems[count] = {
-          list    = list,
-          subtype = subtype,
-          level   = level,
-          start   = getnext(curr) or curr,
-        }
-      else
-        local item = ulitems[value]
-        if item then
-          head = draw_uline(head, curr, parent, item, true)
-          ulitems[value] = nil
-        end
+  local function skip_white_nodes (n, ltr)
+    local nextnode = ltr and getnext or getprev
+    while n do
+      if has_attribute(n, charhead) or harf_actual_literal(n)
+        or n.id == kernid and n.subtype == 0 -- fontkern
+        or not white_nodes[n.id] then
+        break
       end
-
-      to_free[#to_free+1] = curr
-      head = noderemove(head, curr)
-
+      n = nextnode(n)
     end
-    curr = getnext(curr)
+    return n
   end
 
-  for _, item in pairs(ulitems) do
-    if item.level == level then
-      head = draw_uline(head, nodeslide(head), parent, item)
-      item.start = nil
+  local function draw_uline (head, curr, parent, t, final)
+    local start, list, subtype = t.start or head, t.list, t.subtype
+    start = skip_white_nodes(start, true)
+    if final and start then
+      nodeslide(start) -- to get correct getprev.
     end
+    curr  = skip_white_nodes(curr)
+    if start and curr then
+      curr = getnext(curr) or curr
+
+      local len = parent and rangedimensions(parent, start, curr)
+      or  dimensions(start, curr)
+      if len and len ~= 0 then
+        local g = nodenew(glueid)
+        setglue(g, len)
+        g.subtype = subtype
+        g.leader  = final and list or nodecopy(list)
+        g.attr    = list.attr
+        set_attribute(g, charhead, 1)
+        local k = nodenew(kernid)
+        k.kern = -len
+        k.subtype = 1 -- userkern
+        set_attribute(k, charhead, 2)
+        head = insert_before(head, start, g)
+        head = insert_before(head, start, k)
+      end
+    end
+    return head
   end
 
-  for _, v in ipairs(to_free) do nodefree(v) end
-  return head
+  local ulitems = {}
+
+  function process_uline (head, parent, level)
+    local curr, level = head, level or 0
+    local to_free = { }
+    while curr do
+      if curr.list then
+        curr.list = process_uline(curr.list, curr, level+1)
+
+      elseif curr.id == whatsitid and curr.user_id == uline_id then
+
+        local value = curr.value
+        if curr.type == 108 then -- lua_value
+          local count, list, subtype = table.unpack(value)
+          ulitems[count] = {
+            list    = list,
+            subtype = subtype,
+            level   = level,
+            start   = getnext(curr) or curr,
+          }
+        else
+          local item = ulitems[value]
+          if item then
+            head = draw_uline(head, curr, parent, item, true)
+            ulitems[value] = nil
+          end
+        end
+
+        to_free[#to_free+1] = curr
+        head = noderemove(head, curr)
+
+      end
+      curr = getnext(curr)
+    end
+
+    for _, item in pairs(ulitems) do
+      if item.level == level then
+        head = draw_uline(head, nodeslide(head), parent, item)
+        item.start = nil
+      end
+    end
+
+    for _, v in ipairs(to_free) do nodefree(v) end
+    return head
+  end
 end
 
 -- ruby
@@ -1835,8 +1821,8 @@ local function process_ruby_pre_linebreak (head)
             local prev = curr.prev -- 문단 첫머리에 루비 돌출 방지
             if prev and
               ( prev.id == localparid or
-                prev.id == hlistid and prev.subtype == 3 and prev.width == 0 ) then -- indentbox
-                k.kern = 0
+              prev.id == hlistid and prev.subtype == 3 and prev.width == 0 ) then -- indentbox
+              k.kern = 0
             end -- TODO: \rubyoverlap \setbox0\hbox{\ruby{short}{loooooong}} \noindent\copy0\copy0
 
             set_attribute(k, charhead, 1)
@@ -1903,249 +1889,134 @@ end
 
 -- reorder tone marks
 
-local function conv_tounicode (uni)
-  if uni < 0x10000 then
-    return ("%04X"):format(uni)
-  else -- surrogate
-    uni = uni - 0x10000
-    local high = uni // 0x400 + 0xD800
-    local low  = uni %  0x400 + 0xDC00
-    return ("%04X%04X"):format(high, low)
-  end
-end
-
-local function pdfliteral_direct_actual (syllable)
-  local data
-  if syllable then
-    local t = {}
-    for _,v in ipairs(syllable) do
-      t[#t + 1] = conv_tounicode(v)
+local process_reorder_tonemarks
+do
+  local function conv_tounicode (uni)
+    if uni < 0x10000 then
+      return ("%04X"):format(uni)
+    else -- surrogate
+      uni = uni - 0x10000
+      local high = uni // 0x400 + 0xD800
+      local low  = uni %  0x400 + 0xDC00
+      return ("%04X%04X"):format(high, low)
     end
-    data = ("/Span<</ActualText<FEFF%s>>>BDC"):format(table.concat(t))
-  else
-    data = "EMC"
   end
-  local what = nodenew(whatsitid, literal_whatsit)
-  what.mode = 2 -- directmode
-  what.data = data
-  if syllable then
-    my_node_props(what).startactualtext = syllable
-  else
-    my_node_props(what).endactualtext = true
+  local function pdfliteral_direct_actual (syllable)
+    local data
+    if syllable then
+      local t = {}
+      for _,v in ipairs(syllable) do
+        t[#t + 1] = conv_tounicode(v)
+      end
+      data = ("/Span<</ActualText<FEFF%s>>>BDC"):format(table.concat(t))
+    else
+      data = "EMC"
+    end
+    local what = nodenew(whatsitid, literal_whatsit)
+    what.mode = 2 -- directmode
+    what.data = data
+    if syllable then
+      my_node_props(what).startactualtext = syllable
+    else
+      my_node_props(what).endactualtext = true
+    end
+    return what
   end
-  return what
-end
+  local function goto_end_actualtext (curr)
+    local n = getnext(curr)
+    while n do
+      if n.id == whatsitid and
+        n.mode == 2 and -- directmode
+        my_node_props(n).endactualtext then
+        curr = n; break
+      end
+      n = getnext(n)
+    end
+    return curr
+  end
+  function process_reorder_tonemarks (head)
+    local curr, init = head
+    while curr do
+      local id = curr.id
+      if id == glyphid and
+        not has_harf_data(curr.font) and
+        fontoptions.is_hangulscript[curr.font] then
 
-local function process_reorder_tonemarks (head)
-  local curr, init = head
-  while curr do
-    local id = curr.id
-    if id == glyphid and
-       not has_harf_data(curr.font) and
-       fontoptions.is_hangulscript[curr.font] then
-
-      local uni = has_attribute(curr, unicodeattr) or curr.char
-      if is_hangul(uni) or is_chosong(uni) or uni == 0x25CC then
-        init = curr
-      elseif is_jungsong(uni) or is_jongsong(uni) then
-      elseif hangul_tonemark[uni] then
-        if init then
-          local n, syllable = init, { init = init }
-          while n do
-            if n.id == glyphid then
-              local u = has_attribute(n, unicodeattr) or n.char
-              if u then syllable[#syllable+1] = u end
+        local uni = has_attribute(curr, unicodeattr) or curr.char
+        if is_hangul(uni) or is_chosong(uni) or uni == 0x25CC then
+          init = curr
+        elseif is_jungsong(uni) or is_jongsong(uni) then
+        elseif hangul_tonemark[uni] then
+          if init then
+            local n, syllable = init, { init = init }
+            while n do
+              if n.id == glyphid then
+                local u = has_attribute(n, unicodeattr) or n.char
+                if u then syllable[#syllable+1] = u end
+              end
+              if n == curr then break end
+              n = getnext(n)
             end
-            if n == curr then break end
-            n = getnext(n)
+
+            if #syllable > 1 and curr.width > 0 then
+              local TM = curr
+
+              local actual    = pdfliteral_direct_actual(syllable)
+              local endactual = pdfliteral_direct_actual()
+              actual.attr, endactual.attr = TM.attr, TM.attr -- for tagged pdf
+              set_attribute(actual, charhead, 1)
+              head = insert_before(head, init, actual)
+              head, curr = insert_after(head, curr, endactual)
+
+              head = noderemove(head, TM)
+              head, TM = insert_before(head, init, TM)
+
+              local n, i = TM, 1
+              while n.char do
+                set_attribute(n, unicodeattr, syllable[i]) -- reorder unicode attr
+                n, i = getnext(n), i+1
+              end
+            end
+
+            init = nil
+          elseif char_in_font(curr.font, 0x25CC) then -- isolated tone mark
+            local dotcircle = nodecopy(curr)
+            dotcircle.char = 0x25CC
+            if curr.width > 0 then
+              local actual    = pdfliteral_direct_actual{ init = curr, uni }
+              local endactual = pdfliteral_direct_actual()
+              actual.attr, endactual.attr = dotcircle.attr, dotcircle.attr -- for tagged pdf
+              set_attribute(actual, charhead, 1)
+              set_attribute(curr, unicodeattr, 0x25CC)
+              set_attribute(dotcircle, unicodeattr, uni)
+              head = insert_before(head, curr, actual)
+              head, curr = insert_after(head, curr, dotcircle)
+              head, curr = insert_after(head, curr, endactual)
+            else
+              head = insert_before(head, curr, dotcircle)
+            end
           end
 
-          if #syllable > 1 and curr.width > 0 then
-            local TM = curr
-
-            local actual    = pdfliteral_direct_actual(syllable)
-            local endactual = pdfliteral_direct_actual()
-            actual.attr, endactual.attr = TM.attr, TM.attr -- for tagged pdf
-            set_attribute(actual, charhead, 1)
-            head = insert_before(head, init, actual)
-            head, curr = insert_after(head, curr, endactual)
-
-            head = noderemove(head, TM)
-            head, TM = insert_before(head, init, TM)
-
-            local n, i = TM, 1
-            while n.char do
-              set_attribute(n, unicodeattr, syllable[i]) -- reorder unicode attr
-              n, i = getnext(n), i+1
-            end
-          end
-
+        else
           init = nil
-        elseif char_in_font(curr.font, 0x25CC) then -- isolated tone mark
-          local dotcircle = nodecopy(curr)
-          dotcircle.char = 0x25CC
-          if curr.width > 0 then
-            local actual    = pdfliteral_direct_actual{ init = curr, uni }
-            local endactual = pdfliteral_direct_actual()
-            actual.attr, endactual.attr = dotcircle.attr, dotcircle.attr -- for tagged pdf
-            set_attribute(actual, charhead, 1)
-            set_attribute(curr, unicodeattr, 0x25CC)
-            set_attribute(dotcircle, unicodeattr, uni)
-            head = insert_before(head, curr, actual)
-            head, curr = insert_after(head, curr, dotcircle)
-            head, curr = insert_after(head, curr, endactual)
-          else
-            head = insert_before(head, curr, dotcircle)
-          end
         end
-
+      elseif id == kernid and curr.subtype ~= 1 then -- skip non-userkern
+      elseif id == whatsitid then
+        if curr.mode == 2 -- directmode
+          and my_node_props(curr).startactualtext then
+          curr, init = goto_end_actualtext(curr), nil
+        end
       else
         init = nil
+        if id == mathid then curr = end_of_math(curr) end
       end
-    elseif id == kernid and curr.subtype ~= 1 then -- skip non-userkern
-    elseif id == whatsitid then
-      if curr.mode == 2 -- directmode
-        and my_node_props(curr).startactualtext then
-        curr, init = goto_end_actualtext(curr), nil
-      end
-    else
-      init = nil
-      if id == mathid then curr = end_of_math(curr) end
+      curr = getnext(curr)
     end
-    curr = getnext(curr)
+    return head
   end
-  return head
 end
 
 -- vertical font
-
-local get_tsb_table
-do
-  local streamreader = utilities.files
-  local openfile     = streamreader.open
-  local closefile    = streamreader.close
-  local readstring   = streamreader.readstring
-  local readulong    = streamreader.readcardinal4
-  local readushort   = streamreader.readcardinal2
-  local readfixed    = streamreader.readfixed4
-  local readshort    = streamreader.readinteger2
-  local setpos       = streamreader.setposition
-
-  local function get_otf_tables (f, subfont)
-    if f then
-      local sfntversion = readstring(f,4)
-      if sfntversion == "ttcf" then
-        local ttcversion = readfixed(f)
-        local numfonts   = readulong(f)
-        if subfont >= 1 and subfont <= numfonts then
-          local offsets = {}
-          for i = 1, numfonts do
-            offsets[i] = readulong(f)
-          end
-          setpos(f, offsets[subfont])
-          sfntversion = readstring(f,4)
-        end
-      end
-      if sfntversion == "OTTO" or sfntversion == "true" or sfntversion == "\0\1\0\0" then
-        local numtables     = readushort(f)
-        local searchrange   = readushort(f)
-        local entryselector = readushort(f)
-        local rangeshift    = readushort(f)
-        local tables        = {}
-        for i= 1, numtables do
-          local tag = readstring(f,4)
-          tables[tag] = {
-            checksum = readulong(f),
-            offset   = readulong(f),
-            length   = readulong(f),
-          }
-        end
-        return tables
-      end
-    end
-  end
-
-  local function read_maxp (f, t)
-    if f and t then
-      setpos(f, t.offset)
-      return {
-        version   = readfixed(f),
-        numglyphs = readushort(f),
-      }
-    end
-  end
-
-  local function read_vhea (f, t)
-    if f and t then
-      setpos(f, t.offset)
-      return {
-        version               = readfixed(f),
-        ascent                = readshort(f),
-        descent               = readshort(f),
-        lineGap               = readshort(f),
-        advanceheightmax      = readshort(f),
-        mintopsidebearing     = readshort(f),
-        minbottomsidebrearing = readshort(f),
-        ymaxextent            = readshort(f),
-        caretsloperise        = readshort(f),
-        caretsloperun         = readshort(f),
-        caretoffset           = readshort(f),
-        reserved1             = readshort(f),
-        reserved2             = readshort(f),
-        reserved3             = readshort(f),
-        reserved4             = readshort(f),
-        metricdataformat      = readshort(f),
-        numheights            = readushort(f),
-      }
-    end
-  end
-
-  local function read_vmtx (f, t, numofheights, numofglyphs)
-    if f and t and numofheights and numofglyphs then
-      setpos(f, t.offset)
-      local vmtx = {}
-      local height = 0
-      for i = 0, numofheights-1 do
-        height = readushort(f)
-        vmtx[i] = {
-          ht  = height,
-          tsb = readshort(f),
-        }
-      end
-      for i = numofheights, numofglyphs-1 do
-        vmtx[i] = {
-          ht  = height,
-          tsb = readshort(f),
-        }
-      end
-      return vmtx
-    end
-  end
-
-  function get_tsb_table (filename, subfont)
-    local tsb_font_data = fontoptions.tsb_data or {}
-    subfont = tonumber(subfont) or 1
-    local key = ("%s::%s"):format(filename, subfont)
-    if tsb_font_data[key] then
-      return tsb_font_data[key]
-    end
-    local f = openfile(filename, true) -- true: zero-based
-    if f then
-      local vmtx
-      local tables = get_otf_tables(f, subfont)
-      if tables then
-        local vhea = read_vhea(f, tables.vhea)
-        local numofheights = vhea and vhea.numheights
-        local maxp = read_maxp(f, tables.maxp)
-        local numofglyphs = maxp and maxp.numglyphs
-        vmtx = read_vmtx(f, tables.vmtx, numofheights, numofglyphs)
-      end
-      closefile(f)
-      tsb_font_data[key] = vmtx
-      return vmtx
-    end
-  end
-end
 
 local function activate_process (cbnam, cbfun, name, first)
   if not active_processes[name] then
@@ -2162,15 +2033,6 @@ local function activate_process (cbnam, cbfun, name, first)
     active_processes[name] = cbnam
   end
 end
-
-local function fontdata_warning(activename, ...)
-  if not active_processes[activename] then
-    warning(...)
-    active_processes[activename] = true
-  end
-end
-
-local dfltfntsize = get_font_param(font.current(), "quad") or 655360
 
 local function get_hb_char_bbox (hbfont, index)
   local name = tostring(hbfont)
@@ -2212,148 +2074,288 @@ local function get_HB_variant_char (fontdata, charcode, vertical)
   end
 end
 
-local function process_vertical_font (fontdata)
-  local fullname = fontdata.fullname
+local process_vertical_font
+do
+  local get_tsb_table
+  do
+    local streamreader = utilities.files
+    local openfile     = streamreader.open
+    local closefile    = streamreader.close
+    local readstring   = streamreader.readstring
+    local readulong    = streamreader.readcardinal4
+    local readushort   = streamreader.readcardinal2
+    local readfixed    = streamreader.readfixed4
+    local readshort    = streamreader.readinteger2
+    local setpos       = streamreader.setposition
 
-  if not fontdata.hb and fontdata.type == "virtual" then
-    fontdata_warning("vitrual."..fullname,
-    "Virtual font `%s' cannot be\nused for vertical writing.", fullname)
-    return
-  end
-
-  local specification = fontdata.specification or { }
-  local tsb_tab = get_tsb_table(specification.filename or fontdata.filename, fontdata.subfont)
-
-  if not tsb_tab then
-    fontdata_warning("vertical."..fullname,
-    "Vertical metrics table (vmtx) not found in the font\n`%s'", fullname)
-    return
-  end
-
-  local extend  = (fontdata.extend  or 1000)/1000
-  local squeeze = (fontdata.squeeze or 1000)/1000
-
-  local shared       = fontdata.shared or {}
-  local descriptions = shared.rawdata and shared.rawdata.descriptions or {}
-  local parameters   = fontdata.parameters or {}
-  local scale    = fontdata.hb and fontdata.hb.scale or parameters.factor or 655.36
-  local quad     = parameters.quad or 655360
-  local xheight  = parameters.x_height and parameters.x_height / squeeze * extend or quad/2
-  local ascender = fontdata.hb and get_asc_desc(fontdata.hb) or parameters.ascender or quad*0.8
-
-  local goffset = xheight/2 * (dfltfntsize / quad) -- TODO?
-
-  -- declare shift amount of horizontal box inside vertical env.
-  if fontdata.vertcharraise then return end -- avoid multiple running
-  fontdata.vertcharraise = goffset
-
-  local charraise
-  if fontdata.hb then
-    charraise = font_opt_dim(fontdata, "charraise") or 0
-    fontdata.luatexko_charraise = charraise -- for luamplib
-  end
-
-  for i,v in pairs(fontdata.characters) do
-    local voff = goffset - (v.width or 0)/2
-    local gid  = v.index
-    local bbox = fontdata.hb and get_hb_char_bbox(fontdata.hb.shared.font, gid)
-              or descriptions[i] and descriptions[i].boundingbox or {0,0,0,0}
-    local tsb  = tsb_tab[gid] and tsb_tab[gid].tsb
-    local hoff = tsb and (bbox[4] + tsb) * scale * squeeze or ascender
-
-    if fontdata.hb then
-      v.luatexko_voff = voff
-      v.luatexko_hoff = hoff
-    else
-      v.commands = {
-        { "down", -voff },
-        { "right", hoff },
-        { "pdf", "q 0 1 -1 0 0 0 cm" },
-        { "push" },
-        { "char", i },
-        { "pop" },
-        { "pdf", "Q" },
-      }
-    end
-
-    local vw = tsb_tab[gid] and tsb_tab[gid].ht
-    vw = vw and vw * scale * squeeze or quad
-
-    -- character width shall be consistent with the width in the font program
-    local diff = vw - v.width
-    if diff and diff ~= 0 then
-      v.luatexko_diff = diff
-    end
-
-    local ht = bbox[3] * scale * extend + voff
-    local dp = bbox[1] * scale * extend + voff
-    if fontdata.hb then
-      ht, dp = ht + charraise, dp + charraise
-    end
-    v.height = ht > 0 and  ht or 0
-    v.depth  = dp < 0 and -dp or 0
-  end
-  local spacechar = char_in_font(fontdata, 32)
-  if spacechar then
-    local wd = spacechar.width or parameters.space
-    wd = wd + (spacechar.luatexko_diff or 0)
-    parameters.space         = wd
-    parameters.space_stretch = wd/2
-    parameters.space_shrink  = wd/2
-  end
-  parameters.ascender  = quad/2 + goffset
-  parameters.descender = quad/2 - goffset
-
-  local fea = shared.features or {}
-  fea.kern = nil  -- only for horizontal writing
-  fea.vert = true -- should be activated by default
-
-  if fontdata.hb then
-    local hb_features, t = specification.hb_features or { }, { }
-    for i,v in ipairs(hb_features) do
-      t[tostring(v)] = i
-    end
-    if t.kern then table.remove(hb_features, t.kern) end
-    if not t.vert then hb_features[#hb_features+1] = harfbuzz.Feature.new"vert"  end
-    -- now reset hb.space and parameters.space: see also the otfregister.features below
-    local spacewidth     = get_HB_variant_char(fontdata, 32)
-    local _, spaceheight = get_HB_variant_char(fontdata, 32, true) -- ttb
-    if spacewidth and spaceheight then
-      fontdata.hb.space = spacewidth * scale
-      fontdata.parameters.space = -spaceheight * scale
-    end
-    --
-    if t.vhal then -- harf-mode vhal feature not working properly with luatexko, so an alternative
-      table.remove(hb_features, t.vhal)
-      fea.vhal = nil
-      fea.compresspunctuations = true
-      activate_process("post_shaping_filter", process_glyph_width, "compresspunctuations")
-    end
-    return
-  end
-
-  local res = fontdata.resources or {}
-  local seq = res.sequences or {}
-  for _,v in ipairs(seq) do
-    local fea = v.features or {}
-    if fea.vhal or fea.vkrn or fea.valt or fea.vpal or fea.vert then
-      if v.type == "gpos_single" then
-        for _,vv in pairs(v.steps or {}) do
-          for _,vvv in pairs(vv.coverage or {}) do
-            if type(vvv) == "table" and #vvv == 4 then
-              vvv[1], vvv[2], vvv[3], vvv[4], vvv[5] =
-              -vvv[2], vvv[1], vvv[4], vvv[3], 0 -- last 0 to avoid multiple run
+    local function get_otf_tables (f, subfont)
+      if f then
+        local sfntversion = readstring(f,4)
+        if sfntversion == "ttcf" then
+          local ttcversion = readfixed(f)
+          local numfonts   = readulong(f)
+          if subfont >= 1 and subfont <= numfonts then
+            local offsets = {}
+            for i = 1, numfonts do
+              offsets[i] = readulong(f)
             end
+            setpos(f, offsets[subfont])
+            sfntversion = readstring(f,4)
           end
         end
-      elseif v.type == "gpos_pair" then
-        for _,vv in pairs(v.steps or {}) do
-          for _,vvv in pairs(vv.coverage or {}) do
-            for _,vvvv in pairs(vvv) do
-              for _,vvvvv in pairs(vvvv) do
-                if type(vvvvv) == "table" and #vvvvv == 4 then
-                  vvvvv[1], vvvvv[2], vvvvv[3], vvvvv[4], vvvvv[5] =
-                  -vvvvv[2], vvvvv[1], vvvvv[4], vvvvv[3], 0
+        if sfntversion == "OTTO" or sfntversion == "true" or sfntversion == "\0\1\0\0" then
+          local numtables     = readushort(f)
+          local searchrange   = readushort(f)
+          local entryselector = readushort(f)
+          local rangeshift    = readushort(f)
+          local tables        = {}
+          for i= 1, numtables do
+            local tag = readstring(f,4)
+            tables[tag] = {
+              checksum = readulong(f),
+              offset   = readulong(f),
+              length   = readulong(f),
+            }
+          end
+          return tables
+        end
+      end
+    end
+
+    local function read_maxp (f, t)
+      if f and t then
+        setpos(f, t.offset)
+        return {
+          version   = readfixed(f),
+          numglyphs = readushort(f),
+        }
+      end
+    end
+
+    local function read_vhea (f, t)
+      if f and t then
+        setpos(f, t.offset)
+        return {
+          version               = readfixed(f),
+          ascent                = readshort(f),
+          descent               = readshort(f),
+          lineGap               = readshort(f),
+          advanceheightmax      = readshort(f),
+          mintopsidebearing     = readshort(f),
+          minbottomsidebrearing = readshort(f),
+          ymaxextent            = readshort(f),
+          caretsloperise        = readshort(f),
+          caretsloperun         = readshort(f),
+          caretoffset           = readshort(f),
+          reserved1             = readshort(f),
+          reserved2             = readshort(f),
+          reserved3             = readshort(f),
+          reserved4             = readshort(f),
+          metricdataformat      = readshort(f),
+          numheights            = readushort(f),
+        }
+      end
+    end
+
+    local function read_vmtx (f, t, numofheights, numofglyphs)
+      if f and t and numofheights and numofglyphs then
+        setpos(f, t.offset)
+        local vmtx = {}
+        local height = 0
+        for i = 0, numofheights-1 do
+          height = readushort(f)
+          vmtx[i] = {
+            ht  = height,
+            tsb = readshort(f),
+          }
+        end
+        for i = numofheights, numofglyphs-1 do
+          vmtx[i] = {
+            ht  = height,
+            tsb = readshort(f),
+          }
+        end
+        return vmtx
+      end
+    end
+
+    function get_tsb_table (filename, subfont)
+      local tsb_font_data = fontoptions.tsb_data or {}
+      subfont = tonumber(subfont) or 1
+      local key = ("%s::%s"):format(filename, subfont)
+      if tsb_font_data[key] then
+        return tsb_font_data[key]
+      end
+      local f = openfile(filename, true) -- true: zero-based
+      if f then
+        local vmtx
+        local tables = get_otf_tables(f, subfont)
+        if tables then
+          local vhea = read_vhea(f, tables.vhea)
+          local numofheights = vhea and vhea.numheights
+          local maxp = read_maxp(f, tables.maxp)
+          local numofglyphs = maxp and maxp.numglyphs
+          vmtx = read_vmtx(f, tables.vmtx, numofheights, numofglyphs)
+        end
+        closefile(f)
+        tsb_font_data[key] = vmtx
+        return vmtx
+      end
+    end
+  end
+
+  local function fontdata_warning(activename, ...)
+    if not active_processes[activename] then
+      warning(...)
+      active_processes[activename] = true
+    end
+  end
+
+  local dfltfntsize = get_font_param(font.current(), "quad") or 655360
+
+  function process_vertical_font (fontdata)
+    local fullname = fontdata.fullname
+
+    if not fontdata.hb and fontdata.type == "virtual" then
+      fontdata_warning("vitrual."..fullname,
+      "Virtual font `%s' cannot be\nused for vertical writing.", fullname)
+      return
+    end
+
+    local specification = fontdata.specification or { }
+    local tsb_tab = get_tsb_table(specification.filename or fontdata.filename, fontdata.subfont)
+
+    if not tsb_tab then
+      fontdata_warning("vertical."..fullname,
+      "Vertical metrics table (vmtx) not found in the font\n`%s'", fullname)
+      return
+    end
+
+    local extend  = (fontdata.extend  or 1000)/1000
+    local squeeze = (fontdata.squeeze or 1000)/1000
+
+    local shared       = fontdata.shared or {}
+    local descriptions = shared.rawdata and shared.rawdata.descriptions or {}
+    local parameters   = fontdata.parameters or {}
+    local scale    = fontdata.hb and fontdata.hb.scale or parameters.factor or 655.36
+    local quad     = parameters.quad or 655360
+    local xheight  = parameters.x_height and parameters.x_height / squeeze * extend or quad/2
+    local ascender = fontdata.hb and get_asc_desc(fontdata.hb) or parameters.ascender or quad*0.8
+
+    local goffset = xheight/2 * (dfltfntsize / quad) -- TODO?
+
+    -- declare shift amount of horizontal box inside vertical env.
+    if fontdata.vertcharraise then return end -- avoid multiple running
+    fontdata.vertcharraise = goffset
+
+    local charraise
+    if fontdata.hb then
+      charraise = font_opt_dim(fontdata, "charraise") or 0
+      fontdata.luatexko_charraise = charraise -- for luamplib
+    end
+
+    for i,v in pairs(fontdata.characters) do
+      local voff = goffset - (v.width or 0)/2
+      local gid  = v.index
+      local bbox = fontdata.hb and get_hb_char_bbox(fontdata.hb.shared.font, gid)
+      or descriptions[i] and descriptions[i].boundingbox or {0,0,0,0}
+      local tsb  = tsb_tab[gid] and tsb_tab[gid].tsb
+      local hoff = tsb and (bbox[4] + tsb) * scale * squeeze or ascender
+
+      if fontdata.hb then
+        v.luatexko_voff = voff
+        v.luatexko_hoff = hoff
+      else
+        v.commands = {
+          { "down", -voff },
+          { "right", hoff },
+          { "pdf", "q 0 1 -1 0 0 0 cm" },
+          { "push" },
+          { "char", i },
+          { "pop" },
+          { "pdf", "Q" },
+        }
+      end
+
+      local vw = tsb_tab[gid] and tsb_tab[gid].ht
+      vw = vw and vw * scale * squeeze or quad
+
+      -- character width shall be consistent with the width in the font program
+      local diff = vw - v.width
+      if diff and diff ~= 0 then
+        v.luatexko_diff = diff
+      end
+
+      local ht = bbox[3] * scale * extend + voff
+      local dp = bbox[1] * scale * extend + voff
+      if fontdata.hb then
+        ht, dp = ht + charraise, dp + charraise
+      end
+      v.height = ht > 0 and  ht or 0
+      v.depth  = dp < 0 and -dp or 0
+    end
+    local spacechar = char_in_font(fontdata, 32)
+    if spacechar then
+      local wd = spacechar.width or parameters.space
+      wd = wd + (spacechar.luatexko_diff or 0)
+      parameters.space         = wd
+      parameters.space_stretch = wd/2
+      parameters.space_shrink  = wd/2
+    end
+    parameters.ascender  = quad/2 + goffset
+    parameters.descender = quad/2 - goffset
+
+    local fea = shared.features or {}
+    fea.kern = nil  -- only for horizontal writing
+    fea.vert = true -- should be activated by default
+
+    if fontdata.hb then
+      local hb_features, t = specification.hb_features or { }, { }
+      for i,v in ipairs(hb_features) do
+        t[tostring(v)] = i
+      end
+      if t.kern then table.remove(hb_features, t.kern) end
+      if not t.vert then hb_features[#hb_features+1] = harfbuzz.Feature.new"vert"  end
+      -- now reset hb.space and parameters.space: see also the otfregister.features below
+      local spacewidth     = get_HB_variant_char(fontdata, 32)
+      local _, spaceheight = get_HB_variant_char(fontdata, 32, true) -- ttb
+      if spacewidth and spaceheight then
+        fontdata.hb.space = spacewidth * scale
+        fontdata.parameters.space = -spaceheight * scale
+      end
+      --
+      if t.vhal then -- harf-mode vhal feature not working properly with luatexko, so an alternative
+        table.remove(hb_features, t.vhal)
+        fea.vhal = nil
+        fea.compresspunctuations = true
+        activate_process("post_shaping_filter", process_glyph_width, "compresspunctuations")
+      end
+      return
+    end
+
+    local res = fontdata.resources or {}
+    local seq = res.sequences or {}
+    for _,v in ipairs(seq) do
+      local fea = v.features or {}
+      if fea.vhal or fea.vkrn or fea.valt or fea.vpal or fea.vert then
+        if v.type == "gpos_single" then
+          for _,vv in pairs(v.steps or {}) do
+            for _,vvv in pairs(vv.coverage or {}) do
+              if type(vvv) == "table" and #vvv == 4 then
+                vvv[1], vvv[2], vvv[3], vvv[4], vvv[5] =
+                -vvv[2], vvv[1], vvv[4], vvv[3], 0 -- last 0 to avoid multiple run
+              end
+            end
+          end
+        elseif v.type == "gpos_pair" then
+          for _,vv in pairs(v.steps or {}) do
+            for _,vvv in pairs(vv.coverage or {}) do
+              for _,vvvv in pairs(vvv) do
+                for _,vvvvv in pairs(vvvv) do
+                  if type(vvvvv) == "table" and #vvvvv == 4 then
+                    vvvvv[1], vvvvv[2], vvvvv[3], vvvvv[4], vvvvv[5] =
+                    -vvvvv[2], vvvvv[1], vvvvv[4], vvvvv[3], 0
+                  end
                 end
               end
             end
@@ -2364,63 +2366,66 @@ local function process_vertical_font (fontdata)
   end
 end
 
-local iwspaceattributeid = luatexbase.attributes.g__tag_interwordspace_attr
-local function process_vertical_diff (head)
-  local curr = head
-  while curr do
-    if curr.id == glyphid
-      and fontoptions.is_vertical[curr.font]
-      and not has_attribute(curr, verticalattr) then
+local process_vertical_diff
+do
+  local iwspaceattributeid = luatexbase.attributes.g__tag_interwordspace_attr
+  function process_vertical_diff (head)
+    local curr = head
+    while curr do
+      if curr.id == glyphid
+        and fontoptions.is_vertical[curr.font]
+        and not has_attribute(curr, verticalattr) then
 
-      set_attribute(curr, verticalattr, 1)
-      local chardata = char_in_font(curr.font, curr.char)
-      local diff = chardata and chardata.luatexko_diff or 0
+        set_attribute(curr, verticalattr, 1)
+        local chardata = char_in_font(curr.font, curr.char)
+        local diff = chardata and chardata.luatexko_diff or 0
 
-      if has_harf_data(curr.font) then -- harf-mode
-        local charraise = fontoptions.charraise[curr.font] or 0
-        local yofforig  = curr.yoffset - charraise
-        diff = diff + curr.width - yofforig
-        curr.yoffset = yofforig - (chardata.luatexko_hoff or 0)
-        curr.xoffset = curr.xoffset + (chardata.luatexko_voff or 0) + charraise
-        local save = nodenew(whatsitid, save_whatsit)
-        local matrix = nodenew(whatsitid, matrix_whatsit)
-        matrix.data = "0 1 -1 0"
-        local restore = nodenew(whatsitid, restore_whatsit)
-        save.attr, matrix.attr, restore.attr = curr.attr, curr.attr, curr.attr
-        set_attribute(save, charhead, 1)
-        set_attribute(matrix, charhead, 2)
-        head = insert_before(head, curr, save)
-        head = insert_before(head, curr, matrix)
-        if curr.height ~= 0 then
-          local rule = nodenew(ruleid)
-          rule.height, rule.depth, rule.width = curr.height, 0, 0
-          rule.subtype, rule.attr = 3, curr.attr
-          set_attribute(rule, charhead, 3)
-          head = insert_before(head, curr, rule)
-        end
-        if curr.width ~= 0 then
-          local kern = nodenew(kernid)
-          kern.kern = -curr.width
-          head, curr = insert_after(head, curr, kern)
-        end
-        head, curr = insert_after(head, curr, restore)
-        if iwspaceattributeid then -- for tagging fakespace
-          local n = getnext(curr)
-          if n and n.id == glueid and n.subtype == 13 then -- spaceskip
-            set_attribute(n, iwspaceattributeid, 1)
+        if has_harf_data(curr.font) then -- harf-mode
+          local charraise = fontoptions.charraise[curr.font] or 0
+          local yofforig  = curr.yoffset - charraise
+          diff = diff + curr.width - yofforig
+          curr.yoffset = yofforig - (chardata.luatexko_hoff or 0)
+          curr.xoffset = curr.xoffset + (chardata.luatexko_voff or 0) + charraise
+          local save = nodenew(whatsitid, save_whatsit)
+          local matrix = nodenew(whatsitid, matrix_whatsit)
+          matrix.data = "0 1 -1 0"
+          local restore = nodenew(whatsitid, restore_whatsit)
+          save.attr, matrix.attr, restore.attr = curr.attr, curr.attr, curr.attr
+          set_attribute(save, charhead, 1)
+          set_attribute(matrix, charhead, 2)
+          head = insert_before(head, curr, save)
+          head = insert_before(head, curr, matrix)
+          if curr.height ~= 0 then
+            local rule = nodenew(ruleid)
+            rule.height, rule.depth, rule.width = curr.height, 0, 0
+            rule.subtype, rule.attr = 3, curr.attr
+            set_attribute(rule, charhead, 3)
+            head = insert_before(head, curr, rule)
+          end
+          if curr.width ~= 0 then
+            local kern = nodenew(kernid)
+            kern.kern = -curr.width
+            head, curr = insert_after(head, curr, kern)
+          end
+          head, curr = insert_after(head, curr, restore)
+          if iwspaceattributeid then -- for tagging fakespace
+            local n = getnext(curr)
+            if n and n.id == glueid and n.subtype == 13 then -- spaceskip
+              set_attribute(n, iwspaceattributeid, 1)
+            end
           end
         end
-      end
 
-      if tex.sp(diff) ~= 0 then
-        local k = nodenew(kernid)
-        k.kern = diff
-        head, curr = insert_after(head, curr, k)
+        if tex.sp(diff) ~= 0 then
+          local k = nodenew(kernid)
+          k.kern = diff
+          head, curr = insert_after(head, curr, k)
+        end
       end
+      curr = getnext(curr)
     end
-    curr = getnext(curr)
+    return head
   end
-  return head
 end
 
 function luatexko.gethorizboxmoveright ()
@@ -2465,50 +2470,58 @@ end
 
 -- fake italic correctioin
 
-local function process_fake_slant_corr (head) -- for font fallback
-  local curr = head
-  while curr do
-    local id = curr.id
-    if id == kernid then
-      if curr.subtype == 3 and curr.kern == 0 then -- italcorr
-        local p, t = getprev(curr), {}
-        while p do
-          if p.id == glyphid and not fontoptions.is_vertical[p.font] then
-            -- harf font: break before reordered tone mark
-            if harf_reordered_tonemark(p) then
-              break
-            end
+local process_fake_slant_corr
+do
+  local function harf_reordered_tonemark (curr)
+    if has_harf_data(curr.font) then
+      local props = getproperty(curr) or {}
+      local actualtext = props.luaotfload_startactualtext
+      return actualtext and actualtext:find"302[EF]$"
+    end
+  end
+  function process_fake_slant_corr (head) -- for font fallback
+    local curr = head
+    while curr do
+      local id = curr.id
+      if id == kernid then
+        if curr.subtype == 3 and curr.kern == 0 then -- italcorr
+          local p, t = getprev(curr), {}
+          while p do
+            if p.id == glyphid and not fontoptions.is_vertical[p.font] then
+              -- harf font: break before reordered tone mark
+              if harf_reordered_tonemark(p) then break end
 
-            local slant = fontoptions.slantvalue[p.font]
-            if slant and slant > 0 then
-              t[#t+1] = char_in_font(p.font, p.char).italic or 0
-            end
+              local slant = fontoptions.slantvalue[p.font]
+              if slant and slant > 0 then
+                t[#t+1] = char_in_font(p.font, p.char).italic or 0
+              end
 
-            local c = has_attribute(p, unicodeattr) or p.char
-            if is_jungsong(c) or is_jongsong(c) or hangul_tonemark[c] then
+              local c = has_attribute(p, unicodeattr) or p.char
+              if is_jungsong(c) or is_jongsong(c) or hangul_tonemark[c] then
+              else
+                break
+              end
+            elseif p.id == whatsitid then
             else
               break
             end
-          elseif p.id == whatsitid then
-          else
-            break
+            p = getprev(p)
           end
-          p = getprev(p)
-        end
 
-        if p.id == glyphid and #t > 0 then
-          local italic = math.max(table.unpack(t))
-          if italic > 0 then
-            curr.kern = italic
+          if p.id == glyphid and #t > 0 then
+            local italic = math.max(table.unpack(t))
+            if italic > 0 then
+              curr.kern = italic
+            end
           end
         end
+      elseif id == mathid then
+        curr = end_of_math(curr)
       end
-    elseif id == mathid then
-      curr = end_of_math(curr)
+      curr = getnext(curr)
     end
-    curr = getnext(curr)
+    return head
   end
-  return head
 end
 
 local function process_fake_slant_font (fontdata, fsl)
@@ -2824,39 +2837,41 @@ otfregister {
   },
 }
 
-local auxiliary_procs = {
-  dotemph = {
-    post_linebreak_filter = process_dotemph,
-    hpack_filter          = process_dotemph,
-  },
-  uline   = {
-    post_linebreak_filter = function(h) return process_uline(h) end,
-    hpack_filter          = function(h) return process_uline(h) end,
-  },
-  ruby    = {
-    pre_linebreak_filter = process_ruby_pre_linebreak,
-    hpack_filter         = process_ruby_pre_linebreak,
-  },
-  autojosa = {
-    luatexko_prelinebreak_first = process_josa,
-  },
-  reorderTM = {
-    luatexko_prelinebreak_third = process_reorder_tonemarks,
-  },
-}
+do
+  local auxiliary_procs = {
+    dotemph = {
+      post_linebreak_filter = process_dotemph,
+      hpack_filter          = process_dotemph,
+    },
+    uline   = {
+      post_linebreak_filter = function(h) return process_uline(h) end,
+      hpack_filter          = function(h) return process_uline(h) end,
+    },
+    ruby    = {
+      pre_linebreak_filter = process_ruby_pre_linebreak,
+      hpack_filter         = process_ruby_pre_linebreak,
+    },
+    autojosa = {
+      luatexko_prelinebreak_first = process_josa,
+    },
+    reorderTM = {
+      luatexko_prelinebreak_third = process_reorder_tonemarks,
+    },
+  }
 
--- dotemph 등을 수식 한글에서도 작동하게 하려면
--- post_mlist_to_hlist_filter 콜백을 이용해야 한다.
+  -- dotemph 등을 수식 한글에서도 작동하게 하려면
+  -- post_mlist_to_hlist_filter 콜백을 이용해야 한다.
 
-function luatexko.activate (name)
-  for cbnam, cbfun in pairs( auxiliary_procs[name] ) do
-    local myname = "luatexko." .. cbnam .. "." .. name
-    if cbnam == "hpack_filter" then
-      luatexbase.declare_callback_rule(cbnam, myname, "before", "luaotfload.color_handler")
+  function luatexko.activate (name)
+    for cbnam, cbfun in pairs( auxiliary_procs[name] ) do
+      local myname = "luatexko." .. cbnam .. "." .. name
+      if cbnam == "hpack_filter" then
+        luatexbase.declare_callback_rule(cbnam, myname, "before", "luaotfload.color_handler")
+      end
+      luatexbase.add_to_callback(cbnam, cbfun, myname)
     end
-    luatexbase.add_to_callback(cbnam, cbfun, myname)
+    active_processes[name] = true
   end
-  active_processes[name] = true
 end
 
 -- aux functions
