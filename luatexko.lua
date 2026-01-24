@@ -88,8 +88,6 @@ local charhead         = luatexbase.new_attribute"luatexko_char_head_attr"
 local verticalattr  -- set later at otfregister
 local charraiseattr -- set later at otfregister
 
-local stretch_f = 5/100 -- should be consistent for ruby
-
 local function get_font_data (fontid)
   return fontgetfont(fontid) or font.fonts[fontid] or {}
 end
@@ -247,6 +245,14 @@ local fontoptions = {
     end
   end }),
 
+  intercharpenalty = setmetatable( {}, { __index = function(t, fid)
+    if fid then
+      local pena = option_in_font(fid, "intercharpenalty") or false
+      t[fid] = pena
+      return pena
+    end
+  end }),
+
   interhangul = setmetatable( {}, { __index = function(t, fid)
     if fid then
       local dim = font_opt_dim(fid, "interhangul") or false
@@ -362,16 +368,6 @@ local function harf_actual_literal (curr)
     local data = curr.data
     return data == "EMC" and 2 or data and data:find"BDC$" and 1 or false
   end
-end
-
-local function my_node_props (n)
-  local t = getproperty(n)
-  if not t then
-    t = {}
-    setproperty(n, t)
-  end
-  t.luatexko = t.luatexko or {}
-  return t.luatexko
 end
 
 local function is_hanja (c)
@@ -555,28 +551,31 @@ local charclass = setmetatable({
   [0xFF1F] = 6, -- ？
 }, { __index = function() return 0 end })
 
-local special_classes = {
-  [0] = charclass,
-  setmetatable({  -- vert
-    [0xFF1A] = 7, [0xFF1B] = 7,  -- 0xFE13, 0xFE14
-  }, { __index = charclass }),
-  setmetatable({  -- SC
-    [0xFF01] = 4, [0xFF1A] = 2, [0xFF1B] = 2, [0xFF1F] = 4,
-  }, { __index = charclass }),
-  setmetatable({  -- TC
-    [0x3001] = 3, [0x3002] = 3, [0xFF0C] = 3, [0xFF0E] = 3,
-  }, { __index = charclass }),
-  setmetatable({  -- TC vert
-    [0x3001] = 3, [0x3002] = 3, [0xFF0C] = 3, [0xFF0E] = 3,
-    [0xFF1A] = 7, [0xFF1B] = 7,  -- 0xFE13, 0xFE14
-  }, { __index = charclass }),
-  setmetatable({  -- JP vert
-    [0xFF1B] = 7, -- 0xFE14
-  }, { __index = charclass }),
-}
+local get_char_class
+do
+  local special_classes = {
+    [0] = charclass,
+    setmetatable({  -- vert
+      [0xFF1A] = 7, [0xFF1B] = 7,  -- 0xFE13, 0xFE14
+    }, { __index = charclass }),
+    setmetatable({  -- SC
+      [0xFF01] = 4, [0xFF1A] = 2, [0xFF1B] = 2, [0xFF1F] = 4,
+    }, { __index = charclass }),
+    setmetatable({  -- TC
+      [0x3001] = 3, [0x3002] = 3, [0xFF0C] = 3, [0xFF0E] = 3,
+    }, { __index = charclass }),
+    setmetatable({  -- TC vert
+      [0x3001] = 3, [0x3002] = 3, [0xFF0C] = 3, [0xFF0E] = 3,
+      [0xFF1A] = 7, [0xFF1B] = 7,  -- 0xFE13, 0xFE14
+    }, { __index = charclass }),
+    setmetatable({  -- JP vert
+      [0xFF1B] = 7, -- 0xFE14
+    }, { __index = charclass }),
+  }
 
-local function get_char_class (c, classic)
-  return special_classes[classic or 0][c]
+  function get_char_class (c, classic)
+    return special_classes[classic or 0][c]
+  end
 end
 
 local breakable_after = setmetatable({
@@ -939,6 +938,7 @@ end
 
 local insert_glue_before
 do
+  local stretch_f = 5/100 -- should be consistent for ruby
   local function char_orphan_penalty (curr, par)
     if par then
       local nn = getnext(curr)
@@ -969,6 +969,7 @@ do
       pn.penalty = not br and 10000
       or type(brb) == "number" and brb
       or char_orphan_penalty(curr, par)
+      or fid and fontoptions.intercharpenalty[fid]
       or 50
       head = insert_before(head, curr, pn)
     end
@@ -1900,6 +1901,15 @@ do
       local low  = uni %  0x400 + 0xDC00
       return ("%04X%04X"):format(high, low)
     end
+  end
+  local function my_node_props (n)
+    local t = getproperty(n)
+    if not t then
+      t = {}
+      setproperty(n, t)
+    end
+    t.luatexko = t.luatexko or {}
+    return t.luatexko
   end
   local function pdfliteral_direct_actual (syllable)
     local data
