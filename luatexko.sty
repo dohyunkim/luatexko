@@ -33,7 +33,6 @@
 \newattribute\luatexkorubyattr \chardef\luatexkorubyalloc\allocationnumber
 \newattribute\luatexkohangulbyhangulattr
 \newattribute\luatexkohanjabyhanjaattr
-\newattribute\luatexkoinhibitglueattr
 \directlua{ require"luatexko" }
 % classics
 % 0: horizontal KO, JP
@@ -68,9 +67,6 @@
   \fi
   }
 \protected\def\typesetmodern{\unsetattribute\luatexkoclassicattr}
-\protected\def\inhibitglue{\begingroup\luatexkoinhibitglueattr\@ne
-  \ifnum\lastnodetype=13\else \penalty 50\fi
-  \hskip\z@ plus.025em minus.015em\endgroup}
 \protected\def\japanese{% 0, 5
   \chardef\luatexkolangCJK=\@ne
   \ifcase\luatexkoclassicattr

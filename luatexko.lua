@@ -82,7 +82,7 @@ local dotemphattr      = luatexbase.attributes.luatexkodotemphattr
 local rubyattr         = luatexbase.attributes.luatexkorubyattr
 local hangulbyhangulattr = luatexbase.attributes.luatexkohangulbyhangulattr
 local hanjabyhanjaattr   = luatexbase.attributes.luatexkohanjabyhanjaattr
-local inhibitglueattr  = luatexbase.attributes.luatexkoinhibitglueattr
+local inhibitglueattr  = luatexbase.new_attribute"luatexko_inhibitglue_attr"
 local unicodeattr      = luatexbase.new_attribute"luatexko_unicode_attr"
 local charhead         = luatexbase.new_attribute"luatexko_char_head_attr"
 local verticalattr  -- set later at otfregister
@@ -2809,7 +2809,7 @@ otfregister {
           for _, ii in ipairs{i, get_HB_variant_char(fontdata,i)} do
             local chr = chrs[ii]
             if chr then
-              local wdq = chr.width/quad*1000
+              local wdq = (chr.width + (chr.luatexko_diff or 0))/quad*1000
               if l and l ~= 0 then chr.left_protruding  = wdq*l*left*factor end
               if r and r ~= 0 then chr.right_protruding = wdq*r*right*factor end
             end
@@ -2950,4 +2950,39 @@ lua.get_functions_table()[xxruby_index] = function ()
   tex.sprint(-2, t)
 end
 token.set_lua("xxruby", xxruby_index, "global", "protected")
+
+--[[
+\protected\def\inhibitglue{\begingroup\luatexkoinhibitglueattr\@ne
+  \ifnum\lastnodetype=13\else \penalty 50\fi
+  \hskip\z@ plus.025em minus.015em\endgroup}
+--]]
+local inhibitglue_index = luatexbase.new_luafunction"luatexko_inhibitglue_func"
+token.set_lua("inhibitglue", inhibitglue_index, "global", "protected")
+lua.get_functions_table()[inhibitglue_index] = function ()
+  if tex.lastnodetype ~= 13 then -- penalty node
+    local pena = 50
+    for _, v in ipairs{
+      font.current(),
+      tex.attribute.luatexkohangulfontattr,
+      tex.attribute.luatexkohanjafontattr,
+      tex.attribute.luatexkofallbackfontattr,
+    }
+    do
+      local icp = fontoptions.intercharpenalty[v]
+      if icp then
+        pena = icp; break
+      end
+    end
+    local p = nodenew(penaltyid)
+    p.penalty = pena
+    set_attribute(p, inhibitglueattr, 1)
+    nodewrite(p)
+  end
+
+  local g = nodenew(glueid)
+  local em = get_font_param(font.current(), "quad")
+  setglue(g, 0, 0.025*em, 0.015*em)
+  set_attribute(g, inhibitglueattr, 1)
+  nodewrite(g)
+end
 
