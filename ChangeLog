@@ -1,3 +1,11 @@
+2026-01-26	Dohyun Kim <nomosnomos at gmail com>
+
+	Version 5.5
+
+	* luatexko.{sty,lua}:
+	- new font option 'InterCharPenalty'
+	- revise \inhibitglue using token.set_lua
+
 2025-12-19	Dohyun Kim <nomosnomos at gmail com>
 
 	Version 5.4

@@ -1,6 +1,6 @@
 -- luatexko.lua
 --
--- Copyright (c) 2013-2025 Dohyun Kim <nomosnomos at gmail com>
+-- Copyright (c) 2013-2026 Dohyun Kim <nomosnomos at gmail com>
 --                         Soojin Nam <jsunam at gmail com>
 --
 -- This work may be distributed and/or modified under the
@@ -13,8 +13,8 @@
 
 luatexbase.provides_module {
   name        = 'luatexko',
-  date        = '2025/12/19',
-  version     = '5.4',
+  date        = '2026/01/26',
+  version     = '5.5',
   description = 'typesetting Korean with LuaTeX',
   author      = 'Dohyun Kim, Soojin Nam',
   license     = 'LPPL v1.3+',
@@ -87,6 +87,8 @@ local unicodeattr      = luatexbase.new_attribute"luatexko_unicode_attr"
 local charhead         = luatexbase.new_attribute"luatexko_char_head_attr"
 local verticalattr  -- set later at otfregister
 local charraiseattr -- set later at otfregister
+
+local stretch_f = 5/100 -- should be consistent for ruby
 
 local function get_font_data (fontid)
   return fontgetfont(fontid) or font.fonts[fontid] or {}
@@ -936,9 +938,9 @@ local function hbox_char_font (box, init, deep)
   end
 end
 
+local iwspaceOffattributeid = luatexbase.attributes.g__tag_interwordspaceOff_attr
 local insert_glue_before
 do
-  local stretch_f = 5/100 -- should be consistent for ruby
   local function char_orphan_penalty (curr, par)
     if par then
       local nn = getnext(curr)
@@ -958,20 +960,22 @@ do
       end
     end
   end
-  local iwspaceOffattributeid = luatexbase.attributes.g__tag_interwordspaceOff_attr
   function insert_glue_before (head, curr, par, br, brb, classic, ict, dim, fid)
     local prev = getprev(curr)
 
     if prev and prev.penalty then
       -- repect user's penalty
     else
-      local pn = nodenew(penaltyid)
-      pn.penalty = not br and 10000
-      or type(brb) == "number" and brb
-      or char_orphan_penalty(curr, par)
-      or fid and fontoptions.intercharpenalty[fid]
-      or 50
-      head = insert_before(head, curr, pn)
+      local pena = not br and 10000
+        or type(brb) == "number" and brb
+        or char_orphan_penalty(curr, par)
+        or fid and fontoptions.intercharpenalty[fid]
+        or 50
+      if not fid or pena ~= 0 then
+        local pn = nodenew(penaltyid)
+        pn.penalty = pena
+        head = insert_before(head, curr, pn)
+      end
     end
     if not fid then return head end -- penalty only for non-glyph box + cjk
 
@@ -2755,12 +2759,10 @@ otfregister {
       end
     end,
     plug = function(fontdata, _, value)
-      ---[[ adapt to luaotfload
       local setup = fonts.expansions.setups[value] or {}
       fontdata.stretch = fontdata.stretch or (setup.stretch or 2)*10
       fontdata.shrink  = fontdata.shrink  or (setup.shrink  or 2)*10
       fontdata.step    = fontdata.step    or (setup.step    or .5)*10
-      --]]
       if tex.adjustspacing == 0 then
         tex.set("global", "adjustspacing", 2)
       end
@@ -2951,11 +2953,6 @@ lua.get_functions_table()[xxruby_index] = function ()
 end
 token.set_lua("xxruby", xxruby_index, "global", "protected")
 
---[[
-\protected\def\inhibitglue{\begingroup\luatexkoinhibitglueattr\@ne
-  \ifnum\lastnodetype=13\else \penalty 50\fi
-  \hskip\z@ plus.025em minus.015em\endgroup}
---]]
 local inhibitglue_index = luatexbase.new_luafunction"luatexko_inhibitglue_func"
 token.set_lua("inhibitglue", inhibitglue_index, "global", "protected")
 lua.get_functions_table()[inhibitglue_index] = function ()
@@ -2973,15 +2970,32 @@ lua.get_functions_table()[inhibitglue_index] = function ()
         pena = icp; break
       end
     end
-    local p = nodenew(penaltyid)
-    p.penalty = pena
-    set_attribute(p, inhibitglueattr, 1)
-    nodewrite(p)
+    if pena ~= 0 then
+      local p = nodenew(penaltyid)
+      p.penalty = pena
+      set_attribute(p, inhibitglueattr, 1)
+      nodewrite(p)
+    end
   end
 
+  local str = stretch_f * fontoptions.en_size[font.current()]
+  for _, v in ipairs{
+    font.current(),
+    tex.attribute.luatexkohangulfontattr,
+    tex.attribute.luatexkohanjafontattr,
+    tex.attribute.luatexkofallbackfontattr,
+  }
+  do
+    local ics = fontoptions.intercharstretch[v]
+    if ics then
+      str = ics; break
+    end
+  end
   local g = nodenew(glueid)
-  local em = get_font_param(font.current(), "quad")
-  setglue(g, 0, 0.025*em, 0.015*em)
+  setglue(g, 0, str, str*0.6)
+  if iwspaceOffattributeid then
+    set_attribute(g, iwspaceOffattributeid, 1)
+  end
   set_attribute(g, inhibitglueattr, 1)
   nodewrite(g)
 end

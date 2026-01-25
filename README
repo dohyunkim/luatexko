@@ -1,4 +1,4 @@
-LuaTeX-ko Package version 5.4 (2025/12/19)
+LuaTeX-ko Package version 5.5 (2026/01/26)
 ===========================================
 
 This is a Lua(La)TeX macro package that supports typesetting Korean
@@ -127,6 +127,9 @@ Set spacing between CJK characters.
 
     [InterCharStretch=<dimen>]
 Set stretching of the glue between CJK characters.
+
+    [InterCharPenalty=<number>]
+Set the penalty (default: 50) inserted between CJK characters.
 
     [CharRaise=<dimen>]
 Raise CJK characters by <dimen>.

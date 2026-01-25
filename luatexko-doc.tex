@@ -204,15 +204,15 @@
 \makeatother
 \def\ldots{|...|}
 
-\widowpenalty5000
-\clubpenalty5000
+\widowpenalty=0
+\clubpenalty=0
 
 \begin{document}
 \title{\luatexko\ 간단 매뉴얼}
 \author{\normalsize Dohyun Kim \small |<nomosnomos at gmail com>| \and
         \normalsize Soojin Nam \small |<jsunam at gmail com>| \and
         \normalsize <\url{http://github.com/dohyunkim/luatexko}>}
-\date{Version 5.4\quad 2025/12/19}
+\date{Version 5.5\quad 2026/01/26}
 \maketitle
 
 For a summary introduction in English, please see |README| file.
@@ -435,6 +435,17 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
     플레인텍에서는 |intercharstretch=|\meta{dimen}. }
 \begin{verbatim}
     [InterCharStretch=0.5pt]
+\end{verbatim}
+
+\item[InterCharPenalty] \pkgkwd*{InterCharPenalty}%
+  CJK 글자간 가변공백\hparen{글루} 직전에 삽입되는 penalty의 값을 지시한다.%
+  \footnote{플레인텍에서는 |intercharpenalty=|\meta{number}. }
+  |-10000|부터 |10000|까지의 값을 줄 수 있는데,
+  양수값은 글자간 개행을 억제하고 음수값은 글자간 개행을 권장한다.
+  기본값은 |50|으로, 글자간 개행을 조금 억제하여 단어간 개행을 조금 선호하는 결과를 낳는다.
+  옵션값을 |0|으로 주면 이러한 차이가 사라져 글자간 개행이 더 빈번하게 일어난다.
+\begin{verbatim}
+    [InterCharPenalty=0]
 \end{verbatim}
 
 \item[CharRaise] \pkgkwd*{CharRaise}%
@@ -884,8 +895,7 @@ ulem 패키지가 \luatexko와 궁합이 맞지 않아\hparen{줄바꿈에 문�
 
 \pkgkwd{\luatexhangulnormalize}|=1|이라 지시하면 첫가끝 자모를 완성형 음절로,
 |2|라면 완성형 음절을 첫가끝 자모로 인코딩 변환한다. |0|이 할당되면
-인코딩 변환 기능이 꺼진다. \XeTeX의 \cs{XeTeXinputnormalization} 명령과
-유사하다.%
+인코딩 변환 기능이 꺼진다.%
 \footnote{%
   변환기능은 |lua-uni-algos| 패키지를 이용하므로
   이 패키지를 설치해두어야 한다. }\,%
@@ -893,6 +903,7 @@ ulem 패키지가 \luatexko와 궁합이 맞지 않아\hparen{줄바꿈에 문�
   HarfBuzz 모드에서는
   첫가끝 자모로의 입력변환이 효과를 못볼 수도 있으니 유의할 것.
 }
+\XeTeX의 \cs{XeTeXinputnormalization} 명령과 유사하다.
 
 \section{UHC 입력 인코딩}\label{sec:uhcencoding}
 
@@ -910,6 +921,8 @@ ulem 패키지가 \luatexko와 궁합이 맞지 않아\hparen{줄바꿈에 문�
 \section*{주요 변경 이력}
 
 \begin{itemize}\linespread{1.1}\small
+  \item[v5.5] ------
+  \item \hyperref[sec:fontoption]{글꼴 옵션 |InterCharPenalty| 추가}
   \item[v5.0] ------
   \item \hyperref[sec:ruby]{\cs{xxruby} 명령 개선} \hparen{|lua-uni-algos| 패키지 설치 필요}
   \item[v4.9] ------
