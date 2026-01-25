@@ -34,7 +34,6 @@ local has_glyph       = node.has_glyph
 local insert_after    = node.insert_after
 local insert_before   = node.insert_before
 local nodecopy        = node.copy
-local nodecount       = node.count
 local nodefree        = node.free
 local nodenew         = node.new
 local noderemove      = node.remove
@@ -1725,8 +1724,7 @@ do
     if start and curr then
       curr = getnext(curr) or curr
 
-      local len = parent and rangedimensions(parent, start, curr)
-      or  dimensions(start, curr)
+      local len = parent and rangedimensions(parent, start, curr) or dimensions(start, curr)
       if len and len ~= 0 then
         local g = nodenew(glueid)
         setglue(g, len)
@@ -2272,7 +2270,7 @@ do
       local voff = goffset - (v.width or 0)/2
       local gid  = v.index
       local bbox = fontdata.hb and get_hb_char_bbox(fontdata.hb.shared.font, gid)
-      or descriptions[i] and descriptions[i].boundingbox or {0,0,0,0}
+            or descriptions[i] and descriptions[i].boundingbox or {0,0,0,0}
       local tsb  = tsb_tab[gid] and tsb_tab[gid].tsb
       local hoff = tsb and (bbox[4] + tsb) * scale * squeeze or ascender
 
@@ -2956,43 +2954,32 @@ token.set_lua("xxruby", xxruby_index, "global", "protected")
 local inhibitglue_index = luatexbase.new_luafunction"luatexko_inhibitglue_func"
 token.set_lua("inhibitglue", inhibitglue_index, "global", "protected")
 lua.get_functions_table()[inhibitglue_index] = function ()
-  if tex.lastnodetype ~= 13 then -- penalty node
-    local pena = 50
-    for _, v in ipairs{
-      font.current(),
-      tex.attribute.luatexkohangulfontattr,
-      tex.attribute.luatexkohanjafontattr,
-      tex.attribute.luatexkofallbackfontattr,
-    }
-    do
-      local icp = fontoptions.intercharpenalty[v]
-      if icp then
-        pena = icp; break
-      end
-    end
-    if pena ~= 0 then
-      local p = nodenew(penaltyid)
-      p.penalty = pena
-      set_attribute(p, inhibitglueattr, 1)
-      nodewrite(p)
-    end
-  end
-
-  local str = stretch_f * fontoptions.en_size[font.current()]
-  for _, v in ipairs{
+  local icp, ics
+  for _, v in ipairs {
     font.current(),
     tex.attribute.luatexkohangulfontattr,
     tex.attribute.luatexkohanjafontattr,
     tex.attribute.luatexkofallbackfontattr,
   }
   do
-    local ics = fontoptions.intercharstretch[v]
-    if ics then
-      str = ics; break
+    icp = icp or fontoptions.intercharpenalty[v]
+    ics = ics or fontoptions.intercharstretch[v]
+    if icp and ics then break end
+  end
+
+  if tex.lastnodetype ~= 13 then -- penalty node
+    icp = icp or 50
+    if icp ~= 0 then
+      local p = nodenew(penaltyid)
+      p.penalty = icp
+      set_attribute(p, inhibitglueattr, 1)
+      nodewrite(p)
     end
   end
+
+  ics = ics or stretch_f * fontoptions.en_size[font.current()]
   local g = nodenew(glueid)
-  setglue(g, 0, str, str*0.6)
+  setglue(g, 0, ics, ics*0.6)
   if iwspaceOffattributeid then
     set_attribute(g, iwspaceOffattributeid, 1)
   end
