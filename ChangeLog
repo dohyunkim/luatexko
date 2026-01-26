@@ -6,6 +6,9 @@
 	- new font option 'InterCharPenalty'
 	- revise \inhibitglue using token.set_lua
 
+	* luatexko.lua:
+	- fix protrusion value for harf-mode vertical writing
+
 2025-12-19	Dohyun Kim <nomosnomos at gmail com>
 
 	Version 5.4

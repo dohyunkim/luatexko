@@ -1724,7 +1724,8 @@ do
     if start and curr then
       curr = getnext(curr) or curr
 
-      local len = parent and rangedimensions(parent, start, curr) or dimensions(start, curr)
+      local len = parent and rangedimensions(parent, start, curr)
+                         or  dimensions(start, curr)
       if len and len ~= 0 then
         local g = nodenew(glueid)
         setglue(g, len)
@@ -2501,7 +2502,9 @@ do
           while p do
             if p.id == glyphid and not fontoptions.is_vertical[p.font] then
               -- harf font: break before reordered tone mark
-              if harf_reordered_tonemark(p) then break end
+              if harf_reordered_tonemark(p) then
+                break
+              end
 
               local slant = fontoptions.slantvalue[p.font]
               if slant and slant > 0 then
