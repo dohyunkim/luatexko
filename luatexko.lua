@@ -150,19 +150,12 @@ local function has_harf_data (f)
 end
 
 local harfbuzz = luaotfload.harfbuzz
-local os2tag = harfbuzz and harfbuzz.Tag.new"OS/2"
-local function get_asc_desc (hb) -- fontdata.hb
-  if hb and os2tag then
-    local hbface = hb.shared.face
-    local tags = hbface:get_table_tags()
-    local hasos2 = false
-    for _,v in ipairs(tags) do
-      if v == os2tag then
-        hasos2 = true
-        break
-      end
-    end
-    if hasos2 then
+local get_asc_desc
+do
+  local os2tag = harfbuzz and harfbuzz.Tag.new"OS/2"
+  function get_asc_desc (hb) -- fontdata.hb
+    if hb and os2tag then
+      local hbface = hb.shared.face
       local os2 = hbface:get_table(os2tag)
       local length = os2:get_length()
       if length > 69 then -- sTypoAscender (int16)
@@ -2192,27 +2185,56 @@ do
       end
     end
 
-    function get_tsb_table (filename, subfont)
+    local vmtxtag = harfbuzz and harfbuzz.Tag.new"vmtx"
+    local vheatag = harfbuzz and harfbuzz.Tag.new"vhea"
+    function get_tsb_table (fontdata)
       local tsb_font_data = fontoptions.tsb_data or {}
-      subfont = tonumber(subfont) or 1
-      local key = ("%s::%s"):format(filename, subfont)
-      if tsb_font_data[key] then
-        return tsb_font_data[key]
-      end
-      local f = openfile(filename, true) -- true: zero-based
-      if f then
-        local vmtx
-        local tables = get_otf_tables(f, subfont)
-        if tables then
-          local vhea = read_vhea(f, tables.vhea)
-          local numofheights = vhea and vhea.numheights
-          local maxp = read_maxp(f, tables.maxp)
-          local numofglyphs = maxp and maxp.numglyphs
-          vmtx = read_vmtx(f, tables.vmtx, numofheights, numofglyphs)
+      if fontdata.hb then
+        local hbface = fontdata.hb.shared.face
+        local key = tostring(hbface)
+        if tsb_font_data[key] then
+          return tsb_font_data[key]
         end
-        closefile(f)
-        tsb_font_data[key] = vmtx
-        return vmtx
+        local vmtx_b = hbface:get_table(vmtxtag)
+        local vhea_b = hbface:get_table(vheatag)
+        if vmtx_b:get_length() > 0 and vhea_b:get_length() > 35 then
+          local numofglyphs = hbface:get_glyph_count()
+          local data = vhea_b:get_data()
+          local numofheights = (">H"):unpack(data, 35)
+          data = vmtx_b:get_data()
+          local vmtx, pos, ht, tsb = { }, 1
+          for i = 0, numofglyphs-1 do
+            if i < numofheights then
+              ht, pos = (">H"):unpack(data, pos)
+            end
+            tsb, pos = (">h"):unpack(data, pos)
+            vmtx[i] = { ht = ht, tsb = tsb }
+          end
+          tsb_font_data[key] = vmtx
+          return vmtx
+        end
+      else
+        local filename = fontdata.specification.filename or fontdata.filename
+        local subfont = tonumber(fontdata.subfont) or 1
+        local key = ("%s::%s"):format(filename, subfont)
+        if tsb_font_data[key] then
+          return tsb_font_data[key]
+        end
+        local f = openfile(filename, true) -- true: zero-based
+        if f then
+          local vmtx
+          local tables = get_otf_tables(f, subfont)
+          if tables then
+            local vhea = read_vhea(f, tables.vhea)
+            local numofheights = vhea and vhea.numheights
+            local maxp = read_maxp(f, tables.maxp)
+            local numofglyphs = maxp and maxp.numglyphs
+            vmtx = read_vmtx(f, tables.vmtx, numofheights, numofglyphs)
+          end
+          closefile(f)
+          tsb_font_data[key] = vmtx
+          return vmtx
+        end
       end
     end
   end
@@ -2235,8 +2257,7 @@ do
       return
     end
 
-    local specification = fontdata.specification or { }
-    local tsb_tab = get_tsb_table(specification.filename or fontdata.filename, fontdata.subfont)
+    local tsb_tab = get_tsb_table(fontdata)
 
     if not tsb_tab then
       fontdata_warning("vertical."..fullname,
@@ -2323,7 +2344,7 @@ do
     fea.vert = true -- should be activated by default
 
     if fontdata.hb then
-      local hb_features, t = specification.hb_features or { }, { }
+      local hb_features, t = fontdata.specification.hb_features or { }, { }
       for i,v in ipairs(hb_features) do
         t[tostring(v)] = i
       end

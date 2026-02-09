@@ -204,9 +204,6 @@
 \makeatother
 \def\ldots{|...|}
 
-\widowpenalty=0
-\clubpenalty=0
-
 \begin{document}
 \title{\luatexko\ 간단 매뉴얼}
 \author{\normalsize Dohyun Kim \small |<nomosnomos at gmail com>| \and
@@ -242,14 +239,14 @@ CP949 인코딩에 관해서는 제\ref{sec:uhcencoding}절 참조.
 \luatexko를 부르면 fontspec 패키지도 자동 불러온다. 글꼴 설정은
 fontspec 문서 참조.
 
-한국어 글꼴을 위해 새로 마련한 명령은 다음과 같다.%
-\pkgkwd*{\setmainhangulfont}%
-\pkgkwd*{\setsanshangulfont}%
-\pkgkwd*{\setmonohangulfont}%
-\pkgkwd*{\newhangulfontfamily}%
-\pkgkwd*{\newhangulfontface}%
-\pkgkwd*{\addhangulfontfeature}%
-\pkgkwd*{\hangulfontspec}
+한국어 글꼴을 위해 새로 마련한 명령은 다음과 같다.
+%\pkgkwd*{\setmainhangulfont}%
+%\pkgkwd*{\setsanshangulfont}%
+%\pkgkwd*{\setmonohangulfont}%
+%\pkgkwd*{\newhangulfontfamily}%
+%\pkgkwd*{\newhangulfontface}%
+%\pkgkwd*{\addhangulfontfeature}%
+%\pkgkwd*{\hangulfontspec}
 첫 두 줄, 즉 main/sans 글꼴들에는 |Ligatures=TeX| 옵션이 자동으로 주어진다.%
 \footnote{%
   \cs{adhochangulfont} \cs{adhochanjafont} \cs{addhocfallbackfont}는
@@ -396,50 +393,51 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
       \parindent1em
       \hunmintxt
   }}
-  \caption{옛한글 조판 보기}\label{fig:yethangul}
+  \caption{옛한글 조판 보기. Noto Sans CJK KR 폰트에
+    |Script=Hangul|과 |Language=Korean| 옵션을 주었다.
+    비록 이름에 KR이 들어있지만, |Script|와 |Language| 옵션만 적절히 지시한다면
+    이 폰트는 모든 CJK 언어를 잘 지원한다.}\label{fig:yethangul}
 \end{figure}
 
 \begin{description}
-  \item[InterHangul] \pkgkwd*{InterHangul}%
-    {\addhangulfontfeature{InterHangul=.5ex}한글 글자
-    사이의 자간}.  아래는 $-0.04$em 만큼 한글 자간을 지시한다.%
-    \footnote{%
-      플레인텍에서는 |interhangul=|\meta{dimen}. }
+  \parskip=2pt plus 1pt minus 1pt
+  \def\plaintexoption#1{{\small\textcolor{gray}{\hologo{plainTeX}:}\,#1}\quad\ignorespaces}
+\item[InterHangul] %\pkgkwd*{InterHangul}%
+    \plaintexoption{|interhangul=|\meta{dimen}}
+    {\addhangulfontfeature{InterHangul=.5ex}한글 글자 사이의 자간}.
+    아래는 $-0.04$em 만큼 한글 자간을 지시한다.
 \begin{verbatim}
     [InterHangul=-0.04em]
 \end{verbatim}
 
-\item[InterLatinCJK] \pkgkwd*{InterLatinCJK}%
-  한글^^b7한자와 Latin문자 사이의 자간을 설정한다.%
-    \footnote{%
-      플레인텍에서는 |interlatincjk=|\meta{dimen}. }
+\item[InterLatinCJK] %\pkgkwd*{InterLatinCJK}%
+  \plaintexoption{|interlatincjk=|\meta{dimen}}
+  한글^^b7한자와 Latin문자 사이의 자간을 설정한다.
     한글^^b7한자 다음에 라틴 문자가 오는 경우 원래 줄바꿈이 되지 않지만
     이 옵션을 주면 줄바꿈이 가능해진다.
 \begin{verbatim}
     [InterLatinCJK=0.25em]
 \end{verbatim}
 
-\item[InterCharacter] \pkgkwd*{InterCharacter}%
-  CJK 글자들 사이의 자간을 지시한다.%
-  \footnote{%
-    플레인텍에서는 |intercharacter=|\meta{dimen}. }
+\item[InterCharacter] %\pkgkwd*{InterCharacter}%
+  \plaintexoption{|intercharacter=|\meta{dimen}}
+  CJK 글자들 사이의 자간을 지시한다.
   fontspec의 |LetterSpace| 옵션과 기능이 유사하지만, 옛한글을 깨뜨리는 등의
   오작동을 하지 않는다. 전술한 자간 옵션들보다 후순위로 동작한다.
 \begin{verbatim}
     [InterCharacter=.125em]
 \end{verbatim}
 
-\item[InterCharStretch] \pkgkwd*{InterCharStretch}%
-  CJK 글자간 가변공백\hparen{글루}의 stretch 값을 지시한다.%
-  \footnote{%
-    플레인텍에서는 |intercharstretch=|\meta{dimen}. }
+\item[InterCharStretch] %\pkgkwd*{InterCharStretch}%
+  \plaintexoption{|intercharstretch=|\meta{dimen}}
+  CJK 글자간 가변공백\hparen{글루}의 stretch\hparen{늘이기} 값을 지시한다.
 \begin{verbatim}
     [InterCharStretch=0.5pt]
 \end{verbatim}
 
-\item[InterCharPenalty] \pkgkwd*{InterCharPenalty}%
-  CJK 글자간 가변공백\hparen{글루} 직전에 삽입되는 penalty의 값을 지시한다.%
-  \footnote{플레인텍에서는 |intercharpenalty=|\meta{number}. }
+\item[InterCharPenalty] %\pkgkwd*{InterCharPenalty}%
+  \plaintexoption{|intercharpenalty=|\meta{number}}
+  CJK 글자간 가변공백\hparen{글루} 직전에 삽입되는 penalty의 값을 지시한다.
   |-10000|부터 |10000|까지의 값을 줄 수 있는데,
   양수값은 글자간 개행을 억제하고 음수값은 글자간 개행을 권장한다.
   기본값은 |50|으로, 글자간 개행을 조금 억제하여 단어간 개행을 조금 선호하는 결과를 낳는다.
@@ -448,31 +446,26 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
     [InterCharPenalty=0]
 \end{verbatim}
 
-\item[CharRaise] \pkgkwd*{CharRaise}%
+\item[CharRaise] %\pkgkwd*{CharRaise}%
+  \plaintexoption{|charraise=|\meta{dimen}}
   글자의 세로 위치를
   {\addhangulfontfeature{CharRaise=.3em} 조절}할 수 있는 기능이다.
-  이로써 주변에 식자되는 다른 글꼴과 조화를 이루게 한다.%
-  \footnote{%
-    플레인텍에서는 |charraise=|\meta{dimen}. }
+  이로써 주변에 식자되는 다른 글꼴과 조화를 이루게 한다.
 \begin{verbatim}
     [CharRaise=2pt]
 \end{verbatim}
   세로쓰기에서는 모든 글자들을 지정한 값만큼 오른쪽으로 이동시킨다.%
   \footnote{%
-    세로쓰기에서는 이 옵션 값을 고정길이\hparen{가령 |pt| 단위}로 주어야
+    세로쓰기에서는 이 옵션값을 고정길이\hparen{가령 |pt| 단위}로 주어야
     크기가 다른 폰트들 간에 중앙정렬이 유지된다. }
 
-\item[RemoveClassicSpaces] \pkgkwd*{RemoveClassicSpaces}%
-  고문헌 조판시에 CJK 글자들 사이의 공백을 없애준다.%
-  \footnote{%
-    플레인텍에서는 |+removeclassicspaces|. }
+\item[RemoveClassicSpaces] %\pkgkwd*{RemoveClassicSpaces}%
+  \plaintexoption{|+removeclassicspaces|}
+  고문헌 조판시에 CJK 글자들 사이의 공백을 없애준다.
 
-\item[CompressPunctuations] \pkgkwd*{CompressPunctuations}%
-  CJK 구두점\hparen{낫표 따위}의 글자폭을
-  반각으로 만든다.%
-  \footnote{%
-    플레인텍에서는 |+compresspunctuations|.
-  }
+\item[CompressPunctuations] %\pkgkwd*{CompressPunctuations}%
+  \plaintexoption{|+compresspunctuations|}
+  CJK 구두점\hparen{낫표 따위}의 글자폭을 반각으로 만든다.
   버전 2.0부터는 사용자가 지시하지 않는 한 글자폭을 자동으로 줄여주지 않는다.
   이 옵션은 |CharacterWidth=AlternateHalf| 내지 \hparen{세로쓰기의 경우}
   |Vertical=HalfMetrics|와 사실상 같은 기능을 한다.%
@@ -485,12 +478,11 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
   |CompressPunctuations|는 \hparen{설령 명시되었더라도} 아무 작용도 하지 않는다.%
   \footnote{그러나 HarfBuzz 모드 세로쓰기에서는 |vhal| 대신 |CompressPunctuations|가 사용된다.}
 
-\item[Protrusion] \pkgkwd*{Protrusion}%
+\item[Protrusion] %\pkgkwd*{Protrusion}%
+  \plaintexoption{|protrusion=default|}
   특정 글자가 행 끝에 왔을 때 판면 바깥으로 끌어내는
   기능이다. \luatex은 기본으로 온점 반점 등을 완전 글자내밀기 한다.
-  |Protrusion|은 |Protrusion=default|와 같은 뜻이다.%
-  \footnote{%
-    플레인텍에서는 |protrusion=default|. }
+  |Protrusion|은 |Protrusion=|\allowbreak|default|와 같은 뜻이다.
   자신만의 설정을 만들어 지정할 수 있다.%
   \footnote{%
     default 설정을 고치는 방법은 이를테면 다음과 같다%
@@ -498,15 +490,34 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
     \leftskip=3em\noindent
     \cs{directlua{ fonts.protrusions.setups.default[0x201C] = { 1, 0 } }} }
 
-\item[Expansion] \pkgkwd*{Expansion}%
+\item[Expansion] %\pkgkwd*{Expansion}%
+  \plaintexoption{|expansion=default|}
   판면의 균일한 조판을 위해 글자들을 미세하게 늘이거나
-  줄이는 기능이다. |Expansion|은 |Expansion=default|와 마찬가지 뜻이다.%
-  \footnote{%
-    플레인텍에서는 |expansion=default|. }
+  줄이는 기능이다. |Expansion|은 |Expansion=|\allowbreak|default|와 같은 뜻이다.
 
 \end{description}
 
 \section{고문헌}\label{sec:classic}
+
+고문헌 조판을 위해 \pkgkwd{typesetclassic} 환경을 제공한다.
+전처리부에 \cs{typesetclassic}을 선언할 수도 있다.%
+\footnote{%
+  |japanese|, |chinese|, |Schinese|, |Tchinese|, |korean| 따위의 환경은
+  지난 버전과의 호환성을 위해 제공되고 있을 뿐이다.
+  그렇더라도 중국어나 일본어 폰트를 사용한다면 이들 환경을 사용하는 것이 좋다.
+  |chinese|는 |Schinese|와 동의어이다. }
+그림~\ref{fig:gomun} 참조.
+버전 2.0부터는 고문헌 조판에서 한글^^b7한자와 영문자가 붙어 나오더라도 자동으로
+간격을 조정해주지 않으므로 사용자가 |InterLatinCJK| 옵션을
+지정해야 한다.
+또한 불필요한 공백이 오더라도 자동으로 제거해주지 않으므로
+사용자가 |RemoveClassicSpaces| 옵션을 주어야 한다.
+
+\pkgkwd{typesetmodern} 환경은 고문헌 조판 중에 잠깐 현대 한국어를 조판하는 데
+사용한다.
+
+고문헌 조판 중 \luatexko가 글자 사이에 삽입하는 미세간격을 사용자가
+영\hparen{零}으로 강제하기 위해선 \pkgkwd{\inhibitglue} 명령을 이용한다.
 
 \def\analectstext{\addhangulfontfeature{RemoveClassicSpaces}
 子 曰：「學而時習之，不亦說乎？有朋自遠方來，不亦樂乎？人不知而不慍，不亦君子乎？」\par
@@ -526,31 +537,13 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
   }\label{fig:gomun}
 \end{figure}
 
-고문헌 조판을 위해 \pkgkwd{typesetclassic} 환경을 제공한다.
-전처리부에 \cs{typesetclassic}을 선언할 수도 있다.%
-\footnote{%
-  플레인텍에서는 \hparen{문서 전체에 적용하지 않는다면 그룹 안에서}
-  \cs{typesetclassic}을 사용한다. }\,%
-\footnote{%
-  |japanese|, |chinese|, |Schinese|, |Tchinese|, |korean| 따위의 환경은
-  지난 버전과의 호환성을 위해 제공되고 있을 뿐이다.
-  그렇더라도 중국어나 일본어 폰트를 사용한다면 이들 환경을 사용하는 것이 좋다.
-  |chinese|는 |Schinese|와 동의어이다. }
-그림~\ref{fig:gomun} 참조.
-버전 2.0부터는 고문헌 조판에서 한글^^b7한자와 영문자가 붙어 나오더라도 자동으로
-간격을 조정해주지 않으므로 사용자가 |InterLatinCJK| 옵션을
-지정해야 한다.
-또한 불필요한 공백이 오더라도 자동으로 제거해주지 않으므로
-사용자가 |RemoveClassicSpaces| 옵션을 주어야 한다.
+\begin{plaintex}
+  고문헌 조판을 하려면 \hparen{문서 전체에 적용하지 않는다면 그룹 안에서}
+  \cs{typesetclassic}.
 
-\pkgkwd{typesetmodern} 환경은 고문헌 조판 중에 잠깐 현대 한국어를 조판하는 데
-사용한다.%
-\footnote{%
-  플레인텍에서는 \hparen{문서 전체에 적용하지 않는다면 그룹 안에서}
-  \cs{typesetmodern}을 사용한다. }
-
-고문헌 조판 중 \luatexko가 글자 사이에 삽입하는 미세간격을 사용자가
-영\hparen{零}으로 강제하기 위해선 \pkgkwd{\inhibitglue} 명령을 이용한다.
+  잠깐 현대 한국어를 조판하려면 \hparen{그룹 안에서}
+  \cs{typesetmodern}.
+\end{plaintex}
 
 \section{세로쓰기}\label{sec:verttype}
 
@@ -731,14 +724,14 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
 \section{밑줄긋기}\label{sec:uline}
 
 ulem 패키지가 \luatexko와 궁합이 맞지 않아\hparen{줄바꿈에 문제가 있음}
-명령을 따로 제공한다.%
-\pkgkwd*{\uline}%
-\pkgkwd*{\sout}%
-\pkgkwd*{\uuline}%
-\pkgkwd*{\xout}%
-\pkgkwd*{\uwave}%
-\pkgkwd*{\dashuline}%
-\pkgkwd*{\dotuline}
+명령을 따로 제공한다.
+%\pkgkwd*{\uline}%
+%\pkgkwd*{\sout}%
+%\pkgkwd*{\uuline}%
+%\pkgkwd*{\xout}%
+%\pkgkwd*{\uwave}%
+%\pkgkwd*{\dashuline}%
+%\pkgkwd*{\dotuline}
 
 \begin{sourceandresult}
   \setbox0\hbox{\ttfamily\string\dotuline\{밑줄을 점선으로 긋는다\}}\dimen0=\wd0
