@@ -157,8 +157,7 @@ do
     if hb and os2tag then
       local hbface = hb.shared.face
       local os2 = hbface:get_table(os2tag)
-      local length = os2:get_length()
-      if length > 69 then -- sTypoAscender (int16)
+      if os2:get_length() > 69 then -- sTypoAscender (int16)
         local data = os2:get_data()
         local typoascender  = string.unpack(">h", data, 69)
         local typodescender = string.unpack(">h", data, 71)
@@ -2058,31 +2057,64 @@ local function get_hb_char_bbox (hbfont, index)
   return bbox
 end
 
-local dir_ltr = harfbuzz and harfbuzz.Direction.new"ltr"
-local dir_ttb = harfbuzz and harfbuzz.Direction.new"ttb"
-local function get_HB_variant_char (fontdata, charcode, vertical)
-  local hbfont = fontdata.hb.shared.font
-  local spec   = fontdata.specification
-  local shaper = spec.features.raw.shaper
-  local buff   = harfbuzz.Buffer.new()
-  buff:set_direction(vertical and dir_ttb or dir_ltr)
-  buff:set_script(spec.script)
-  buff:set_language(spec.language)
-  buff:add_codepoints{charcode}
-  hbfont:set_scale(fontdata.hb.hscale, fontdata.hb.vscale)
-  harfbuzz.shape_full(hbfont, buff, spec.hb_features, shaper and {shaper} or {})
-  local glyphs = buff:get_glyphs()
-  if glyphs and glyphs[1] then
-    if charcode == 32 then
-      return glyphs[1].x_advance, glyphs[1].y_advance
+local get_HB_variant_char
+do
+  local dir_ltr = harfbuzz and harfbuzz.Direction.new"ltr"
+  local dir_ttb = harfbuzz and harfbuzz.Direction.new"ttb"
+  function get_HB_variant_char (fontdata, charcode, vertical)
+    local hbfont = fontdata.hb.shared.font
+    local spec   = fontdata.specification
+    local shaper = spec.features.raw.shaper
+    local buff   = harfbuzz.Buffer.new()
+    buff:set_direction(vertical and dir_ttb or dir_ltr)
+    buff:set_script(spec.script)
+    buff:set_language(spec.language)
+    buff:add_codepoints{charcode}
+    hbfont:set_scale(fontdata.hb.hscale, fontdata.hb.vscale)
+    harfbuzz.shape_full(hbfont, buff, spec.hb_features, shaper and {shaper} or {})
+    local glyphs = buff:get_glyphs()
+    if glyphs and glyphs[1] then
+      if charcode == 32 then
+        return glyphs[1].x_advance, glyphs[1].y_advance
+      end
+      return glyphs[1].codepoint + fontdata.hb.shared.gid_offset
     end
-    return glyphs[1].codepoint + fontdata.hb.shared.gid_offset
   end
 end
 
 local process_vertical_font
 do
   local get_tsb_table_harf, get_tsb_table_node
+  do
+    local vmtxtag = harfbuzz and harfbuzz.Tag.new"vmtx"
+    local vheatag = harfbuzz and harfbuzz.Tag.new"vhea"
+    function get_tsb_table_harf (fontdata)
+      local tsb_font_data = fontoptions.tsb_data or {}
+      local hbface = fontdata.hb.shared.face
+      local key = tostring(hbface)
+      if tsb_font_data[key] then
+        return tsb_font_data[key]
+      end
+      local vmtx_b = hbface:get_table(vmtxtag)
+      local vhea_b = hbface:get_table(vheatag)
+      if vmtx_b:get_length() > 0 and vhea_b:get_length() > 35 then
+        local numofglyphs = hbface:get_glyph_count()
+        local data = vhea_b:get_data()
+        local numofheights = (">H"):unpack(data, 35)
+        data = vmtx_b:get_data()
+        local vmtx, pos, ht, tsb = { }, 1
+        for i = 0, numofglyphs-1 do
+          if i < numofheights then
+            ht, pos = (">H"):unpack(data, pos)
+          end
+          tsb, pos = (">h"):unpack(data, pos)
+          vmtx[i] = { ht = ht, tsb = tsb }
+        end
+        tsb_font_data[key] = vmtx
+        return vmtx
+      end
+    end
+  end
   do
     local streamreader = utilities.files
     local openfile     = streamreader.open
@@ -2185,34 +2217,6 @@ do
       end
     end
 
-    local vmtxtag = harfbuzz and harfbuzz.Tag.new"vmtx"
-    local vheatag = harfbuzz and harfbuzz.Tag.new"vhea"
-    function get_tsb_table_harf (fontdata)
-      local tsb_font_data = fontoptions.tsb_data or {}
-      local hbface = fontdata.hb.shared.face
-      local key = tostring(hbface)
-      if tsb_font_data[key] then
-        return tsb_font_data[key]
-      end
-      local vmtx_b = hbface:get_table(vmtxtag)
-      local vhea_b = hbface:get_table(vheatag)
-      if vmtx_b:get_length() > 0 and vhea_b:get_length() > 35 then
-        local numofglyphs = hbface:get_glyph_count()
-        local data = vhea_b:get_data()
-        local numofheights = (">H"):unpack(data, 35)
-        data = vmtx_b:get_data()
-        local vmtx, pos, ht, tsb = { }, 1
-        for i = 0, numofglyphs-1 do
-          if i < numofheights then
-            ht, pos = (">H"):unpack(data, pos)
-          end
-          tsb, pos = (">h"):unpack(data, pos)
-          vmtx[i] = { ht = ht, tsb = tsb }
-        end
-        tsb_font_data[key] = vmtx
-        return vmtx
-      end
-    end
     function get_tsb_table_node (fontdata)
       local tsb_font_data = fontoptions.tsb_data or {}
       local filename = fontdata.specification.filename or fontdata.filename
