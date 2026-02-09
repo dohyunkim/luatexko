@@ -2082,7 +2082,7 @@ end
 
 local process_vertical_font
 do
-  local get_tsb_table
+  local get_tsb_table_harf, get_tsb_table_node
   do
     local streamreader = utilities.files
     local openfile     = streamreader.open
@@ -2187,54 +2187,54 @@ do
 
     local vmtxtag = harfbuzz and harfbuzz.Tag.new"vmtx"
     local vheatag = harfbuzz and harfbuzz.Tag.new"vhea"
-    function get_tsb_table (fontdata)
+    function get_tsb_table_harf (fontdata)
       local tsb_font_data = fontoptions.tsb_data or {}
-      if fontdata.hb then
-        local hbface = fontdata.hb.shared.face
-        local key = tostring(hbface)
-        if tsb_font_data[key] then
-          return tsb_font_data[key]
-        end
-        local vmtx_b = hbface:get_table(vmtxtag)
-        local vhea_b = hbface:get_table(vheatag)
-        if vmtx_b:get_length() > 0 and vhea_b:get_length() > 35 then
-          local numofglyphs = hbface:get_glyph_count()
-          local data = vhea_b:get_data()
-          local numofheights = (">H"):unpack(data, 35)
-          data = vmtx_b:get_data()
-          local vmtx, pos, ht, tsb = { }, 1
-          for i = 0, numofglyphs-1 do
-            if i < numofheights then
-              ht, pos = (">H"):unpack(data, pos)
-            end
-            tsb, pos = (">h"):unpack(data, pos)
-            vmtx[i] = { ht = ht, tsb = tsb }
+      local hbface = fontdata.hb.shared.face
+      local key = tostring(hbface)
+      if tsb_font_data[key] then
+        return tsb_font_data[key]
+      end
+      local vmtx_b = hbface:get_table(vmtxtag)
+      local vhea_b = hbface:get_table(vheatag)
+      if vmtx_b:get_length() > 0 and vhea_b:get_length() > 35 then
+        local numofglyphs = hbface:get_glyph_count()
+        local data = vhea_b:get_data()
+        local numofheights = (">H"):unpack(data, 35)
+        data = vmtx_b:get_data()
+        local vmtx, pos, ht, tsb = { }, 1
+        for i = 0, numofglyphs-1 do
+          if i < numofheights then
+            ht, pos = (">H"):unpack(data, pos)
           end
-          tsb_font_data[key] = vmtx
-          return vmtx
+          tsb, pos = (">h"):unpack(data, pos)
+          vmtx[i] = { ht = ht, tsb = tsb }
         end
-      else
-        local filename = fontdata.specification.filename or fontdata.filename
-        local subfont = tonumber(fontdata.subfont) or 1
-        local key = ("%s::%s"):format(filename, subfont)
-        if tsb_font_data[key] then
-          return tsb_font_data[key]
+        tsb_font_data[key] = vmtx
+        return vmtx
+      end
+    end
+    function get_tsb_table_node (fontdata)
+      local tsb_font_data = fontoptions.tsb_data or {}
+      local filename = fontdata.specification.filename or fontdata.filename
+      local subfont = tonumber(fontdata.subfont) or 1
+      local key = ("%s::%s"):format(filename, subfont)
+      if tsb_font_data[key] then
+        return tsb_font_data[key]
+      end
+      local f = openfile(filename, true) -- true: zero-based
+      if f then
+        local vmtx
+        local tables = get_otf_tables(f, subfont)
+        if tables then
+          local vhea = read_vhea(f, tables.vhea)
+          local numofheights = vhea and vhea.numheights
+          local maxp = read_maxp(f, tables.maxp)
+          local numofglyphs = maxp and maxp.numglyphs
+          vmtx = read_vmtx(f, tables.vmtx, numofheights, numofglyphs)
         end
-        local f = openfile(filename, true) -- true: zero-based
-        if f then
-          local vmtx
-          local tables = get_otf_tables(f, subfont)
-          if tables then
-            local vhea = read_vhea(f, tables.vhea)
-            local numofheights = vhea and vhea.numheights
-            local maxp = read_maxp(f, tables.maxp)
-            local numofglyphs = maxp and maxp.numglyphs
-            vmtx = read_vmtx(f, tables.vmtx, numofheights, numofglyphs)
-          end
-          closefile(f)
-          tsb_font_data[key] = vmtx
-          return vmtx
-        end
+        closefile(f)
+        tsb_font_data[key] = vmtx
+        return vmtx
       end
     end
   end
@@ -2257,7 +2257,7 @@ do
       return
     end
 
-    local tsb_tab = get_tsb_table(fontdata)
+    local tsb_tab = fontdata.hb and get_tsb_table_harf(fontdata) or get_tsb_table_node(fontdata)
 
     if not tsb_tab then
       fontdata_warning("vertical."..fullname,
