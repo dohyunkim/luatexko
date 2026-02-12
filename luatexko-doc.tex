@@ -400,100 +400,103 @@ fontspec의 글꼴 옵션 외에 \luatexko가 따로 제공하는 것들이 있�
 \end{figure}
 
 \begin{description}
-  \parskip=2pt plus 1pt minus 1pt
-  \def\plaintexoption#1{{\small\textcolor{gray}{\hologo{plainTeX}:}\,#1}\quad\ignorespaces}
+    \topsep=6pt plus 1pt minus 1pt
+    \parskip=1pt plus 1pt minus 1pt
+\def\plaintexoption#1{\par\setbox0\vbox to 0pt{\vskip-2ex\vss
+    \hfill\small\textcolor{gray}{\hologo{plainTeX}\unskip:}\,#1}\par
+  \AddToHookNext{para/begin}{\vadjust{\box0}}}
 \item[InterHangul] %\pkgkwd*{InterHangul}%
-    \plaintexoption{|interhangul=|\meta{dimen}}
     {\addhangulfontfeature{InterHangul=.5ex}한글 글자 사이의 자간}.
     아래는 $-0.04$em 만큼 한글 자간을 지시한다.
+    \plaintexoption{|interhangul=|\meta{dimen}}
 \begin{verbatim}
     [InterHangul=-0.04em]
 \end{verbatim}
 
 \item[InterLatinCJK] %\pkgkwd*{InterLatinCJK}%
-  \plaintexoption{|interlatincjk=|\meta{dimen}}
   한글^^b7한자와 Latin문자 사이의 자간을 설정한다.
     한글^^b7한자 다음에 라틴 문자가 오는 경우 원래 줄바꿈이 되지 않지만
     이 옵션을 주면 줄바꿈이 가능해진다.
+  \plaintexoption{|interlatincjk=|\meta{dimen}}
 \begin{verbatim}
     [InterLatinCJK=0.25em]
 \end{verbatim}
 
 \item[InterCharacter] %\pkgkwd*{InterCharacter}%
-  \plaintexoption{|intercharacter=|\meta{dimen}}
   CJK 글자들 사이의 자간을 지시한다.
   fontspec의 |LetterSpace| 옵션과 기능이 유사하지만, 옛한글을 깨뜨리는 등의
   오작동을 하지 않는다. 전술한 자간 옵션들보다 후순위로 동작한다.
+  \plaintexoption{|intercharacter=|\meta{dimen}}
 \begin{verbatim}
     [InterCharacter=.125em]
 \end{verbatim}
 
 \item[InterCharStretch] %\pkgkwd*{InterCharStretch}%
-  \plaintexoption{|intercharstretch=|\meta{dimen}}
   CJK 글자간 가변공백\hparen{글루}의 stretch\hparen{늘이기} 값을 지시한다.
+  \plaintexoption{|intercharstretch=|\meta{dimen}}
 \begin{verbatim}
     [InterCharStretch=0.5pt]
 \end{verbatim}
 
 \item[InterCharPenalty] %\pkgkwd*{InterCharPenalty}%
-  \plaintexoption{|intercharpenalty=|\meta{number}}
   CJK 글자간 가변공백\hparen{글루} 직전에 삽입되는 penalty의 값을 지시한다.
   |-10000|부터 |10000|까지의 값을 줄 수 있는데,
   양수값은 글자간 개행을 억제하고 음수값은 글자간 개행을 권장한다.
   기본값은 |50|으로, 글자간 개행을 조금 억제하여 단어간 개행을 조금 선호하는 결과를 낳는다.
   옵션값을 |0|으로 주면 이러한 차이가 사라져 글자간 개행이 더 빈번하게 일어난다.
+  \plaintexoption{|intercharpenalty=|\meta{number}}
 \begin{verbatim}
     [InterCharPenalty=0]
 \end{verbatim}
 
 \item[CharRaise] %\pkgkwd*{CharRaise}%
-  \plaintexoption{|charraise=|\meta{dimen}}
   글자의 세로 위치를
   {\addhangulfontfeature{CharRaise=.3em} 조절}할 수 있는 기능이다.
   이로써 주변에 식자되는 다른 글꼴과 조화를 이루게 한다.
+  \plaintexoption{|charraise=|\meta{dimen}}
 \begin{verbatim}
     [CharRaise=2pt]
 \end{verbatim}
   세로쓰기에서는 모든 글자들을 지정한 값만큼 오른쪽으로 이동시킨다.%
-  \footnote{%
-    세로쓰기에서는 이 옵션값을 고정길이\hparen{가령 |pt| 단위}로 주어야
+  \footnote{세로쓰기에서는 이 옵션값을 고정길이\hparen{가령 |pt| 단위}로 주어야
     크기가 다른 폰트들 간에 중앙정렬이 유지된다. }
 
+\def\plaintexoption#1#2{{\unskip\nobreak\hfil\penalty50\hskip2em
+  \null\nobreak\hfil\raise#2\hbox{\small\textcolor{gray}{\hologo{plainTeX}\unskip:}\,#1}%
+  \parfillskip=0pt \finalhyphendemerits=0 \par}}
 \item[RemoveClassicSpaces] %\pkgkwd*{RemoveClassicSpaces}%
-  \plaintexoption{|+removeclassicspaces|}
   고문헌 조판시에 CJK 글자들 사이의 공백을 없애준다.
+  \plaintexoption{|+removeclassicspaces|}{2pt}
 
 \item[CompressPunctuations] %\pkgkwd*{CompressPunctuations}%
-  \plaintexoption{|+compresspunctuations|}
   CJK 구두점\hparen{낫표 따위}의 글자폭을 반각으로 만든다.
   버전 2.0부터는 사용자가 지시하지 않는 한 글자폭을 자동으로 줄여주지 않는다.
-  이 옵션은 |CharacterWidth=AlternateHalf| 내지 \hparen{세로쓰기의 경우}
-  |Vertical=HalfMetrics|와 사실상 같은 기능을 한다.%
-  \footnote{%
-    플레인텍에서는 각각 |+halt| 및 |+vhal|이다.  이들과 완전 동일하진
+  이 옵션은 |CharacterWidth=|\allowbreak|AlternateHalf| 내지 \hparen{세로쓰기의 경우}
+  |Vertical=|\allowbreak|HalfMetrics|와 사실상 같은 기능을 한다.%
+  \footnote{플레인텍에서는 각각 |+halt| 및 |+vhal|이다.  이들과 완전 동일하진
     않다. 가령 U+00B7\hparen{^^b7} 및 고문헌조판 모드에서
     U+2018\hparen{^^^^2018} U+2019\hparen{^^^^2019} U+201C\hparen{^^^^201c} U+201D\hparen{^^^^201d}
     처리의 경우 미세한 간격 차이가 있을 수 있다. }
   그래서 이들 옵션 중 하나가 지시되어 있다면 그것이 우선 적용되고
   |CompressPunctuations|는 \hparen{설령 명시되었더라도} 아무 작용도 하지 않는다.%
   \footnote{그러나 HarfBuzz 모드 세로쓰기에서는 |vhal| 대신 |CompressPunctuations|가 사용된다.}
+  \plaintexoption{|+compresspunctuations|}{2pt}
 
 \item[Protrusion] %\pkgkwd*{Protrusion}%
-  \plaintexoption{|protrusion=default|}
   특정 글자가 행 끝에 왔을 때 판면 바깥으로 끌어내는
   기능이다. \luatex은 기본으로 온점 반점 등을 완전 글자내밀기 한다.
   |Protrusion|은 |Protrusion=|\allowbreak|default|와 같은 뜻이다.
   자신만의 설정을 만들어 지정할 수 있다.%
-  \footnote{%
-    default 설정을 고치는 방법은 이를테면 다음과 같다%
+  \footnote{default 설정을 고치는 방법은 이를테면 다음과 같다%
     \hparen{또한 이 매뉴얼의 소스 앞부분을 참고하라}:\par
     \leftskip=3em\noindent
     \cs{directlua{ fonts.protrusions.setups.default[0x201C] = { 1, 0 } }} }
+  \plaintexoption{|protrusion=default|}{6pt}
 
 \item[Expansion] %\pkgkwd*{Expansion}%
-  \plaintexoption{|expansion=default|}
   판면의 균일한 조판을 위해 글자들을 미세하게 늘이거나
   줄이는 기능이다. |Expansion|은 |Expansion=|\allowbreak|default|와 같은 뜻이다.
+  \plaintexoption{|expansion=default|}{0pt}
 
 \end{description}
 
@@ -878,11 +881,17 @@ ulem 패키지가 \luatexko와 궁합이 맞지 않아\hparen{줄바꿈에 문�
 
 \section{한국어 항목 번호}\label{sec:hangulnums}
 
-\kotex과 동일하게 항목 번호를 한국어 기호로 붙일 수 있다.%
-\footnote{%
+\kotex과 동일하게 항목 번호를 한국어 기호로 붙일 수 있다.
+  가용한 숫자에 제한이 있지만
   \cs{jaso} \cs{gana} \cs{ojaso} \cs{ogana} \cs{pjaso} \cs{pgana}
   \cs{onum} \cs{pnum} \cs{oeng} \cs{peng} \cs{hnum} \cs{Hnum}
-  \cs{hroman} \cs{hRoman} \cs{hNum} \cs{hanjanum} 따위를 사용한다. }
+  \cs{hroman} \cs{hRoman} \cs{hNum} \cs{hanjanum} 따위를 지원한다%
+  \hparen{|cjk-ko| 문서 참조}.
+
+  예컨대 \cs{onum{page}}라고 하면 쪽번호가 \onum{page}\로 찍힌다.
+  따라서 가령 제2단계 enumerate 환경의 항목번호 양식을 바꾸려면
+  \cs{def}\allowbreak\cs{labelenumii}\allowbreak|{\onum{enumii}}|처럼 선언할 수 있다.
+  또한 \cs{pagenumbering}\allowbreak|{onum}|처럼 선언해서 쪽번호 양식을 바꿀 수도 있다.
 
 \section{입력 변환}\label{sec:normalize}
 
