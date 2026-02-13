@@ -1,3 +1,12 @@
+2026-02-14	Dohyun Kim <nomosnomos at gmail com>
+
+	Version 5.6
+
+	* luatexko.lua:
+	- use harfbuzz functions for vmtx data of harf-mode font
+	- a little speed-up by caching bbox data of harf-mode font
+	- minor revision of \inhibitglue
+
 2026-01-26	Dohyun Kim <nomosnomos at gmail com>
 
 	Version 5.5

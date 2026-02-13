@@ -13,8 +13,8 @@
 
 luatexbase.provides_module {
   name        = 'luatexko',
-  date        = '2026/01/26',
-  version     = '5.5',
+  date        = '2026/02/14',
+  version     = '5.6',
   description = 'typesetting Korean with LuaTeX',
   author      = 'Dohyun Kim, Soojin Nam',
   license     = 'LPPL v1.3+',
@@ -151,8 +151,8 @@ end
 
 local harfbuzz = luaotfload.harfbuzz
 local get_asc_desc
-do
-  local os2tag = harfbuzz and harfbuzz.Tag.new"OS/2"
+if harfbuzz then
+  local os2tag = harfbuzz.Tag.new"OS/2"
   function get_asc_desc (hb) -- fontdata.hb
     if hb and os2tag then
       local hbface = hb.shared.face
@@ -2108,9 +2108,9 @@ do
 end
 
 local get_HB_variant_char
-do
-  local dir_ltr = harfbuzz and harfbuzz.Direction.new"ltr"
-  local dir_ttb = harfbuzz and harfbuzz.Direction.new"ttb"
+if harfbuzz then
+  local dir_ltr = harfbuzz.Direction.new"ltr"
+  local dir_ttb = harfbuzz.Direction.new"ttb"
   function get_HB_variant_char (fontdata, charcode, vertical)
     local hbfont = fontdata.hb.shared.font
     local spec   = fontdata.specification
@@ -2135,9 +2135,9 @@ end
 local process_vertical_font
 do
   local get_tsb_table_harf, get_tsb_table_node
-  do
-    local vmtxtag = harfbuzz and harfbuzz.Tag.new"vmtx"
-    local vheatag = harfbuzz and harfbuzz.Tag.new"vhea"
+  if harfbuzz then
+    local vmtxtag = harfbuzz.Tag.new"vmtx"
+    local vheatag = harfbuzz.Tag.new"vhea"
     function get_tsb_table_harf (fontdata)
       local tsb_font_data = fontoptions.tsb_data or {}
       local hbface = fontdata.hb.shared.face
