@@ -2039,22 +2039,72 @@ local function activate_process (cbnam, cbfun, name, first)
   end
 end
 
-local function get_hb_char_bbox (hbfont, index)
-  local name = tostring(hbfont)
-  local bboxes = fontoptions.hb_char_bbox[name]
-  if not bboxes then
-    fontoptions.hb_char_bbox[name] = { }
-    bboxes = fontoptions.hb_char_bbox[name]
+local get_hb_char_bbox
+do
+  local cachedir, get_cache_data, store_cache_data
+  if harfbuzz then
+    local texmfvar = kpse.var_value"TEXMFVAR"
+    if texmfvar and texmfvar ~= "" then
+      for _,v in ipairs(texmfvar:explode(os.type == "unix" and ":" or ";")) do
+        local dir = ("%s/%s"):format(v,"luatexko_cache")
+        if lfs.attributes(dir,"mode") ~= "directory" then lfs.mkdirp(dir) end
+        if file.is_writable(dir) then cachedir = dir; break end
+      end
+    end
+    if cachedir then
+      function get_cache_data (cachename, fontdata)
+        local filename = fontdata.specification.filename
+        local otime = assert(lfs.attributes(filename, "modification"))
+        local ntime = lfs.attributes(cachename, "modification") or 0
+        if otime == ntime then
+          return require(cachename)
+        end
+      end
+      function store_cache_data (cachename, data, fontdata)
+        local filename = fontdata.specification.filename
+        local otime = assert(lfs.attributes(filename, "modification"))
+        table.tofile(cachename, data, "return")
+        lfs.touch(cachename, otime, otime)
+      end
+    else
+      warning"Cache disabled. Check TEXMFVAR is writable."
+    end
   end
-  local bbox = bboxes[index]
-  if bbox then return bbox end
-  local t = hbfont:get_glyph_extents(index) -- quite slow for CFF
-  bbox = t and { t.x_bearing,
-                 t.y_bearing + t.height,
-                 t.x_bearing + t.width,
-                 t.y_bearing, } or {0,0,0,0}
-  bboxes[index] = bbox
-  return bbox
+  local function get_char_bbox (hbfont, gid)
+    local t = hbfont:get_glyph_extents(gid) -- quite slow for CFF
+    if t then
+      return { t.x_bearing, t.y_bearing + t.height, t.x_bearing + t.width, t.y_bearing }
+    end
+  end
+  function get_hb_char_bbox (fontdata, index) --hbfont, index, fullname)
+    local hbfont = fontdata.hb.shared.font
+    local name = tostring(hbfont)
+    local bboxes = fontoptions.hb_char_bbox[name]
+    local bbox = bboxes and bboxes[index]
+    if bbox then return bbox end
+    if cachedir then
+      local cachename = ("%s/%s-bbox.lua"):format(cachedir, fontdata.fullname:gsub("%W","_"))
+      local data = get_cache_data(cachename, fontdata)
+      if not data then
+        data = { }
+        for i = 0, 65534 do
+          local t = get_char_bbox(hbfont, i)
+          if not t then break end
+          data[i] = t
+        end
+        store_cache_data(cachename, data, fontdata)
+      end
+      fontoptions.hb_char_bbox[name], bbox = data, data[index]
+      if bbox then return bbox end
+    end
+    if not bboxes then
+      fontoptions.hb_char_bbox[name] = { }
+      bboxes = fontoptions.hb_char_bbox[name]
+    end
+    bbox = get_char_bbox(hbfont, index) or {0,0,0,0}
+    bboxes[index] = bbox
+    return bbox
+  end
 end
 
 local get_HB_variant_char
@@ -2295,7 +2345,7 @@ do
     for i,v in pairs(fontdata.characters) do
       local voff = goffset - (v.width or 0)/2
       local gid  = v.index
-      local bbox = fontdata.hb and get_hb_char_bbox(fontdata.hb.shared.font, gid)
+      local bbox = fontdata.hb and get_hb_char_bbox(fontdata, gid)
             or descriptions[i] and descriptions[i].boundingbox or {0,0,0,0}
       local tsb  = tsb_tab[gid] and tsb_tab[gid].tsb
       local hoff = tsb and (bbox[4] + tsb) * scale * squeeze or ascender
@@ -2582,7 +2632,7 @@ local function process_fake_slant_font (fontdata, fsl)
       local rbearing = 0
 
       if wd > 0 then -- or, jong/jung italic could by very large value
-        local bbox = hb and get_hb_char_bbox(hb.shared.font, v.index)
+        local bbox = hb and get_hb_char_bbox(fontdata, v.index)
                   or descrs[i] and descrs[i].boundingbox
         if bbox then
           rbearing = wd - bbox[3]*scale
