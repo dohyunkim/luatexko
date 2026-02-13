@@ -2052,19 +2052,22 @@ do
       end
     end
     if cachedir then
-      function get_cache_data (cachename, fontdata)
-        local filename = fontdata.specification.filename
-        local otime = assert(lfs.attributes(filename, "modification"))
-        local ntime = lfs.attributes(cachename, "modification") or 0
-        if otime == ntime then
-          return require(cachename)
+      local function get_cache_name (fontdata, suffix)
+        local version = fontdata.hb.shared.face:get_name(harfbuzz.ot.NAME_ID_VERSION_STRING)
+           or assert(lfs.attributes(fontdata.specification.filename, "modification"))
+        local name = ("%s_%s_%s"):format(fontdata.fullname, version, suffix)
+        local hexa = ('%02x'):rep(256/8):format(sha2.digest256(name):byte(1, -1))
+        return ("%s/%s.lua"):format(cachedir, hexa)
+      end
+      function get_cache_data (fontdata, suffix)
+        local name = get_cache_name(fontdata, suffix)
+        if lfs.attributes(name, "mode") == "file" then
+          return require(name)
         end
       end
-      function store_cache_data (cachename, data, fontdata)
-        local filename = fontdata.specification.filename
-        local otime = assert(lfs.attributes(filename, "modification"))
-        table.tofile(cachename, data, "return")
-        lfs.touch(cachename, otime, otime)
+      function store_cache_data (fontdata, suffix, data)
+        local name = get_cache_name(fontdata, suffix)
+        table.tofile(name, data, "return")
       end
     else
       warning"Cache disabled. Check TEXMFVAR is writable."
@@ -2076,15 +2079,14 @@ do
       return { t.x_bearing, t.y_bearing + t.height, t.x_bearing + t.width, t.y_bearing }
     end
   end
-  function get_hb_char_bbox (fontdata, index) --hbfont, index, fullname)
+  function get_hb_char_bbox (fontdata, index)
     local hbfont = fontdata.hb.shared.font
-    local name = tostring(hbfont)
-    local bboxes = fontoptions.hb_char_bbox[name]
+    local key = tostring(hbfont)
+    local bboxes = fontoptions.hb_char_bbox[key]
     local bbox = bboxes and bboxes[index]
     if bbox then return bbox end
     if cachedir then
-      local cachename = ("%s/%s-bbox.lua"):format(cachedir, fontdata.fullname:gsub("%W","_"))
-      local data = get_cache_data(cachename, fontdata)
+      local data = get_cache_data(fontdata, "bbox")
       if not data then
         data = { }
         for i = 0, 65534 do
@@ -2092,14 +2094,14 @@ do
           if not t then break end
           data[i] = t
         end
-        store_cache_data(cachename, data, fontdata)
+        store_cache_data(fontdata, "bbox", data)
       end
-      fontoptions.hb_char_bbox[name], bbox = data, data[index]
+      fontoptions.hb_char_bbox[key], bbox = data, data[index]
       if bbox then return bbox end
     end
     if not bboxes then
-      fontoptions.hb_char_bbox[name] = { }
-      bboxes = fontoptions.hb_char_bbox[name]
+      fontoptions.hb_char_bbox[key] = { }
+      bboxes = fontoptions.hb_char_bbox[key]
     end
     bbox = get_char_bbox(hbfont, index) or {0,0,0,0}
     bboxes[index] = bbox
