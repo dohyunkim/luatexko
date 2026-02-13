@@ -2069,8 +2069,6 @@ do
         local name = get_cache_name(fontdata, suffix)
         table.tofile(name, data, "return")
       end
-    else
-      warning"Cache disabled. Check TEXMFVAR is writable."
     end
   end
   local function get_char_bbox (hbfont, gid)
