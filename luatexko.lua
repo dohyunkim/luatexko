@@ -1569,7 +1569,11 @@ local function process_dotemph (head)
           local c = has_attribute(curr, unicodeattr) or curr.char
           if is_hangul(c) or is_compat_jamo(c) or is_chosong(c) or is_hanja(c) or is_kana(c) then
 
-            local box = nodecopy(dotemphbox[dotattr])
+            local box = node.copy_list(dotemphbox[dotattr].head)
+            -- bypass unwanted nodes injected by some other packages
+            while box.id ~= hlistid do
+              box = getnext(box)
+            end
 
             -- consider charraise
             box.shift = shift_put_top(curr, box, true)
@@ -1661,7 +1665,6 @@ function luatexko.ulboundary (i, n, subtype)
   what.user_id = uline_id
   if n then
     while n.id ~= ruleid and n.id ~= hlistid and n.id ~= vlistid do
-      warning[[\markoverwith should be a rule or a box]]
       n = getnext(n)
     end
     what.type  = 108 -- lua_value : table
