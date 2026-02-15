@@ -121,19 +121,13 @@ local function font_opt_dim (fd, optname)
   local dim = option_in_font(fd, optname)
   if dim then
     local params, m, u
-    if type(fd) == "number" then
-      params = getparameters(fd)
-    else
-      params = fd.parameters
-    end
     if type(dim) == "string" then
       m, u = dim:match"^(.+)(e[mx])%s*$"
     end
-    if m and u and params then
-      if u == "em" then
-        dim = m * params.quad
-      else
-        dim = m * params.x_height
+    if m and u then
+      local params = type(fd) == "number" and getparameters(fd) or fd.parameters
+      if params then
+        dim = u == "em" and m * params.quad or m * params.x_height
       end
     else
       dim = tex.sp(dim)
@@ -1576,11 +1570,6 @@ local function process_dotemph (head)
           if is_hangul(c) or is_compat_jamo(c) or is_chosong(c) or is_hanja(c) or is_kana(c) then
 
             local box = nodecopy(dotemphbox[dotattr])
-            -- bypass unwanted nodes injected by some other packages
-            while box.id ~= hlistid do
-              warning[[\dotemph should be an hbox]]
-              box = getnext(box)
-            end
 
             -- consider charraise
             box.shift = shift_put_top(curr, box, true)
