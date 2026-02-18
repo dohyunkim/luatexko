@@ -209,7 +209,7 @@
 \author{\normalsize Dohyun Kim \small |<nomosnomos at gmail com>| \and
         \normalsize Soojin Nam \small |<jsunam at gmail com>| \and
         \normalsize <\url{http://github.com/dohyunkim/luatexko}>}
-\date{Version 5.6\quad 2026/02/14}
+\date{Version 5.7\quad 2026/02/20}
 \maketitle
 
 For a summary introduction in English, please see |README| file.
@@ -218,13 +218,15 @@ For a summary introduction in English, please see |README| file.
 
 \section{부르기}\label{sec:loading}
 
-\luatexko 를 불러오려면 \cs{usepackage{luatexko}} 혹은 \cs{usepackage{kotex}}.%
-\footnote{%
-  플레인텍에서는 \cs{input luatexko.sty} 혹은 \cs{input kotex.sty}. }
+\luatexko 를 불러오려면 \cs{usepackage{luatexko}} 혹은 \cs{usepackage{kotex}}.
 
 입력은 원칙적으로 UTF-8으로 한다.
 BOM \hparen{Byte Order Mark}은 있어도 좋고 없어도 좋다.
 CP949 인코딩에 관해서는 제\ref{sec:uhcencoding}절 참조.
+
+\begin{plaintex}
+  플레인텍에서는 \cs{input luatexko.sty} 혹은 \cs{input kotex.sty}.
+\end{plaintex}
 
 \section{패키지 옵션}\label{sec:packageopt}
 
@@ -888,7 +890,7 @@ ulem 패키지가 \luatexko와 궁합이 맞지 않아\hparen{줄바꿈에 문�
   \cs{hroman} \cs{hRoman} \cs{hNum} \cs{hanjanum} 따위를 지원한다%
   \hparen{|cjk-ko| 문서 참조}.
 
-  예컨대 \cs{onum{page}}라고 하면 쪽번호가 \onum{page}\로 찍힌다.
+  이를테면 \cs{onum{page}}라고 하면 현재 쪽의 번호를 \onum{page}\로 찍는다.
   따라서 가령 제2단계 enumerate 환경의 항목번호 양식을 바꾸려면
   \cs{def}\allowbreak\cs{labelenumii}\allowbreak|{\onum{enumii}}|처럼 선언할 수 있다.
   또한 \cs{pagenumbering}\allowbreak|{onum}|처럼 선언해서 쪽번호 양식을 바꿀 수도 있다.

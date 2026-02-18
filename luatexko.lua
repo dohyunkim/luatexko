@@ -13,8 +13,8 @@
 
 luatexbase.provides_module {
   name        = 'luatexko',
-  date        = '2026/02/14',
-  version     = '5.6',
+  date        = '2026/02/20',
+  version     = '5.7',
   description = 'typesetting Korean with LuaTeX',
   author      = 'Dohyun Kim, Soojin Nam',
   license     = 'LPPL v1.3+',
@@ -1569,11 +1569,7 @@ local function process_dotemph (head)
           local c = has_attribute(curr, unicodeattr) or curr.char
           if is_hangul(c) or is_compat_jamo(c) or is_chosong(c) or is_hanja(c) or is_kana(c) then
 
-            local box = node.copy_list(dotemphbox[dotattr].head)
-            -- bypass unwanted nodes injected by some other packages
-            while box.id ~= hlistid do
-              box = getnext(box)
-            end
+            local box = node.copy(dotemphbox[dotattr])
 
             -- consider charraise
             box.shift = shift_put_top(curr, box, true)

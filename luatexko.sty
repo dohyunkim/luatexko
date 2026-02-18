@@ -14,7 +14,7 @@
 \ifdefined\luatexkohangulfontattr \endinput\fi
 \ifdefined\ProvidesPackage
   \NeedsTeXFormat{LaTeX2e}[2025/06/01]
-  \ProvidesPackage{luatexko}[2026/02/14 v5.6 typesetting Korean with LuaTeX]
+  \ProvidesPackage{luatexko}[2026/02/20 v5.7 typesetting Korean with LuaTeX]
   \RequirePackage{fontspec}[2020/02/03]
   \let\luatexkoselectfont\selectfont
 \else
@@ -215,7 +215,9 @@
   \begingroup
   \count@=\luatexkodotemphcount
   \setbox\z@\hbox{\raise\dotemphraise\hbox{\luatexkodotemphchar}}%
-  \directlua{ luatexko.dotemphbox[\number\count@] = node.copy(tex.box[0]) }%
+  \directlua{ local n, hbox, getnext = tex.getbox(0).head, node.id"hlist", node.getnext
+              while n and n.id \csstring\~= hbox do n = getnext(n) end
+              luatexko.dotemphbox[\number\count@] = node.copy(n) }%
   \luatexkodotemphattr\count@ #1\relax
   \directlua{ luatexko.dotemphboundary(\number\count@) }%
   \endgroup }

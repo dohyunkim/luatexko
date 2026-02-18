@@ -1,3 +1,10 @@
+2026-02-20	Dohyun Kim <nomosnomos at gmail com>
+
+	Version 5.7
+
+	* luatexko.{sty,lua}:
+	- fix the routine to get a dotemph box
+
 2026-02-14	Dohyun Kim <nomosnomos at gmail com>
 
 	Version 5.6
