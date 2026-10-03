@@ -829,7 +829,7 @@
 }
 \DeclareDocumentCommand \setmathhangulfont { O{} m O{} }
 {
-  \fontspec_set_family:Nnn \luatexkomathhangulfamily { #1, #3 } { #2 }
+  \fontspec_set_family:Nnn \luatexkomathhangulfamily { Renderer=Basic, #1, #3 } { #2 }
   \DeclareSymbolFont { mathhangul }
     \g_fontspec_encoding_tl \luatexkomathhangulfamily \seriesdefault \shapedefault
   \int_compare:nNnF { \Umathcharfam"AC00 } = { \symmathhangul }

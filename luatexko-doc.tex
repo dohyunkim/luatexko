@@ -8,6 +8,7 @@
 %%
 %% public domain
 
+%\RequirePackage{luatagging}
 %\DocumentMetadata{
 %  lang=ko,
 %  pdfstandard={UA-2,A-4f},
@@ -845,9 +846,9 @@ ulem 패키지가 \luatexko와 궁합이 맞지 않아\hparen{줄바꿈에 문�
   \cs{hbox}를 쓰지 않고 직접 입력하는 수식 한글이
   \uline{디스플레이 수식} 안에 사용된 경우,
   앞서 기술한 드러냄표 강조, 밑줄 강조, 한글 글꼴 옵션 등의 기능이 현재로는
-  전혀 작동하지 않는다.  구현은 비교적 간단하지만, 과연 수식에서
-  저러한 기능을 써야 할 경우가 있을까 의문이기 때문이다.
-  사용자의 요청이 있으면 즉시 반영하겠다.
+  전혀 작동하지 않는다. 과연 수식에서 저러한 기능을 써야 할 경우가 있을까 의문이기 때문이다.
+  또한 수식폰트에는 |Renderer=Basic|이 기본으로 설정되어 있음에 유의하라.
+  플레인텍에서는 사용자가 |mode=base|를 넣어주는 것이 권장된다.
 }
 버전 2.0부터는 자동으로 수식 한글을 잡아주지 않는다.%
 \pkgkwd*{\setmathhangulfont}
@@ -870,13 +871,13 @@ ulem 패키지가 \luatexko와 궁합이 맞지 않아\hparen{줄바꿈에 문�
 \end{verbatim}
 
 \begin{plaintex}
-  플레인텍에서는 \cs{mathhangulfont=UnBatang}과 같이 설정한다.
+  플레인텍에서는 \cs{mathhangulfont=UnBatang:mode=base}과 같이 설정한다.
 
   또는 좀 더 그럴듯하게 하려면:
 \begin{verbatim}
-    \font\texthangul="Noto Sans CJK KR DemiLight" at 10pt
-    \font\scripthangul="Noto Sans CJK KR Regular" at 7pt
-    \font\scriptscripthangul="Noto Sans CJK KR Medium" at 5pt
+    \font\texthangul="Noto Sans CJK KR DemiLight:mode=base" at 10pt
+    \font\scripthangul="Noto Sans CJK KR Regular:mode=base" at 7pt
+    \font\scriptscripthangul="Noto Sans CJK KR Medium:mode=base" at 5pt
     \setmathhangulfonts\texthangul\scripthangul\scriptscripthangul
 \end{verbatim}
 \end{plaintex}
