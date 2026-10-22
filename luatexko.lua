@@ -194,6 +194,10 @@ local function memo_per_font (compute, default)
 end
 
 local fontoptions = {
+  is_harf = memo_per_font(function(fid)
+    return has_harf_data(fid) or false
+  end),
+
   is_widefont = memo_per_font(function(fid)
     local fontdata = get_font_data(fid)
     local format   = fontdata.format
@@ -739,7 +743,7 @@ local function process_fonts (head)
             done = false
             if hangul_tonemark[c]
               and not active_processes.reorderTM
-              and not has_harf_data(curr.font) then
+              and not fontoptions.is_harf[curr.font] then
               luatexko.activate("reorderTM") -- activate reorderTM here
             end
           end
@@ -1892,7 +1896,7 @@ do
     while curr do
       local id = curr.id
       if id == glyphid and
-        not has_harf_data(curr.font) and
+        not fontoptions.is_harf[curr.font] and
         fontoptions.is_hangulscript[curr.font] then
 
         local uni = has_attribute(curr, unicodeattr) or curr.char
@@ -2416,7 +2420,7 @@ do
         local chardata = char_in_font(curr.font, curr.char)
         local diff = chardata and chardata.luatexko_diff or 0
 
-        if chardata and has_harf_data(curr.font) then -- harf-mode
+        if chardata and fontoptions.is_harf[curr.font] then -- harf-mode
           local charraise = fontoptions.charraise[curr.font] or 0
           local yofforig  = curr.yoffset - charraise
           diff = diff + curr.width - yofforig
@@ -2509,7 +2513,7 @@ end
 local process_fake_slant_corr
 do
   local function harf_reordered_tonemark (curr)
-    if has_harf_data(curr.font) then
+    if fontoptions.is_harf[curr.font] then
       local props = getproperty(curr) or {}
       local actualtext = props.luaotfload_startactualtext
       return actualtext and actualtext:find"302[EF]$"
@@ -2601,7 +2605,7 @@ end
 local function normalize_syllable_TC (head)
   local curr = head
   while curr do
-    if curr.id == glyphid and not has_harf_data(curr.font) then
+    if curr.id == glyphid and not fontoptions.is_harf[curr.font] then
       local c, f = curr.char, curr.font
       if is_hangul(c) and (c - 0xAC00) % 28 == 0 then
         local t = getnext(curr)
