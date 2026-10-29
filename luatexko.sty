@@ -569,9 +569,11 @@
 }
 % hangul fonts
 \AddToHook{selectfont}{%
+  \ifluatexkorunningselectfont \else \let\luatexko@font@name\font@name
   \luatexkohangulselectfont
   \luatexkohanjaselectfont
   \luatexkofallbackselectfont
+  \let\font@name\luatexko@font@name \fi
 }
 \AddToHook{rmfamily}{%
   \let\luatexkohangulfont  \luatexkomainhangulfont
