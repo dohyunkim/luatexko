@@ -13,8 +13,8 @@
 
 luatexbase.provides_module {
   name        = 'luatexko',
-  date        = '2026/08/28',
-  version     = '5.8',
+  date        = '2026/10/29',
+  version     = '5.9',
   description = 'typesetting Korean with LuaTeX',
   author      = 'Dohyun Kim, Soojin Nam',
   license     = 'LPPL v1.3+',
@@ -716,129 +716,142 @@ function luatexko.updateforcehangul (value)
   nodewrite(what)
 end
 
-local function process_fonts (head)
-  local curr, currfont, currlang, newfont = head, 0, nohyphen, 0
-  local to_free = { }
-  while curr do
-    local id = curr.id
-    if id == glyphid then
-      currfont, currlang = curr.font, curr.lang
-      if curr.font ~= 0 -- exclude nullfont
-        and not has_attribute(curr, unicodeattr) then
+local process_fonts
+do
+  local sf_ignore = {
+    [kernid] = true,
+    [penaltyid] = true,
+    [glueid] = true,
+    [whatsitid] = true,
+    [ins_id] = true,
+    [discid] = true,
+    [node.id"adjust"] = true,
+    [node.id"mark"] = true,
+  }
+  function process_fonts (head)
+    local curr, currfont, currlang, newfont = head, 0, nohyphen, 0
+    local to_free = { }
+    while curr do
+      local id = curr.id
+      if id == glyphid then
+        currfont, currlang = curr.font, curr.lang
+        if curr.font ~= 0 -- exclude nullfont
+          and not has_attribute(curr, unicodeattr) then
 
-        local c = curr.char
-        set_attribute(curr, unicodeattr, c)
+          local c = curr.char
+          set_attribute(curr, unicodeattr, c)
 
-        local done
-        if is_combining(c) then
+          local done
+          if is_combining(c) then
+            local p = getprev(curr)
+            if p and p.id == glyphid then
+              if curr.font ~= p.font then
+                curr.font = p.font
+              end
+              curr.lang = p.lang
+              done = true
+            end
+            if is_jungsong(c) or is_jongsong(c) or hangul_tonemark[c] then
+              done = false
+              if hangul_tonemark[c]
+                and not active_processes.reorderTM
+                and not fontoptions.is_harf[curr.font] then
+                luatexko.activate("reorderTM") -- activate reorderTM here
+              end
+            end
+          end
+
+          if not done then
+
+            if curr.subtype == 1 and curr.lang ~= nohyphen and is_cjk_char(c) then
+              curr.lang = langkor -- suppress hyphenation of cjk chars
+            end
+
+            local hf  = has_attribute(curr, hangulfontattr) or false
+            local hjf = has_attribute(curr, hanjafontattr)  or false
+
+            if hf and force_hangul[c]
+              and curr.lang ~= nohyphen
+              and fontoptions.is_widefont[curr.font] -- exclude legacy fonts
+              and not fontoptions.monospaced[curr.font] then -- exclude ttfamily
+              curr.font = hf
+            elseif hf and has_attribute(curr, hangulbyhangulattr) and is_hangul_jamo(c) then
+              curr.font = hf
+            elseif hjf and has_attribute(curr, hanjabyhanjaattr) and is_hanja(c) then
+              curr.font = hjf
+            elseif not char_in_font(curr.font, c) then
+              local fbf = has_attribute(curr, fallbackfontattr) or false
+              local f = hf  and char_in_font(hf,  c) and hf
+              or hjf and char_in_font(hjf, c) and hjf
+              or fbf and char_in_font(fbf, c) and fbf
+              if f then curr.font = f end
+            end
+          end
+        end
+        newfont = curr.font
+      elseif id == glueid
+        and currfont ~= 0
+        and currfont ~= newfont
+        and currlang ~= nohyphen
+        and curr.subtype == 13 -- spaceskip
+        -- fontloader's "node" mode sets space_stretch to zero
+        -- when the font is a monospaced font (fontspec's \setmonofont
+        -- command does the same thing), which we will bypass here
+        -- for alignment of CJK and Latin glyphs in verbatim environment.
+        -- See http://www.ktug.org/xe/index.php?document_srl=249772
+        and not fontoptions.monospaced[currfont] then
+
+        local params = getparameters(currfont)
+        local oldwd, oldst, oldsh, oldsto, oldsho = getglue(curr)
+        if params and oldsto == 0 and oldsho == 0 then
           local p = getprev(curr)
-          if p and p.id == glyphid then
-            if curr.font ~= p.font then
-              curr.font = p.font
+          while p and sf_ignore[p.id] do p = getprev(p) end
+          local sf = p and p.char and tex.getsfcode(p.char) or 1000
+          if sf == 0 or sf > 1000 then
+            local p, pf = getprev(p), 0
+            while p and pf == 0 do
+              pf = p.char and tex.getsfcode(p.char) or 1000
+              p = getprev(p)
             end
-            curr.lang = p.lang
-            done = true
+            if sf == 0 then sf = pf end
+            if pf < 1000 then sf = 1000 end
           end
-          if is_jungsong(c) or is_jongsong(c) or hangul_tonemark[c] then
-            done = false
-            if hangul_tonemark[c]
-              and not active_processes.reorderTM
-              and not fontoptions.is_harf[curr.font] then
-              luatexko.activate("reorderTM") -- activate reorderTM here
+          if oldwd == (sf < 2000 and params.space or params.space+params.extra_space)
+            and oldst == tex.sp(params.space_stretch * (sf/1000))
+            and oldsh == tex.sp(params.space_shrink * (1000/sf)) then
+
+            local newwd = fontoptions.hangulspaceskip[newfont]
+            if newwd then
+              setglue(curr,
+              sf < 2000 and newwd[1] or newwd[1]+newwd[4],
+              tex.sp(newwd[2] * (sf/1000)),
+              tex.sp(newwd[3] * (1000/sf)))
             end
           end
         end
+      elseif id == discid then
+        process_fonts(curr.pre)
+        process_fonts(curr.post)
+        process_fonts(curr.replace)
+      elseif id == mathid then
+        curr = end_of_math(curr)
+      elseif id      == whatsitid  and
+        curr.user_id == forcehf_id and
+        curr.type    == 108 then -- lua_value
 
-        if not done then
-
-          if curr.subtype == 1 and curr.lang ~= nohyphen and is_cjk_char(c) then
-            curr.lang = langkor -- suppress hyphenation of cjk chars
-          end
-
-          local hf  = has_attribute(curr, hangulfontattr) or false
-          local hjf = has_attribute(curr, hanjafontattr)  or false
-
-          if hf and force_hangul[c]
-            and fontoptions.is_widefont[curr.font] -- exclude legacy fonts
-            and curr.lang ~= nohyphen and not fontoptions.monospaced[curr.font] -- exclude ttfamily
-            then
-            curr.font = hf
-          elseif hf and has_attribute(curr, hangulbyhangulattr) and is_hangul_jamo(c) then
-            curr.font = hf
-          elseif hjf and has_attribute(curr, hanjabyhanjaattr) and is_hanja(c) then
-            curr.font = hjf
-          elseif not char_in_font(curr.font, c) then
-            local fbf = has_attribute(curr, fallbackfontattr) or false
-            local f = hf  and char_in_font(hf,  c) and hf
-                   or hjf and char_in_font(hjf, c) and hjf
-                   or fbf and char_in_font(fbf, c) and fbf
-            if f then curr.font = f end
-          end
+        local value = curr.value
+        if type(value) == "function" then
+          value()
         end
+
+        noderemove(head, curr)
+        to_free[#to_free+1] = curr
       end
-      newfont = curr.font
-    elseif id == glueid
-      and currfont ~= 0
-      and currfont ~= newfont
-      and currlang ~= nohyphen
-      and curr.subtype == 13 -- spaceskip
-      -- fontloader's "node" mode sets space_stretch to zero
-      -- when the font is a monospaced font (fontspec's \setmonofont
-      -- command does the same thing), which we will bypass here
-      -- for alignment of CJK and Latin glyphs in verbatim environment.
-      -- See http://www.ktug.org/xe/index.php?document_srl=249772
-      and not fontoptions.monospaced[currfont] then
-
-      local params = getparameters(currfont)
-      local oldwd, oldst, oldsh, oldsto, oldsho = getglue(curr)
-      if params and oldsto == 0 and oldsho == 0 then
-        local p = getprev(curr)
-        while p and p.id == whatsitid do p = getprev(p) end
-        local sf = p and p.char and tex.getsfcode(p.char) or 1000
-        if sf == 0 or sf > 1000 then
-          local p, pf = getprev(p), 0
-          while p and pf == 0 do
-            pf = p.char and tex.getsfcode(p.char) or 1000
-            p = getprev(p)
-          end
-          if sf == 0 then sf = pf end
-          if pf < 1000 then sf = 1000 end
-        end
-        if oldwd == (sf < 2000 and params.space or params.space+params.extra_space)
-          and oldst == tex.sp(params.space_stretch * (sf/1000))
-          and oldsh == tex.sp(params.space_shrink * (1000/sf)) then
-
-          local newwd = fontoptions.hangulspaceskip[newfont]
-          if newwd then
-            setglue(curr,
-                    sf < 2000 and newwd[1] or newwd[1]+newwd[4],
-                    tex.sp(newwd[2] * (sf/1000)),
-                    tex.sp(newwd[3] * (1000/sf)))
-          end
-        end
-      end
-    elseif id == discid then
-      process_fonts(curr.pre)
-      process_fonts(curr.post)
-      process_fonts(curr.replace)
-    elseif id == mathid then
-      curr = end_of_math(curr)
-    elseif id      == whatsitid  and
-      curr.user_id == forcehf_id and
-      curr.type    == 108 then -- lua_value
-
-      local value = curr.value
-      if type(value) == "function" then
-        value()
-      end
-
-      noderemove(head, curr)
-      to_free[#to_free+1] = curr
+      curr = getnext(curr)
     end
-    curr = getnext(curr)
-  end
 
-  for _, v in ipairs(to_free) do nodefree(v) end
+    for _, v in ipairs(to_free) do nodefree(v) end
+  end
 end
 
 -- linebreak
@@ -2709,6 +2722,12 @@ otfregister {
   description = "raise chars",
   default = false,
   manipulators = {
+    base = function()
+      if not active_processes.charraise then
+        charraiseattr = luatexbase.new_attribute"luatexko_char_raise_attr"
+      end
+      activate_process("post_shaping_filter", process_charraise, "charraise")
+    end,
     node = function()
       if not active_processes.charraise then
         charraiseattr = luatexbase.new_attribute"luatexko_char_raise_attr"

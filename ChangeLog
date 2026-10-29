@@ -1,3 +1,16 @@
+2026-10-29	Dohyun Kim <nomosnomos at gmail com>
+
+	Version 5.9
+	* luatexko.lua:
+	- The 'hangulspaceskip' feature affects not only spaceskip glue nodes
+	that follow whatsit nodes, but also those that follow kern, penalty,
+	glue, insert, discretionary, adjust, or mark nodes.  This can have a
+	slight impact on the width of inter-word spaces.
+
+	* luatexko.sty:
+	- fix incompatibility with unicode-math package (#13)
+	- 'Renderer=Basic' is the default mode for math hangul fonts.
+
 2026-08-28	Soojin Nam <jsunam at gmail com> Dohyun Kim <nomosnomos at gmail com>
 
 	Version 5.8
