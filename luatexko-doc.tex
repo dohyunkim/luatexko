@@ -8,13 +8,13 @@
 %%
 %% public domain
 
-%\RequirePackage{luatagging}
-%\DocumentMetadata{
-%  lang=ko,
-%  pdfstandard={UA-2,A-4f},
-%  tagging=on,
-%  tagging-setup={math/setup=mathml-SE, extra-modules=verbatim-alt}
-%}
+\RequirePackage{luatagging}
+\DocumentMetadata{
+  lang=ko,
+  pdfstandard={UA-2,A-4f},
+  tagging=on,
+  tagging-setup={math/setup=mathml-SE, extra-modules=verbatim-alt}
+}
 
 \documentclass[a4paper]{article}
 \usepackage[hmargin={3.4cm,4.2cm}]{geometry}
@@ -205,10 +205,15 @@
 \makeatother
 \def\ldots{|...|}
 
+\hypersetup{pdfinfo={
+  Title={A Brief Manual for LuaTeX-ko},
+  Subject={Typeset Hangul Text with Lua(La)TeX},
+  Author={Dohyun Kim and Soojin Nam},
+}}
 \begin{document}
 \title{\luatexko\ 간단 매뉴얼}
-\author{\normalsize Dohyun Kim \small |<nomosnomos at gmail com>| \and
-        \normalsize Soojin Nam \small |<jsunam at gmail com>| \and
+\author{\normalsize Dohyun Kim {\small |<nomosnomos at gmail com>|}\qquad
+        \normalsize Soojin Nam {\small |<jsunam at gmail com>|}\\
         \normalsize <\url{http://github.com/dohyunkim/luatexko}>}
 \date{Version 5.9\quad 2026/10/29}
 \maketitle
