@@ -1030,6 +1030,9 @@ do
       if id == glyphid and curr.lang ~= nohyphen then
         local cc = curr.char
         old = has_attribute(curr, classicattr)
+        if old and cc < 127 and not fontoptions.is_vertical[curr.font] then
+          old = false
+        end
         local ccl = get_char_class(cc, old)
         if old and intercharclass[pcl][ccl] then
           local cf = charclass[cc] == 0 and pf or curr.font
@@ -1259,6 +1262,9 @@ local function process_glyph_width (head)
 
         local cc = has_attribute(curr, unicodeattr) or curr.char
         local old = has_attribute(curr, classicattr)
+        if old and cc < 127 and not fontoptions.is_vertical[curr.font] then
+          old = false
+        end
         local class = get_char_class(cc, old)
         if class >= 1 and class <= 4 and
           (old or cc < 0x2000 or cc > 0x202F) then -- exclude general puncts
