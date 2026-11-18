@@ -1000,6 +1000,7 @@ local function next_real_node (curr)
   end
 end
 
+
 local process_cjk_punctuation_spacing, process_linebreak
 do
   local function maybe_linebreak (head, curr, pc, pcl, cc, old, fid, par)
@@ -1031,9 +1032,10 @@ do
         local cc = curr.char
         old = has_attribute(curr, classicattr)
         local ccl = get_char_class(cc, old)
-        if old and cc < 127 and not fontoptions.is_vertical[curr.font] then
-          ccl = 0
-        end
+        ccl = old and cc < 127 and not fontoptions.is_vertical[curr.font] and 0 or ccl
+        -- <-- class 0 for ascii chars with non-vertical font.
+        -- but the linebreak function below injects half-width space (seems not bad)
+        -- TODO: someday in the future, rewrite and unite four functions for spacing/linebreak
         if old and intercharclass[pcl][ccl] then
           local cf = charclass[cc] == 0 and pf or curr.font
           head = maybe_linebreak(head, anchor, pc, pcl, cc, old, cf, par)
@@ -1044,14 +1046,11 @@ do
           or has_attribute(curr, inhibitglueattr)) then
           pcl, pc, pf = 0, false, false
         else
-          if pf and old then
-            local cc = curr.head and hbox_char_font(curr,true) or 0x4E00
-            if intercharclass[pcl][get_char_class(cc,old)] then
-              head = maybe_linebreak(head, anchor, pc, pcl, cc, old, pf, par)
-            end
+          -- do not inspect boxes: luatexja also does not.
+          if pf and old and intercharclass[pcl][0] then
+            head = maybe_linebreak(head, anchor, pc, pcl, 0x4E00, old, pf, par)
           end
-          pc = curr.head and hbox_char_font(curr) or 0x4E00
-          pcl, pf = get_char_class(pc,old), false
+          pcl, pc, pf = 0, 0x4E00, false
         end
       end
       curr, anchor = next_real_node(getnext(curr))
@@ -1267,9 +1266,8 @@ local function process_glyph_width (head)
         local cc = has_attribute(curr, unicodeattr) or curr.char
         local old = has_attribute(curr, classicattr)
         local class = get_char_class(cc, old)
-        if old and cc < 127 and not fontoptions.is_vertical[curr.font] then
-          calss = 0
-        end
+        -- class 0 for ascii chars with non-vertical font
+        class = old and cc < 127 and not fontoptions.is_vertical[curr.font] and 0 or class
         if class >= 1 and class <= 4 and
           (old or cc < 0x2000 or cc > 0x202F) then -- exclude general puncts
 
