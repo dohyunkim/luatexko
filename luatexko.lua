@@ -1030,10 +1030,10 @@ do
       if id == glyphid and curr.lang ~= nohyphen then
         local cc = curr.char
         old = has_attribute(curr, classicattr)
-        if old and cc < 127 and not fontoptions.is_vertical[curr.font] then
-          old = false
-        end
         local ccl = get_char_class(cc, old)
+        if old and cc < 127 and not fontoptions.is_vertical[curr.font] then
+          ccl = 0
+        end
         if old and intercharclass[pcl][ccl] then
           local cf = charclass[cc] == 0 and pf or curr.font
           head = maybe_linebreak(head, anchor, pc, pcl, cc, old, cf, par)
@@ -1044,10 +1044,14 @@ do
           or has_attribute(curr, inhibitglueattr)) then
           pcl, pc, pf = 0, false, false
         else
-          if pf and old and intercharclass[pcl][0] then
-            head = maybe_linebreak(head, anchor, pc, pcl, 0x4E00, old, pf, par)
+          if pf and old then
+            local cc = curr.head and hbox_char_font(curr,true) or 0x4E00
+            if intercharclass[pcl][get_char_class(cc,old)] then
+              head = maybe_linebreak(head, anchor, pc, pcl, cc, old, pf, par)
+            end
           end
-          pcl, pc, pf = 0, 0x4E00, false
+          pc = curr.head and hbox_char_font(curr) or 0x4E00
+          pcl, pf = get_char_class(pc,old), false
         end
       end
       curr, anchor = next_real_node(getnext(curr))
@@ -1262,10 +1266,10 @@ local function process_glyph_width (head)
 
         local cc = has_attribute(curr, unicodeattr) or curr.char
         local old = has_attribute(curr, classicattr)
-        if old and cc < 127 and not fontoptions.is_vertical[curr.font] then
-          old = false
-        end
         local class = get_char_class(cc, old)
+        if old and cc < 127 and not fontoptions.is_vertical[curr.font] then
+          calss = 0
+        end
         if class >= 1 and class <= 4 and
           (old or cc < 0x2000 or cc > 0x202F) then -- exclude general puncts
 
