@@ -36,3 +36,11 @@ install: $(RUNFILES) $(DOCFILES)
 uninstall:
 	@echo Uninstalling from: $(TEXMFDIR)
 	@$(RM) -r $(RUNDIR) $(DOCDIR)
+
+clean:
+	@$(RM) $(NAME)-doc.aux $(NAME)-doc.log $(NAME)-doc.out texfot.*
+
+distclean: clean
+	@$(RM) $(PDFFILE) $(ZIPFILE)
+
+.PHONY: all doc ctan install uninstall clean distclean
