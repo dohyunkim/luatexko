@@ -38,7 +38,8 @@ uninstall:
 	@$(RM) -r $(RUNDIR) $(DOCDIR)
 
 clean:
-	@$(RM) $(NAME)-doc.aux $(NAME)-doc.log $(NAME)-doc.out texfot.*
+	@$(RM) $(NAME)-doc.aux $(NAME)-doc.log $(NAME)-doc.out \
+		$(NAME)-doc-luamml-mathml.html texfot.*
 
 distclean: clean
 	@$(RM) $(PDFFILE) $(ZIPFILE)
