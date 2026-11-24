@@ -1,6 +1,16 @@
+202x-xx-xx	Dohyun Kim <nomosnomos at gmail com>
+
+	Version 6.0
+
+	* luatexko.lua:
+	- assign character classes to ASCII punctuations in Hangul vertical
+	writing mode; it is assumed that these characters are processed by
+	the `fwid` OpenType GSUB feature.
+
 2026-10-29	Dohyun Kim <nomosnomos at gmail com>
 
 	Version 5.9
+
 	* luatexko.lua:
 	- The 'hangulspaceskip' feature affects not only spaceskip glue nodes
 	that follow whatsit nodes, but also those that follow kern, penalty,

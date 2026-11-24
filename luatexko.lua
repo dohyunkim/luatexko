@@ -1000,7 +1000,17 @@ local function next_real_node (curr)
   end
 end
 
+local function is_classic (curr, cc) -- only for glyph nodes
+  local old = has_attribute(curr, classicattr)
+  cc = cc or has_attribute(curr, unicodeattr) or curr.char
+  if old == 1 and cc < 127 and not fontoptions.is_vertical[curr.font] then
+    -- ascii chars with non-vertical font in vertical writing mode
+    return false
+  end
+  return old
+end
 
+-- TODO: someday in the future, rewrite and unite four functions for spacing/linebreak
 local process_cjk_punctuation_spacing, process_linebreak
 do
   local function maybe_linebreak (head, curr, pc, pcl, cc, old, fid, par)
@@ -1030,12 +1040,8 @@ do
       local id = curr.id
       if id == glyphid and curr.lang ~= nohyphen then
         local cc = curr.char
-        old = has_attribute(curr, classicattr)
+        old = is_classic(curr, cc)
         local ccl = get_char_class(cc, old)
-        ccl = old and cc < 127 and not fontoptions.is_vertical[curr.font] and 0 or ccl
-        -- <-- class 0 for ascii chars with non-vertical font.
-        -- but the linebreak function below injects half-width space (seems not bad)
-        -- TODO: someday in the future, rewrite and unite four functions for spacing/linebreak
         if old and intercharclass[pcl][ccl] then
           local cf = charclass[cc] == 0 and pf or curr.font
           head = maybe_linebreak(head, anchor, pc, pcl, cc, old, cf, par)
@@ -1070,7 +1076,7 @@ do
       if id == glyphid then
         local c = has_attribute(curr, unicodeattr) or curr.char
         if c and not is_combining(c) then
-          local old = has_attribute(curr, classicattr)
+          local old = is_classic(curr, c)
           local cjk = is_cjk_char(c)
           local f = cjk and curr.font or pf or curr.font
           if old and cjk and pc == -1 then -- penalty only (f is nil below) for non-glyph box + cjk
@@ -1099,7 +1105,7 @@ do
         if curr.dir:sub(1,1) == "+" then -- push dir
           local n = getnext(curr)
           if n.id == glyphid then
-            local old = has_attribute(n, classicattr)
+            local old = is_classic(n)
             head = maybe_linebreak(head, anchor, pc, pcl, n.char, old, n.font, par)
           end
           pc, pcl = false, 0
@@ -1264,10 +1270,8 @@ local function process_glyph_width (head)
         and fontoptions.compresspunctuations[curr.font] then
 
         local cc = has_attribute(curr, unicodeattr) or curr.char
-        local old = has_attribute(curr, classicattr)
+        local old = is_classic(curr, cc)
         local class = get_char_class(cc, old)
-        -- class 0 for ascii chars with non-vertical font
-        class = old and cc < 127 and not fontoptions.is_vertical[curr.font] and 0 or class
         if class >= 1 and class <= 4 and
           (old or cc < 0x2000 or cc > 0x202F) then -- exclude general puncts
 
@@ -1309,10 +1313,9 @@ local function process_remove_spaces (head)
   local curr, to_free, sp, cjk = head, {}, false, false
   while curr do
     local id = curr.id
-    if id == glyphid and curr.lang ~= nohyphen and has_attribute(curr, classicattr)
-      and fontoptions.removeclassicspaces[curr.font] then
+    if id == glyphid and curr.lang ~= nohyphen and fontoptions.removeclassicspaces[curr.font] then
       local c = has_attribute(curr, unicodeattr) or curr.char or 0
-      if not is_combining(c) then
+      if is_classic(curr, c) and not is_combining(c) then
         local cc = is_cjk_char(c) and 1 or 0
         if sp and cjk and (cjk + cc) == 2 then
           head = noderemove(head, sp)
